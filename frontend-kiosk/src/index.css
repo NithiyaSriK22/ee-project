@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+}
+
+/* Accessibility High Contrast mode styles */
+.high-contrast {
+  --tw-bg-opacity: 1;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast .kiosk-card {
+  background-color: #111827 !important;
+  border-color: #facc15 !important;
+  border-width: 2px !important;
+  color: #ffffff !important;
+}
+
+.high-contrast button {
+  border-color: #ffffff !important;
+  border-width: 2px !important;
+}

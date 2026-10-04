@@ -1,0 +1,28 @@
+{
+  "name": "medikiosk-root",
+  "version": "1.0.0",
+  "description": "MediKiosk — AI-Assisted Patient Case-Taking & Clinical Summary Platform (SIH26047)",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend-kiosk",
+    "frontend-doctor-portal"
+  ],
+  "scripts": {
+    "dev:backend": "npm --workspace=backend run dev",
+    "dev:kiosk": "npm --workspace=frontend-kiosk run dev",
+    "dev:doctor": "npm --workspace=frontend-doctor-portal run dev",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "keywords": [
+    "medikiosk",
+    "healthcare",
+    "clinical-intake",
+    "doctor-summary",
+    "triage"
+  ],
+  "author": "MediKiosk Engineering Team",
+  "license": "UNLICENSED"
+}

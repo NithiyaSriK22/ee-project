@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Provenance and Field Verification Highlights */
+.field-verified {
+  background-color: #ecfdf5;
+  border-left: 3px solid #059669;
+}
+
+.field-unverified {
+  background-color: #fffbeb;
+  border-left: 3px solid #d97706;
+}
+
+.field-unreadable {
+  background-color: #fff1f2;
+  border-left: 3px solid #e11d48;
+}
