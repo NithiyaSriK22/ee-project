@@ -40,6 +40,12 @@ export class AuthorizationError extends AppError {
   }
 }
 
+export const UnauthorizedError = AuthenticationError;
+export type UnauthorizedError = AuthenticationError;
+
+export const ForbiddenError = AuthorizationError;
+export type ForbiddenError = AuthorizationError;
+
 export class NotFoundError extends AppError {
   constructor(resource: string = 'Resource') {
     super(`${resource} not found`, 404, ErrorCode.NOT_FOUND);

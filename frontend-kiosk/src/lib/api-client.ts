@@ -10,9 +10,14 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor: inject correlation headers / session token if available
+// Request interceptor: inject correlation headers and kiosk session token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('medikiosk_kiosk_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      config.headers['X-Kiosk-Session-Token'] = token;
+    }
     // Generate a client-side request correlation ID if not present
     if (!config.headers['X-Request-ID']) {
       config.headers['X-Request-ID'] = `kiosk-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;

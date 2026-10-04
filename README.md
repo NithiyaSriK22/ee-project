@@ -1,3 +1,4 @@
+
 # MediKiosk — AI-Assisted Patient Case-Taking & Clinical Summary Platform
 > **SIH26047** | Production-Grade Healthcare Case-Taking & Doctor Review System
 
@@ -59,15 +60,17 @@ medikiosk/
 
 ---
 
+---
+
 ## 3. Technology Stack
 
 | Layer | Technologies |
 |---|---|
 | **Kiosk Frontend** | React 18, TypeScript, Vite, Tailwind CSS, TanStack Query, Lucide Icons |
 | **Doctor Portal** | React 18, TypeScript, Vite, Tailwind CSS, TanStack Query, Lucide Icons |
-| **Backend API** | Node.js, Express, TypeScript, Zod, Helmet, Express-Rate-Limit, CORS |
+| **Backend API** | Node.js, Express, TypeScript, Zod, Helmet, Express-Rate-Limit, CORS, Bcryptjs, JsonWebToken |
 | **Database** | PostgreSQL 16, Prisma ORM |
-| **Security & Privacy** | PHI-Safe Redacting Structured Logger, Dual-Origin CORS, Request Correlation ID (`X-Request-ID`), Non-leaking Global Error Handler |
+| **Security & Privacy** | PHI-Safe Redacting Structured Logger, Dual-Origin CORS, Request Correlation ID (`X-Request-ID`), Password Hashing (Bcrypt 12 rounds), Visit-Scoped Kiosk Tokens, SHA-256 Hashed Refresh Tokens, RBAC Middleware |
 | **Testing** | Vitest, Supertest, Testing Library |
 
 ---
@@ -84,7 +87,24 @@ npm install
 npm --workspace=backend run prisma:generate
 ```
 
-### 3. Start Development Servers
+### 3. Run Database Migrations (PostgreSQL)
+```bash
+npm --workspace=backend run prisma:migrate
+```
+
+### 4. Run Test Suites & Quality Checks
+```bash
+# Run all workspace unit & integration tests
+npm run test
+
+# Run TypeScript compilation checks across all workspaces
+npm run lint
+
+# Build all production bundles (backend + both frontends)
+npm run build
+```
+
+### 5. Start Development Servers
 ```bash
 # Terminal 1: Backend API (http://localhost:5000)
 npm run dev:backend
@@ -100,9 +120,9 @@ npm run dev:doctor
 
 ## 5. Ten-Module Roadmap
 
-- [x] **MODULE 1**: Foundation & System Architecture (Current Module)
-- [ ] **MODULE 2**: Patient Registration, Authentication & Profile
-- [ ] **MODULE 3**: Guided Interview & Kiosk Intake
+- [x] **MODULE 1**: Foundation & System Architecture
+- [x] **MODULE 2**: Patient Registration, Authentication & Profile (Implemented)
+- [x] **MODULE 3**: Guided Interview & Kiosk Intake (Implemented)
 - [ ] **MODULE 4**: OCR, Validation Gate & Document Digitization
 - [ ] **MODULE 5**: AI Clinical Summarization Engine
 - [ ] **MODULE 6**: Red-Flag Detection & Emergency Triage Alerts
@@ -113,5 +133,68 @@ npm run dev:doctor
 
 ---
 
-## 6. Regulatory & Clinical Safety Notice
+## 6. Module 3 Implementation Summary: Guided Interview & Kiosk Intake
+
+### Architectural Boundaries & Data Integrity
+- **Raw Answer Fidelity**: Module 3 records raw, timestamped answers with complete provenance (`answered_via`, `language_used`, `is_critical`). It does **not** implement clinical interpretation, diagnosis, scoring, or red-flag inference.
+- **Controlled Question Types**: `YES_NO`, `YES_NO_WITH_DETAIL`, `FREE_TEXT`, `SINGLE_CHOICE`, `MULTI_CHOICE`, `NUMERIC`, `DATE`, `DURATION`.
+- **Data-Only Branching Logic**: Conditional next-question selection (`{ trigger_condition: { answer }, next_question_id }`) without clinical diagnostic heuristics.
+- **Clinical Content Lifecycle**: `DRAFT` -> `REVIEW` -> `PUBLISHED` -> `ACTIVE` -> `RETIRED` with data-quality validation before activation.
+- **Preserved History**: Question archiving is soft-delete only (`is_archived: true`) so historical intake answers remain interpretable.
+- **Downstream Contract**: Exposes `InterviewService.getCompletedAnswers(visitId)` for Modules 4, 5, and 6.
+
+### Module 3 API Endpoints
+#### Kiosk Patient Intake API (Session-Scoped)
+- `POST /api/v1/kiosk/interview/start` — Start/resume interview session (gated by `VISIT_DATA_COLLECTION` consent)
+- `GET  /api/v1/kiosk/interview/current-question` — Retrieve current interview state & progress
+- `POST /api/v1/kiosk/interview/answer` — Record answer (touch/voice/companion/staff)
+- `POST /api/v1/kiosk/interview/complete` — Mark interview complete
+- `GET  /api/v1/kiosk/interview/progress` — Interview completion progress snapshot
+
+#### Admin Question Bank & Template API (Role-Gated: ADMIN / SUPER_ADMIN)
+- `GET    /api/v1/admin/interview-templates` — List all interview templates
+- `GET    /api/v1/admin/interview-templates/:id` — Get template with questions
+- `POST   /api/v1/admin/interview-templates` — Create DRAFT template
+- `PATCH  /api/v1/admin/interview-templates/:id` — Update template
+- `POST   /api/v1/admin/interview-templates/:id/review` — Submit for clinical review
+- `POST   /api/v1/admin/interview-templates/:id/publish` — Validate & publish template as ACTIVE
+- `POST   /api/v1/admin/interview-templates/:id/retire` — Retire template from live kiosk
+- `POST   /api/v1/admin/interview-templates/:id/questions` — Add question to template
+- `PATCH  /api/v1/admin/interview-questions/:id` — Update question
+- `DELETE /api/v1/admin/interview-questions/:id` — Soft-delete / archive question
+
+---
+
+## 6. Module 4 Implementation Summary (OCR & Deterministic Validation Gate)
+
+### Core Architectural Guarantees
+1. **Zero LLM Verification Decision**: LLMs are never used to decide field correctness or verify OCR facts.
+2. **Four Verification States**:
+   - `VERIFIED` — Met canonical reference or deterministic regex pattern rule with confidence ≥ threshold.
+   - `UNVERIFIED` — Extracted text did not match formulary or failed deterministic check.
+   - `UNREADABLE` — OCR confidence below unreadable threshold (0.60).
+   - `MISMATCH_FLAGGED` — Conflict between multiple OCR checks or explicit out-of-range value.
+3. **Three-State Boolean Logic**: `TRUE AND UNKNOWN = UNKNOWN`, `FALSE AND UNKNOWN = FALSE`.
+4. **Explainability & Provenance**: Every field includes normalized values, OCR confidence score, bounding box, matched canonical formulary record, check rule names, and human-readable explanation strings.
+5. **Versioned National Formulary of India (NFI) Reference Dataset**: Managed exclusively by authenticated `ADMIN` / `SUPER_ADMIN` with database version tracking.
+
+### Module 4 API Endpoints
+
+#### Kiosk Document API (Patient Visit-Scoped)
+- `POST /api/v1/kiosk/documents/upload` — Upload paper prescription or lab document, run OCR & deterministic validation
+- `GET  /api/v1/kiosk/documents` — List uploaded documents for active visit
+- `GET  /api/v1/kiosk/documents/:id` — Retrieve document with raw & validated fields
+
+#### Admin Formulary Reference Data API (Role-Gated: ADMIN / SUPER_ADMIN)
+- `GET  /api/v1/admin/formulary/versions` — List formulary versions
+- `POST /api/v1/admin/formulary/versions` — Create a new formulary version
+- `POST /api/v1/admin/formulary/versions/:id/activate` — Activate formulary version
+- `GET  /api/v1/admin/formulary/drugs` — Search active formulary drugs & patterns
+- `POST /api/v1/admin/formulary/drugs` — Create new formulary drug entry
+- `POST /api/v1/admin/formulary/seed` — Seed National Formulary of India (NFI) essential dataset
+
+---
+
+## 7. Regulatory & Clinical Safety Notice
 > **Notice**: MediKiosk is a clinical decision-support tool. Emergency red-flag screening falls under Software as a Medical Device (SaMD) principles under CDSCO guidance. The platform assists physician workflow and never acts as an autonomous diagnostic authority.
+

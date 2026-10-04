@@ -1,21 +1,31 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import { HealthCheckResponse, ApiResponse } from '../types/api.types';
+import { useAuth } from '../features/auth/hooks/useAuth';
 import {
   Stethoscope,
   Users,
   AlertTriangle,
   FileCheck2,
+  FileCode2,
   Database,
   History,
   Activity,
   ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 
 export const DoctorLayout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const { data: healthData, isLoading, isError } = useQuery<HealthCheckResponse>({
     queryKey: ['system-health'],
@@ -28,19 +38,30 @@ export const DoctorLayout: React.FC = () => {
 
   const navItems = [
     { name: 'OPD Intake Queue', path: '/', icon: <Users className="w-4 h-4" /> },
+    { name: 'Question Bank & Templates', path: '/admin/templates', icon: <FileCode2 className="w-4 h-4 text-purple-600" /> },
     { name: 'Summary Review', path: '/review', icon: <FileCheck2 className="w-4 h-4" /> },
     { name: 'Red-Flag Alerts', path: '/redflags', icon: <AlertTriangle className="w-4 h-4 text-amber-500" /> },
     { name: 'Formulary Reference', path: '/formulary', icon: <Database className="w-4 h-4" /> },
     { name: 'Clinical Audit Log', path: '/audit', icon: <History className="w-4 h-4" /> },
   ];
 
+  const getInitials = (name?: string) => {
+    if (!name) return 'DR';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col antialiased">
       {/* Top Clinical Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-sm">
+      <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-700 text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-700 text-white shadow-xs">
               <Stethoscope className="h-5 w-5" />
             </div>
             <div>
@@ -65,15 +86,29 @@ export const DoctorLayout: React.FC = () => {
             </span>
           </div>
 
-          {/* Doctor Profile Badge */}
+          {/* Doctor Profile Badge & Logout */}
           <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
-            <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
-              DR
+            <div className="w-8 h-8 rounded-full bg-teal-800 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              {getInitials(user?.fullName)}
             </div>
             <div className="text-left hidden md:block">
-              <div className="text-xs font-bold text-slate-800">OPD Duty Physician</div>
-              <div className="text-[10px] text-slate-500">Department of General Medicine</div>
+              <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <span>{user?.fullName || 'OPD Physician'}</span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 text-slate-600 font-mono border border-slate-200">
+                  {user?.role || 'DOCTOR'}
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-500">{user?.hospitalDepartment || 'Department of General Medicine'}</div>
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer ml-1"
+              title="Sign Out"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </header>

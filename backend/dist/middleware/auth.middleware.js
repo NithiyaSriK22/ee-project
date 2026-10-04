@@ -1,0 +1,135 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.authenticateKioskSession = exports.authorizeRoles = exports.authenticateStaff = void 0;
+const token_util_js_1 = require("../utils/token.util.js");
+const app_error_js_1 = require("../errors/app-error.js");
+const prisma_js_1 = require("../database/prisma.js");
+const auth_types_js_1 = require("../types/auth.types.js");
+/**
+ * Middleware: Authenticates Staff / Doctor / Admin users using short-lived Bearer JWT
+ */
+const authenticateStaff = async (req, _res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            throw new app_error_js_1.UnauthorizedError('Authentication token required');
+        }
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            throw new app_error_js_1.UnauthorizedError('Malformed authorization header');
+        }
+        let claims;
+        try {
+            claims = token_util_js_1.TokenUtil.verifyStaffAccessToken(token);
+        }
+        catch {
+            throw new app_error_js_1.UnauthorizedError('Invalid or expired authentication token');
+        }
+        // Verify staff user in database
+        const staffUser = await prisma_js_1.prisma.staffUser.findUnique({
+            where: { id: claims.sub },
+        });
+        if (!staffUser) {
+            throw new app_error_js_1.UnauthorizedError('User account not found');
+        }
+        if (staffUser.status === auth_types_js_1.StaffUserStatus.DISABLED || staffUser.status === auth_types_js_1.StaffUserStatus.SUSPENDED) {
+            throw new app_error_js_1.ForbiddenError(`Account is ${staffUser.status.toLowerCase()}. Access denied.`);
+        }
+        req.user = {
+            id: staffUser.id,
+            email: staffUser.email,
+            role: staffUser.role,
+            fullName: staffUser.full_name,
+            hospitalDepartment: staffUser.hospital_department,
+            status: staffUser.status,
+        };
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.authenticateStaff = authenticateStaff;
+/**
+ * Middleware: Role-based Access Control (RBAC)
+ */
+const authorizeRoles = (...allowedRoles) => {
+    return (req, _res, next) => {
+        if (!req.user) {
+            return next(new app_error_js_1.UnauthorizedError('Authentication required'));
+        }
+        if (!allowedRoles.includes(req.user.role)) {
+            return next(new app_error_js_1.ForbiddenError(`Access forbidden: Role '${req.user.role}' lacks permission for this endpoint`));
+        }
+        next();
+    };
+};
+exports.authorizeRoles = authorizeRoles;
+/**
+ * Middleware: Authenticates Kiosk Patient Visit Session using visit-scoped token
+ */
+const authenticateKioskSession = async (req, _res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        const kioskHeader = req.headers['x-kiosk-session-token'];
+        let token;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
+        else if (kioskHeader) {
+            token = kioskHeader;
+        }
+        if (!token) {
+            throw new app_error_js_1.UnauthorizedError('Kiosk session token required');
+        }
+        let claims;
+        try {
+            claims = token_util_js_1.TokenUtil.verifyKioskSessionToken(token);
+        }
+        catch {
+            throw new app_error_js_1.UnauthorizedError('Invalid or expired kiosk session token');
+        }
+        // Lookup session in DB to ensure not ended/revoked
+        const session = await prisma_js_1.prisma.kioskSession.findUnique({
+            where: { visit_id: claims.visitId },
+            include: {
+                patient: {
+                    select: {
+                        hospital_registration_number: true,
+                    },
+                },
+            },
+        });
+        if (!session) {
+            throw new app_error_js_1.UnauthorizedError('Active kiosk session not found for this visit');
+        }
+        if (session.status !== 'ACTIVE') {
+            throw new app_error_js_1.UnauthorizedError(`Kiosk session is ${session.status.toLowerCase()}`);
+        }
+        if (new Date() > session.expires_at) {
+            // Mark expired
+            await prisma_js_1.prisma.kioskSession.update({
+                where: { id: session.id },
+                data: { status: 'EXPIRED' },
+            });
+            throw new app_error_js_1.UnauthorizedError('Kiosk session has expired. Please restart your visit.');
+        }
+        // Touch last accessed timestamp asynchronously
+        prisma_js_1.prisma.kioskSession.update({
+            where: { id: session.id },
+            data: { last_accessed_at: new Date() },
+        }).catch(() => { });
+        req.kioskSession = {
+            sessionId: session.id,
+            visitId: session.visit_id,
+            patientId: session.patient_id,
+            visitProfileId: session.visit_profile_id || undefined,
+            hospitalRegistrationNumber: session.patient.hospital_registration_number,
+        };
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.authenticateKioskSession = authenticateKioskSession;

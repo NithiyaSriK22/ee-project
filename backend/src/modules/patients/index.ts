@@ -1,5 +1,5 @@
-// Module 2 Architecture Placeholder: Patients
-import { Router } from 'express';
-
-const router = Router();
-export const patientRoutes = router;
+export { patientRoutes, kioskProfileRoutes, consentsRoutes } from './patients.routes.js';
+export { PatientsService } from './patients.service.js';
+export { PatientsRepository } from './patients.repository.js';
+export { PatientsController } from './patients.controller.js';
+export * from './patients.schemas.js';

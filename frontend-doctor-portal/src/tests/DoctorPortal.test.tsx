@@ -2,18 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '../App';
 
-describe('Doctor Portal Application Foundation', () => {
-  it('Renders the doctor portal layout and clinical review dashboard components', () => {
+describe('Doctor Portal Application & Authentication', () => {
+  it('Renders the doctor portal authentication view when unauthenticated', async () => {
     render(<App />);
 
-    // Brand and header
-    expect(screen.getByText(/MediKiosk/i)).toBeInTheDocument();
-    expect(screen.getByText(/Doctor Review Portal/i)).toBeInTheDocument();
-    expect(screen.getByText(/OPD Consultation Queue & Case Reviews/i)).toBeInTheDocument();
+    // Brand, title and security tags
+    expect(screen.getAllByText(/MediKiosk/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Staff Portal/i)).toBeInTheDocument();
+    expect(screen.getByText(/Physician \/ Staff Sign In/i)).toBeInTheDocument();
 
-    // Clinical provenance demonstration
-    expect(screen.getByText(/Clinical Provenance & Explainability Architecture/i)).toBeInTheDocument();
-    expect(screen.getByText(/Chief Complaint/i)).toBeInTheDocument();
-    expect(screen.getByText(/Current Medication/i)).toBeInTheDocument();
+    // Form inputs and action buttons
+    expect(screen.getByLabelText(/Institutional Email Address/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sign In to Clinical Workspace/i })).toBeInTheDocument();
   });
 });

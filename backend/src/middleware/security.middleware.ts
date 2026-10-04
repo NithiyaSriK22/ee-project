@@ -52,7 +52,7 @@ export const rateLimiterMiddleware = rateLimit({
   max: env.RATE_LIMIT_MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res) => {
+  handler: (_req, res) => {
     ResponseUtil.error(
       res,
       429,

@@ -42,3 +42,403 @@ model AuditLog {
   @@index([created_at])
   @@map("audit_logs")
 }
+
+// ==============================================================================
+// MODULE 2: IDENTITY, AUTHENTICATION & PATIENT PROFILE
+// ==============================================================================
+
+model StaffUser {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  email               String                   @unique @db.VarChar(255)
+  password_hash       String                   @db.VarChar(255)
+  full_name           String                   @db.VarChar(255)
+  role                String                   @db.VarChar(50) // STAFF_ATTENDANT, DOCTOR, ADMIN, SUPER_ADMIN
+  status              String                   @default("ACTIVE") @db.VarChar(50) // ACTIVE, SUSPENDED, DISABLED, PENDING_VERIFICATION
+  hospital_department String?                  @db.VarChar(100)
+  email_verified_at   DateTime?                @db.Timestamptz(6)
+  last_login_at       DateTime?                @db.Timestamptz(6)
+  created_at          DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime                 @updatedAt @db.Timestamptz(6)
+
+  refresh_tokens      RefreshToken[]
+  password_resets     PasswordResetToken[]
+  email_verifications EmailVerificationToken[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@map("staff_users")
+}
+
+model RefreshToken {
+  id            String    @id @default(uuid()) @db.Uuid
+  staff_user_id String    @db.Uuid
+  token_hash    String    @unique @db.VarChar(255)
+  expires_at    DateTime  @db.Timestamptz(6)
+  revoked_at    DateTime? @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  last_used_at  DateTime? @db.Timestamptz(6)
+
+  staff_user    StaffUser @relation(fields: [staff_user_id], references: [id], onDelete: Cascade)
+
+  @@index([staff_user_id])
+  @@index([token_hash])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id            String    @id @default(uuid()) @db.Uuid
+  staff_user_id String    @db.Uuid
+  token_hash    String    @unique @db.VarChar(255)
+  expires_at    DateTime  @db.Timestamptz(6)
+  used_at       DateTime? @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  staff_user    StaffUser @relation(fields: [staff_user_id], references: [id], onDelete: Cascade)
+
+  @@index([staff_user_id])
+  @@index([token_hash])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id            String    @id @default(uuid()) @db.Uuid
+  staff_user_id String    @db.Uuid
+  token_hash    String    @unique @db.VarChar(255)
+  expires_at    DateTime  @db.Timestamptz(6)
+  used_at       DateTime? @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  staff_user    StaffUser @relation(fields: [staff_user_id], references: [id], onDelete: Cascade)
+
+  @@index([staff_user_id])
+  @@index([token_hash])
+  @@map("email_verification_tokens")
+}
+
+model Patient {
+  id                           String                @id @default(uuid()) @db.Uuid
+  hospital_registration_number String                @unique @db.VarChar(100)
+  full_name                    String                @db.VarChar(255)
+  date_of_birth                DateTime?             @db.Date
+  age                          Int?
+  gender                       String                @db.VarChar(50)
+  contact_number               String                @db.VarChar(50)
+  preferred_language           String                @default("en") @db.VarChar(10)
+  created_at                   DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                   DateTime              @updatedAt @db.Timestamptz(6)
+
+  visit_profiles               PatientVisitProfile[]
+  kiosk_sessions               KioskSession[]
+  consents                     Consent[]
+
+  @@index([hospital_registration_number])
+  @@index([contact_number])
+  @@map("patients")
+}
+
+model PatientVisitProfile {
+  id                     String         @id @default(uuid()) @db.Uuid
+  patient_id             String         @db.Uuid
+  visit_id               String         @unique @db.VarChar(100)
+  is_companion_assisted  Boolean        @default(false)
+  companion_name         String?        @db.VarChar(255)
+  companion_relationship String?        @db.VarChar(100)
+  preferred_language     String         @default("en") @db.VarChar(10)
+  emergency_contact      String?        @db.VarChar(50)
+  status                 String         @default("ACTIVE") @db.VarChar(50)
+  created_at             DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime       @updatedAt @db.Timestamptz(6)
+
+  patient                Patient        @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  kiosk_session          KioskSession?
+  consents               Consent[]
+
+  @@index([patient_id])
+  @@index([visit_id])
+  @@map("patient_visit_profiles")
+}
+
+model KioskSession {
+  id                 String               @id @default(uuid()) @db.Uuid
+  visit_id           String               @unique @db.VarChar(100)
+  patient_id         String               @db.Uuid
+  visit_profile_id   String?              @unique @db.Uuid
+  session_token_hash String               @unique @db.VarChar(255)
+  status             String               @default("ACTIVE") @db.VarChar(50) // ACTIVE, ENDED, EXPIRED
+  expires_at         DateTime             @db.Timestamptz(6)
+  last_accessed_at   DateTime             @default(now()) @db.Timestamptz(6)
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+
+  patient            Patient              @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  visit_profile      PatientVisitProfile? @relation(fields: [visit_profile_id], references: [id], onDelete: Cascade)
+
+  @@index([visit_id])
+  @@index([patient_id])
+  @@index([session_token_hash])
+  @@map("kiosk_sessions")
+}
+
+model Consent {
+  id               String               @id @default(uuid()) @db.Uuid
+  patient_id       String               @db.Uuid
+  visit_id         String               @db.VarChar(100)
+  visit_profile_id String?              @db.Uuid
+  consent_type     String               @db.VarChar(100) // VISIT_DATA_COLLECTION, DOCUMENT_PROCESSING, AI_SUMMARIZATION, SHARE_WITH_DOCTOR
+  granted          Boolean              @default(true)
+  granted_via      String               @default("patient") @db.VarChar(50) // patient, companion, staff_assisted
+  version          String               @default("1.0") @db.VarChar(20)
+  granted_at       DateTime             @default(now()) @db.Timestamptz(6)
+  revoked_at       DateTime?            @db.Timestamptz(6)
+  created_at       DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime             @updatedAt @db.Timestamptz(6)
+
+  patient          Patient              @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  visit_profile    PatientVisitProfile? @relation(fields: [visit_profile_id], references: [id], onDelete: Cascade)
+
+  @@unique([patient_id, visit_id, consent_type])
+  @@index([patient_id])
+  @@index([visit_id])
+  @@index([consent_type])
+  @@map("consents")
+}
+
+// ==============================================================================
+// MODULE 3: GUIDED INTERVIEW & KIOSK INTAKE (Question Bank & Answers)
+// ==============================================================================
+
+model InterviewTemplate {
+  id                      String              @id @default(uuid()) @db.Uuid
+  name                    String              @db.VarChar(255)
+  description             String?             @db.Text
+  applicable_visit_type   String              @default("GENERAL_OPD") @db.VarChar(100)
+  status                  String              @default("DRAFT") @db.VarChar(50) // DRAFT, REVIEW, PUBLISHED, ACTIVE, RETIRED
+  version                 String              @default("1.0.0") @db.VarChar(50)
+  version_number          Int                 @default(1)
+  change_summary          String?             @db.Text
+  language_variants_ready Boolean             @default(false)
+  created_by              String?             @db.Uuid
+  updated_by              String?             @db.Uuid
+  published_by            String?             @db.Uuid
+  published_at            DateTime?           @db.Timestamptz(6)
+  created_at              DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime            @updatedAt @db.Timestamptz(6)
+
+  questions               InterviewQuestion[]
+  sessions                InterviewSession[]
+
+  @@index([applicable_visit_type])
+  @@index([status])
+  @@map("interview_templates")
+}
+
+model InterviewQuestion {
+  id                String            @id @default(uuid()) @db.Uuid
+  template_id       String            @db.Uuid
+  section           String            @db.VarChar(100) // CHIEF_COMPLAINT, PRESENT_ILLNESS_HISTORY, PAST_MEDICAL_HISTORY, MEDICATIONS, ALLERGIES, LIFESTYLE, FAMILY_HISTORY
+  prompt_text       String            @db.Text
+  prompt_audio_hint String?           @db.Text
+  question_type     String            @db.VarChar(50) // YES_NO, YES_NO_WITH_DETAIL, FREE_TEXT, SINGLE_CHOICE, MULTI_CHOICE, NUMERIC, DATE, DURATION
+  answer_options    Json?
+  is_critical       Boolean           @default(false)
+  is_required       Boolean           @default(true)
+  order             Int               @default(0)
+  branching_logic   Json?
+  is_archived       Boolean           @default(false)
+  created_at        DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime          @updatedAt @db.Timestamptz(6)
+
+  template          InterviewTemplate @relation(fields: [template_id], references: [id], onDelete: Cascade)
+  answers           InterviewAnswer[]
+
+  @@index([template_id])
+  @@index([section])
+  @@index([order])
+  @@map("interview_questions")
+}
+
+model InterviewSession {
+  id                  String            @id @default(uuid()) @db.Uuid
+  visit_id            String            @unique @db.VarChar(100)
+  patient_id          String            @db.Uuid
+  template_id         String            @db.Uuid
+  template_version    String            @db.VarChar(50)
+  status              String            @default("IN_PROGRESS") @db.VarChar(50) // IN_PROGRESS, COMPLETED, ABANDONED
+  current_question_id String?           @db.Uuid
+  started_at          DateTime          @default(now()) @db.Timestamptz(6)
+  completed_at        DateTime?         @db.Timestamptz(6)
+  created_at          DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime          @updatedAt @db.Timestamptz(6)
+
+  template            InterviewTemplate @relation(fields: [template_id], references: [id])
+  answers             InterviewAnswer[]
+
+  @@index([visit_id])
+  @@index([patient_id])
+  @@index([status])
+  @@map("interview_sessions")
+}
+
+model InterviewAnswer {
+  id            String            @id @default(uuid()) @db.Uuid
+  session_id    String            @db.Uuid
+  visit_id      String            @db.VarChar(100)
+  question_id   String            @db.Uuid
+  answer_value  Json
+  answered_via  String            @default("touch") @db.VarChar(50) // voice, touch, staff_assisted, companion_assisted
+  language_used String            @default("en") @db.VarChar(10)
+  is_critical   Boolean           @default(false)
+  is_skipped    Boolean           @default(false)
+  answered_at   DateTime          @default(now()) @db.Timestamptz(6)
+  created_at    DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime          @updatedAt @db.Timestamptz(6)
+
+  session       InterviewSession  @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  question      InterviewQuestion @relation(fields: [question_id], references: [id])
+
+  @@unique([visit_id, question_id])
+  @@index([session_id])
+  @@index([visit_id])
+  @@index([question_id])
+  @@map("interview_answers")
+}
+
+// ==============================================================================
+// MODULE 4: OCR, DOCUMENT DIGITIZATION & DETERMINISTIC VALIDATION GATE
+// ==============================================================================
+
+model UploadedDocument {
+  id                String              @id @default(uuid()) @db.Uuid
+  visit_id          String              @db.VarChar(100)
+  patient_id        String              @db.Uuid
+  document_type     String              @db.VarChar(50) // PRESCRIPTION, LAB_REPORT, DISCHARGE_SUMMARY, OTHER
+  file_name         String              @db.VarChar(255)
+  mime_type         String              @db.VarChar(100)
+  file_size_bytes   Int
+  storage_reference String              @db.VarChar(500)
+  consent_verified  Boolean             @default(true)
+  ocr_status        String              @default("PENDING") @db.VarChar(50) // PENDING, COMPLETED, FAILED
+  overall_status    String              @default("PENDING_VALIDATION") @db.VarChar(50) // PENDING_VALIDATION, FULLY_VERIFIED, NEEDS_PHYSICIAN_REVIEW, PARTIALLY_VERIFIED, EXTRACTION_FAILED
+  ocr_error_message String?             @db.Text
+  uploaded_at       DateTime            @default(now()) @db.Timestamptz(6)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @updatedAt @db.Timestamptz(6)
+
+  raw_fields        RawExtractedField[]
+  validated_fields  ValidatedField[]
+
+  @@index([visit_id])
+  @@index([patient_id])
+  @@index([document_type])
+  @@index([ocr_status])
+  @@index([overall_status])
+  @@map("uploaded_documents")
+}
+
+model RawExtractedField {
+  id                 String            @id @default(uuid()) @db.Uuid
+  document_id        String            @db.Uuid
+  field_type         String            @db.VarChar(50) // drug_name, dosage, allergy, diagnosis, lab_value, lab_test_name, date, physician_name, institution_name
+  raw_text           String            @db.Text
+  ocr_confidence     Float             @default(0.0)
+  source_snippet_ref String?           @db.VarChar(255)
+  bounding_box       Json?
+  created_at         DateTime          @default(now()) @db.Timestamptz(6)
+
+  document           UploadedDocument  @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  validated_fields   ValidatedField[]
+
+  @@index([document_id])
+  @@index([field_type])
+  @@map("raw_extracted_fields")
+}
+
+model FormularyVersion {
+  id               String            @id @default(uuid()) @db.Uuid
+  version_code     String            @unique @db.VarChar(100)
+  description      String?           @db.Text
+  source_name      String            @db.VarChar(255)
+  status           String            @default("DRAFT") @db.VarChar(50) // DRAFT, PENDING_REVIEW, ACTIVE, RETIRED
+  is_active        Boolean           @default(false)
+  reviewed_by      String?           @db.Uuid
+  created_by       String?           @db.Uuid
+  activated_at     DateTime?         @db.Timestamptz(6)
+  created_at       DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime          @updatedAt @db.Timestamptz(6)
+
+  drugs            FormularyDrug[]
+  validated_fields ValidatedField[]
+
+  @@index([version_code])
+  @@index([status])
+  @@index([is_active])
+  @@map("formulary_versions")
+}
+
+model FormularyDrug {
+  id                 String            @id @default(uuid()) @db.Uuid
+  version_id         String            @db.Uuid
+  generic_name       String            @db.VarChar(255)
+  canonical_name     String            @db.VarChar(255)
+  brand_names        String[]          @default([])
+  dosage_forms       String[]          @default([])
+  common_misreadings String[]          @default([])
+  schedule_type      String?           @db.VarChar(50)
+  is_active          Boolean           @default(true)
+  created_at         DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime          @updatedAt @db.Timestamptz(6)
+
+  version            FormularyVersion  @relation(fields: [version_id], references: [id], onDelete: Cascade)
+
+  @@index([version_id])
+  @@index([generic_name])
+  @@index([canonical_name])
+  @@map("formulary_drugs")
+}
+
+model PatternRule {
+  id                String            @id @default(uuid()) @db.Uuid
+  category          String            @db.VarChar(50) // DOSAGE_NOTATION, DATE_FORMAT, NUMERIC_RANGE, EXPLICIT_NONE
+  pattern_code      String            @unique @db.VarChar(100)
+  display_name      String            @db.VarChar(255)
+  canonical_pattern String            @db.Text
+  examples          String[]          @default([])
+  is_active         Boolean           @default(true)
+  created_at        DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime          @updatedAt @db.Timestamptz(6)
+
+  @@index([category])
+  @@index([pattern_code])
+  @@map("pattern_rules")
+}
+
+model ValidatedField {
+  id                      String             @id @default(uuid()) @db.Uuid
+  document_id             String             @db.Uuid
+  raw_field_id            String?            @db.Uuid
+  formulary_version_id    String?            @db.Uuid
+  field_type              String             @db.VarChar(50) // drug_name, dosage, allergy, diagnosis, lab_value, lab_test_name, date, physician_name, institution_name
+  is_critical             Boolean            @default(false)
+  result                  String             @db.VarChar(50) // VERIFIED, UNVERIFIED, UNREADABLE, MISMATCH_FLAGGED
+  eval_state              String             @default("UNKNOWN") @db.VarChar(50) // MATCH, MISMATCH, UNKNOWN
+  matched_reference_value String?            @db.Text
+  match_score             Float?
+  ocr_confidence          Float              @default(0.0)
+  explanation             String             @db.Text
+  formulary_version       String             @db.VarChar(100)
+  evaluated_at            DateTime           @default(now()) @db.Timestamptz(6)
+  created_at              DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime           @updatedAt @db.Timestamptz(6)
+
+  document                UploadedDocument   @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  raw_field               RawExtractedField? @relation(fields: [raw_field_id], references: [id], onDelete: SetNull)
+  formulary_ref           FormularyVersion?  @relation(fields: [formulary_version_id], references: [id], onDelete: SetNull)
+
+  @@index([document_id])
+  @@index([field_type])
+  @@index([result])
+  @@index([is_critical])
+  @@index([evaluated_at])
+  @@map("validated_fields")
+}
+

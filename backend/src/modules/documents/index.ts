@@ -1,4 +1,19 @@
-// Module 4 Architecture Placeholder: OCR, Validation Gate & Document Digitization
-import { Router } from 'express';
-const router = Router();
-export const documentRoutes = router;
+export * from './documents.routes.js';
+export * from './documents.controller.js';
+export * from './documents.service.js';
+export * from './documents.repository.js';
+export * from './documents.schemas.js';
+export * from './documents.types.js';
+export * from './validation/validation-gate.service.js';
+export * from './validation/field-check-evaluator.js';
+export * from './validation/formulary-matcher.js';
+export * from './validation/pattern-matcher.js';
+export * from './validation/value-normalizer.js';
+export * from './validation/explanation-generator.js';
+export * from './validation/types.js';
+export * from './ocr/ocr.service.js';
+export * from './ocr/ocr-provider-adapter.js';
+export * from './formulary/formulary.service.js';
+export * from './formulary/formulary.repository.js';
+export * from './formulary/formulary.controller.js';
+export * from './formulary/seed-formulary.js';

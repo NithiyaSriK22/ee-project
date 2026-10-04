@@ -2,21 +2,38 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { DoctorLayout } from '../layouts/DoctorLayout';
 import { DoctorDashboardPage } from '../pages/DoctorDashboardPage';
+import { DoctorLoginPage } from '../features/auth/pages/DoctorLoginPage';
+import { ProtectedRoute } from '../features/auth/components/ProtectedRoute';
+import { InterviewTemplateManagerPage } from '../features/admin/pages/InterviewTemplateManagerPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      <Route path="/" element={<DoctorLayout />}>
+      {/* Public Authentication Route */}
+      <Route path="/login" element={<DoctorLoginPage />} />
+
+      {/* Protected Clinical & Admin Routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute allowedRoles={['DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN']}>
+            <DoctorLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<DoctorDashboardPage />} />
-        {/* Future routes will be connected in Modules 2, 5, 6, 7, 9:
-          <Route path="login" element={<DoctorLoginPage />} />
-          <Route path="queue" element={<DoctorQueuePage />} />
-          <Route path="summary/:patientId" element={<PatientSummaryReviewPage />} />
-          <Route path="redflags" element={<RedFlagAlertsPage />} />
-          <Route path="formulary" element={<FormularyDatabasePage />} />
-          <Route path="audit" element={<ClinicalAuditLogPage />} />
-        */}
+        
+        {/* Module 3 Admin Template & Question Bank Manager */}
+        <Route
+          path="admin/templates"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}>
+              <InterviewTemplateManagerPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

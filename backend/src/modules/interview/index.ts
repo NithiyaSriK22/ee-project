@@ -1,4 +1,6 @@
-// Module 3 Architecture Placeholder: Guided Interview & Kiosk Intake
-import { Router } from 'express';
-const router = Router();
-export const interviewRoutes = router;
+export * from './interview.routes.js';
+export * from './interview.controller.js';
+export * from './interview.service.js';
+export * from './interview.repository.js';
+export * from './interview.schemas.js';
+export * from './seed-templates.js';

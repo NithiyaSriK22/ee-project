@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import { HealthCheckResponse, ApiResponse } from '../types/api.types';
@@ -8,6 +9,8 @@ import { Alert } from '../components/ui/Alert';
 import { UserCheck, Users, Activity, FileText, Stethoscope, ArrowRight, Shield } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
+  const navigate = useNavigate();
+
   // TanStack Query live health check to backend API
   const { data: healthData, isLoading, isError } = useQuery<HealthCheckResponse>({
     queryKey: ['system-health'],
@@ -34,7 +37,7 @@ export const HomePage: React.FC = () => {
         </p>
       </div>
 
-      {/* Primary Intake Mode Cards (Module 1 Foundation Interface) */}
+      {/* Primary Intake Mode Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card interactive className="flex flex-col justify-between p-8 border-sky-300 hover:border-sky-500 bg-white">
           <div>
@@ -51,7 +54,7 @@ export const HomePage: React.FC = () => {
             size="kiosk-touch"
             className="w-full"
             rightIcon={<ArrowRight className="w-6 h-6" />}
-            onClick={() => alert('Module 1 Foundation Build: Patient Registration & Interview flow will be wired in Module 2 & 3.')}
+            onClick={() => navigate('/register')}
           >
             Start Patient Intake
           </Button>
@@ -72,7 +75,7 @@ export const HomePage: React.FC = () => {
             size="kiosk-touch"
             className="w-full font-semibold text-kiosk-lg min-h-[72px] rounded-2xl"
             rightIcon={<ArrowRight className="w-6 h-6" />}
-            onClick={() => alert('Module 1 Foundation Build: Assisted mode authentication is ready for Module 2.')}
+            onClick={() => navigate('/register')}
           >
             Assisted Intake Mode
           </Button>

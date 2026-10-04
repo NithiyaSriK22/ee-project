@@ -1,0 +1,22 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.authRoutes = void 0;
+const express_1 = require("express");
+const auth_controller_js_1 = require("./auth.controller.js");
+const validate_middleware_js_1 = require("../../middleware/validate.middleware.js");
+const auth_schemas_js_1 = require("./auth.schemas.js");
+const auth_middleware_js_1 = require("../../middleware/auth.middleware.js");
+const auth_rate_limit_middleware_js_1 = require("../../middleware/auth-rate-limit.middleware.js");
+const router = (0, express_1.Router)();
+// Public / Protected Staff Auth Endpoints
+router.post('/register', (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.registerStaffSchema }), auth_controller_js_1.AuthController.register);
+router.post('/login', auth_rate_limit_middleware_js_1.authRateLimiter, (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.loginStaffSchema }), auth_controller_js_1.AuthController.login);
+router.post('/logout', auth_controller_js_1.AuthController.logout);
+router.post('/refresh', (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.refreshTokenSchema }), auth_controller_js_1.AuthController.refresh);
+router.get('/me', auth_middleware_js_1.authenticateStaff, auth_controller_js_1.AuthController.me);
+router.post('/change-password', auth_middleware_js_1.authenticateStaff, (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.changePasswordSchema }), auth_controller_js_1.AuthController.changePassword);
+router.post('/forgot-password', auth_rate_limit_middleware_js_1.authRateLimiter, (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.forgotPasswordSchema }), auth_controller_js_1.AuthController.forgotPassword);
+router.post('/reset-password', auth_rate_limit_middleware_js_1.authRateLimiter, (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.resetPasswordSchema }), auth_controller_js_1.AuthController.resetPassword);
+router.post('/verify-email', (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.verifyEmailSchema }), auth_controller_js_1.AuthController.verifyEmail);
+router.post('/resend-verification', auth_rate_limit_middleware_js_1.authRateLimiter, (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.resendVerificationSchema }), auth_controller_js_1.AuthController.resendVerification);
+exports.authRoutes = router;

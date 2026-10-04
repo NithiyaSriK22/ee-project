@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.kioskSessionRoutes = void 0;
+const express_1 = require("express");
+const kiosk_session_controller_js_1 = require("./kiosk-session.controller.js");
+const validate_middleware_js_1 = require("../../middleware/validate.middleware.js");
+const kiosk_session_schemas_js_1 = require("./kiosk-session.schemas.js");
+const auth_middleware_js_1 = require("../../middleware/auth.middleware.js");
+const auth_rate_limit_middleware_js_1 = require("../../middleware/auth-rate-limit.middleware.js");
+const router = (0, express_1.Router)();
+router.post('/start', auth_rate_limit_middleware_js_1.authRateLimiter, (0, validate_middleware_js_1.validateRequest)({ body: kiosk_session_schemas_js_1.startKioskSessionSchema }), kiosk_session_controller_js_1.KioskSessionController.start);
+router.get('/me', auth_middleware_js_1.authenticateKioskSession, kiosk_session_controller_js_1.KioskSessionController.me);
+router.post('/end', auth_middleware_js_1.authenticateKioskSession, kiosk_session_controller_js_1.KioskSessionController.end);
+exports.kioskSessionRoutes = router;
