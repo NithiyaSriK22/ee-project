@@ -123,8 +123,8 @@ npm run dev:doctor
 - [x] **MODULE 1**: Foundation & System Architecture
 - [x] **MODULE 2**: Patient Registration, Authentication & Profile (Implemented)
 - [x] **MODULE 3**: Guided Interview & Kiosk Intake (Implemented)
-- [ ] **MODULE 4**: OCR, Validation Gate & Document Digitization
-- [ ] **MODULE 5**: AI Clinical Summarization Engine
+- [x] **MODULE 4**: OCR, Validation Gate & Document Digitization (Implemented)
+- [x] **MODULE 5**: AI Clinical Summarization Engine (Implemented)
 - [ ] **MODULE 6**: Red-Flag Detection & Emergency Triage Alerts
 - [ ] **MODULE 7**: Doctor Review & Summary Dashboard
 - [ ] **MODULE 8**: Notifications, Multilingual & Accessibility Layer
@@ -195,6 +195,82 @@ npm run dev:doctor
 
 ---
 
-## 7. Regulatory & Clinical Safety Notice
-> **Notice**: MediKiosk is a clinical decision-support tool. Emergency red-flag screening falls under Software as a Medical Device (SaMD) principles under CDSCO guidance. The platform assists physician workflow and never acts as an autonomous diagnostic authority.
+## 7. Module 5 Implementation Summary: AI Clinical Summarization Engine
+
+### Core Architectural Principle: The LLM Never Decides What Is True
+Module 5 consumes completed interview answers (Module 3) and verified document extractions (Module 4) to generate structured, physician-ready draft summaries (`PENDING_DOCTOR_REVIEW`).
+
+- **Truth is Upstream**: Established solely by the patient's own words and deterministic document validation gates. The model is constrained to reorder and phrase; it never diagnoses, prescribes, or resolves discrepancies.
+- **Uncertain Value Withholding**: Fields with status `UNREADABLE`, `MISMATCH_FLAGGED`, `UNVERIFIED`, `DECLINED`, or `NOT_ANSWERED` are strictly **withheld** from the LLM prompt. Fixed code templates insert explicit placeholders (e.g., `[Illegible in original document — verify manually]`).
+- **Absence is NOT a Negative**: Unanswered questions or empty sections render deterministic code notices (e.g., `[No information collected]`), never false negatives like "no allergies".
+- **Deterministic Conflict Handling**: Central item key matching detects discrepancies across intake and documents, inserting visible warning tags (`⚠ Conflict: interview and document differ — verify`) without allowing the model to choose.
+- **Deterministic Grounding Validator**: Evaluates every model statement with zero external/AI calls against a maintained deny-pattern list and exact normalized token matching for doses, numbers, dates, and drug names.
+- **Safe Template Fallback**: In the event of provider errors or grounding failures, the system automatically falls back to deterministic code-generated drafts (`generation_mode = TEMPLATE_FALLBACK`).
+- **Prompt Gating**: Prompt versions are immutable and cannot be activated until the automated adversarial evaluation suite passes with zero unsupported claims and zero diagnostic claims.
+
+### Module 5 API Endpoints
+
+#### Staff & Doctor Summary API (Role-Gated: DOCTOR, STAFF_ATTENDANT, ADMIN, SUPER_ADMIN)
+- `GET  /api/v1/summary/visits/:visitId` — Retrieve latest summary draft and staleness status
+- `GET  /api/v1/summary/visits/:visitId/versions` — Retrieve immutable version history
+- `GET  /api/v1/summary/:summaryId` — Retrieve specific summary version by UUID
+- `POST /api/v1/summary/visits/:visitId/regenerate` — Request on-demand re-assembly and generation (DOCTOR, ADMIN, SUPER_ADMIN)
+
+#### Kiosk Visit API (Session-Scoped, Strict PHI Isolation)
+- `GET  /api/v1/kiosk/summary/status` — Generic intake status (`READY`, `GENERATING`, `NOT_STARTED`); never exposes clinical statements or text to kiosk patients
+
+#### Admin Prompt Lifecycle & Gating API (Role-Gated: ADMIN, SUPER_ADMIN)
+- `GET  /api/v1/admin/summary-prompts` — List all prompt templates
+- `POST /api/v1/admin/summary-prompts` — Create DRAFT prompt template
+- `POST /api/v1/admin/summary-prompts/:id/submit-review` — Submit prompt for clinical review
+- `POST /api/v1/admin/summary-prompts/:id/run-evaluation` — Run synthetic adversarial evaluation suite
+- `POST /api/v1/admin/summary-prompts/:id/activate` — Activate prompt (GATED: Requires passing evaluation run)
+
+---
+
+## 8. Module 6 Implementation Summary: Red-Flag Detection & Emergency Triage Alerts
+
+### Core Architectural Principle: AI Must Not Decide Emergencies
+Module 6 implements an explainable, deterministic red-flag screening engine. It continuously evaluates interview answers (Module 3) and verified document extractions (Module 4) against clinician-approved rule definitions.
+
+- **Zero AI / LLM**: Pure three-state boolean logic (`TRUE`, `FALSE`, `UNKNOWN`). No probability scores, embeddings, vector search, or learned classifiers.
+- **Sensitivity Bias for UNKNOWN**: Skipped, declined, or unasked critical questions, as well as unreadable or unverified document fields, evaluate to `UNKNOWN`. When `raise_on_indeterminate: true`, this raises a `STAFF_CHECK` alert so staff manually verify the critical item.
+- **Severity Tiers**: `IMMEDIATE` (assess right now), `URGENT` (ahead of queue), `STAFF_CHECK` (verify detail), `MANUAL` (patient/companion pressed help button).
+- **Incremental & Asynchronous**: Evaluated when answers are recorded, when documents validate, and on completion. Never blocks the patient interview flow.
+- **Deduplication**: Updates open alerts for a visit with additional evidence rather than spamming multiple alert cards.
+- **Escalation**: Configurable timeouts per tier automatically escalate unacknowledged alerts to senior staff / duty doctors.
+- **Always-Visible Help Button**: Patient kiosk features a prominent help control reachable by touch and voice that works without registration or consent steps.
+- **Rule Governance**: Rules are versioned data, gated by automated test suites, and require clinical sign-off with enforced separation of duties (authors cannot approve their own rules).
+
+### Module 6 API Endpoints
+
+#### Kiosk API (Session-Scoped & Emergency Open Access)
+- `POST /api/v1/kiosk/help-request` — Raise immediate `MANUAL` help alert with kiosk location
+- `GET  /api/v1/kiosk/alerts/status` — Calm status indicator (`IMMEDIATE`, `STAFF_CHECK`, `null`); zero clinical details leaked
+
+#### Staff Triage Queue API (Role-Gated: STAFF_ATTENDANT, DOCTOR, ADMIN, SUPER_ADMIN)
+- `GET  /api/v1/triage/alerts` — List triage queue sorted by severity tier and time waiting
+- `GET  /api/v1/triage/alerts/:id` — Inspect alert with triggering facts and audit events
+- `POST /api/v1/triage/alerts/:id/acknowledge` — Acknowledge alert
+- `POST /api/v1/triage/alerts/:id/start-assessment` — Mark alert as in active clinical assessment
+- `POST /api/v1/triage/alerts/:id/resolve` — Resolve alert with controlled resolution type & note
+- `POST /api/v1/triage/alerts/:id/escalate` — Escalate unacknowledged alert to duty doctor
+- `POST /api/v1/triage/alerts/:id/dismiss` — Dismiss false positive (requires controlled reason from catalog)
+- `GET  /api/v1/triage/alerts/stream` — Real-time Server-Sent Events (SSE) stream
+
+#### Admin & Clinical Review API (Role-Gated: DOCTOR, ADMIN, SUPER_ADMIN)
+- `GET   /api/v1/admin/redflag-rules` — List all rules and statuses
+- `GET   /api/v1/admin/redflag-rules/:id` — Get rule details and test cases
+- `POST  /api/v1/admin/redflag-rules` — Create DRAFT rule via structured builder
+- `PATCH /api/v1/admin/redflag-rules/:id` — Update draft rule
+- `POST  /api/v1/admin/redflag-rules/:id/run-tests` — Execute automated test harness
+- `POST  /api/v1/admin/redflag-rules/:id/submit-review` — Submit rule for clinical review (Gated by test harness)
+- `POST  /api/v1/admin/redflag-rules/:id/approve` — Clinician approval & activation (Enforces separation of duties)
+- `POST  /api/v1/admin/redflag-rules/:id/retire` — Retire active rule
+
+---
+
+## 9. Regulatory & Clinical Safety Notice
+> **Notice**: MediKiosk is a clinical decision-support tool. Emergency red-flag screening falls under Software as a Medical Device (SaMD) principles under CDSCO guidance. The platform assists physician workflow and never acts as an autonomous diagnostic authority. The red-flag rule set, sensitivity bias thresholds, escalation timings, and evaluation results must be reviewed by clinicians and hospital data governance authorities before real-world pilot deployment.
+
 

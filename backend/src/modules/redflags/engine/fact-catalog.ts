@@ -1,0 +1,111 @@
+export interface FactCatalogItem {
+  factKey: string;
+  sourceType: 'INTERVIEW_QUESTION' | 'DOCUMENT_FIELD';
+  sourceKey: string;
+  dataType: 'BOOLEAN' | 'NUMBER' | 'STRING';
+  description: string;
+  isCritical: boolean;
+  matchAliases?: string[];
+}
+
+export const CENTRAL_FACT_CATALOG: Record<string, FactCatalogItem> = {
+  chest_pain: {
+    factKey: 'chest_pain',
+    sourceType: 'INTERVIEW_QUESTION',
+    sourceKey: 'Q_CHEST_PAIN',
+    dataType: 'BOOLEAN',
+    description: 'Patient reports acute chest pain or pressure',
+    isCritical: true,
+    matchAliases: ['chest pain', 'chest pressure', 'chest tightness', 'heart pain', 'q_chest_pain'],
+  },
+  breathing_difficulty: {
+    factKey: 'breathing_difficulty',
+    sourceType: 'INTERVIEW_QUESTION',
+    sourceKey: 'Q_BREATHING_DIFFICULTY',
+    dataType: 'BOOLEAN',
+    description: 'Patient reports difficulty breathing, shortness of breath or dyspnea',
+    isCritical: true,
+    matchAliases: ['breathing difficulty', 'difficulty breathing', 'shortness of breath', 'breathlessness', 'dyspnea', 'q_breathing_difficulty'],
+  },
+  loss_of_consciousness: {
+    factKey: 'loss_of_consciousness',
+    sourceType: 'INTERVIEW_QUESTION',
+    sourceKey: 'Q_LOSS_OF_CONSCIOUSNESS',
+    dataType: 'BOOLEAN',
+    description: 'Patient reports fainting, blackout, syncope or loss of consciousness',
+    isCritical: true,
+    matchAliases: ['loss of consciousness', 'fainted', 'blackout', 'syncope', 'passed out'],
+  },
+  severe_headache: {
+    factKey: 'severe_headache',
+    sourceType: 'INTERVIEW_QUESTION',
+    sourceKey: 'Q_SEVERE_HEADACHE',
+    dataType: 'BOOLEAN',
+    description: 'Patient reports sudden severe thunderstorm headache or worst headache of life',
+    isCritical: true,
+    matchAliases: ['severe headache', 'thunderclap headache', 'worst headache'],
+  },
+  cough_blood: {
+    factKey: 'cough_blood',
+    sourceType: 'INTERVIEW_QUESTION',
+    sourceKey: 'Q_COUGH_BLOOD',
+    dataType: 'BOOLEAN',
+    description: 'Patient reports coughing up blood (hemoptysis)',
+    isCritical: true,
+    matchAliases: ['coughing blood', 'cough blood', 'blood in sputum', 'hemoptysis'],
+  },
+  severe_allergic_reaction: {
+    factKey: 'severe_allergic_reaction',
+    sourceType: 'INTERVIEW_QUESTION',
+    sourceKey: 'Q_ALLERGIC_REACTION_SEVERE',
+    dataType: 'BOOLEAN',
+    description: 'Patient reports acute facial swelling, lip swelling or throat tightness',
+    isCritical: true,
+    matchAliases: ['facial swelling', 'lip swelling', 'throat swelling', 'anaphylaxis'],
+  },
+  systolic_bp: {
+    factKey: 'systolic_bp',
+    sourceType: 'DOCUMENT_FIELD',
+    sourceKey: 'lab_value',
+    dataType: 'NUMBER',
+    description: 'Systolic blood pressure measured or extracted from clinical records',
+    isCritical: true,
+    matchAliases: ['systolic bp', 'blood pressure systolic', 'sbp'],
+  },
+  oxygen_saturation: {
+    factKey: 'oxygen_saturation',
+    sourceType: 'DOCUMENT_FIELD',
+    sourceKey: 'lab_value',
+    dataType: 'NUMBER',
+    description: 'Blood oxygen saturation percentage (SpO2)',
+    isCritical: true,
+    matchAliases: ['spo2', 'oxygen saturation', 'pulse oximetry'],
+  },
+  known_drug_allergy: {
+    factKey: 'known_drug_allergy',
+    sourceType: 'INTERVIEW_QUESTION',
+    sourceKey: 'Q_ALLERGY_HISTORY',
+    dataType: 'BOOLEAN',
+    description: 'Patient or document reports confirmed severe drug allergies',
+    isCritical: false,
+    matchAliases: ['allergy', 'drug allergy', 'medicine allergy'],
+  },
+  current_medication_blood_thinner: {
+    factKey: 'current_medication_blood_thinner',
+    sourceType: 'DOCUMENT_FIELD',
+    sourceKey: 'drug_name',
+    dataType: 'BOOLEAN',
+    description: 'Patient taking anticoagulant / antiplatelet therapy (Warfarin, Heparin, Clopidogrel)',
+    isCritical: false,
+    matchAliases: ['anticoagulant', 'blood thinner', 'warfarin', 'heparin', 'clopidogrel', 'aspirin'],
+  },
+  symptom_duration_hours: {
+    factKey: 'symptom_duration_hours',
+    sourceType: 'INTERVIEW_QUESTION',
+    sourceKey: 'Q_SYMPTOM_DURATION',
+    dataType: 'NUMBER',
+    description: 'Estimated duration of current acute symptoms in hours',
+    isCritical: false,
+    matchAliases: ['duration', 'symptom duration'],
+  },
+};

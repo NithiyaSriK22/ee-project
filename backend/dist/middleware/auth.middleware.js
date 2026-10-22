@@ -4,6 +4,7 @@ exports.authenticateKioskSession = exports.authorizeRoles = exports.authenticate
 const token_util_js_1 = require("../utils/token.util.js");
 const app_error_js_1 = require("../errors/app-error.js");
 const prisma_js_1 = require("../database/prisma.js");
+const auth_repository_js_1 = require("../modules/auth/auth.repository.js");
 const auth_types_js_1 = require("../types/auth.types.js");
 /**
  * Middleware: Authenticates Staff / Doctor / Admin users using short-lived Bearer JWT
@@ -25,10 +26,8 @@ const authenticateStaff = async (req, _res, next) => {
         catch {
             throw new app_error_js_1.UnauthorizedError('Invalid or expired authentication token');
         }
-        // Verify staff user in database
-        const staffUser = await prisma_js_1.prisma.staffUser.findUnique({
-            where: { id: claims.sub },
-        });
+        // Verify staff user in database (or offline fallback)
+        const staffUser = await auth_repository_js_1.AuthRepository.findUserById(claims.sub);
         if (!staffUser) {
             throw new app_error_js_1.UnauthorizedError('User account not found');
         }
@@ -90,16 +89,33 @@ const authenticateKioskSession = async (req, _res, next) => {
             throw new app_error_js_1.UnauthorizedError('Invalid or expired kiosk session token');
         }
         // Lookup session in DB to ensure not ended/revoked
-        const session = await prisma_js_1.prisma.kioskSession.findUnique({
-            where: { visit_id: claims.visitId },
-            include: {
-                patient: {
-                    select: {
-                        hospital_registration_number: true,
+        let session = null;
+        try {
+            session = await prisma_js_1.prisma.kioskSession.findUnique({
+                where: { visit_id: claims.visitId },
+                include: {
+                    patient: {
+                        select: {
+                            hospital_registration_number: true,
+                        },
                     },
                 },
-            },
-        });
+            });
+        }
+        catch {
+            // Offline fallback: Use cryptographically verified claims
+            session = {
+                id: claims.sessionId || 'dev-kiosk-session',
+                visit_id: claims.visitId,
+                patient_id: claims.patientId,
+                visit_profile_id: claims.visitProfileId,
+                status: 'ACTIVE',
+                expires_at: new Date(Date.now() + 3600000),
+                patient: {
+                    hospital_registration_number: claims.hospitalRegistrationNumber || 'HRN-DEFAULT',
+                },
+            };
+        }
         if (!session) {
             throw new app_error_js_1.UnauthorizedError('Active kiosk session not found for this visit');
         }

@@ -13,6 +13,7 @@ import {
   QuestionTypes,
   BranchingRule,
 } from '../../types/interview.types.js';
+import { RedFlagsService } from '../redflags/redflags.service.js';
 
 export class InterviewService {
   // ============================================================================
@@ -404,6 +405,11 @@ export class InterviewService {
       isFinished,
     });
 
+    // Incremental Red-Flag Evaluation (Module 6 Non-blocking hook)
+    RedFlagsService.evaluateVisit(visitId).catch((err) => {
+      logger.warn('Asynchronous red-flag evaluation caught error', { visitId, error: String(err) });
+    });
+
     const refreshedSession = await InterviewRepository.findSessionByVisitId(visitId);
 
     return {
@@ -425,6 +431,11 @@ export class InterviewService {
       InterviewSessionStatus.COMPLETED,
       new Date()
     );
+
+    // Final-pass Red-Flag Evaluation (Module 6 Non-blocking hook)
+    RedFlagsService.evaluateVisit(visitId).catch((err) => {
+      logger.warn('Asynchronous red-flag evaluation caught error on interview completion', { visitId, error: String(err) });
+    });
 
     logger.info('Clinical interview session COMPLETED', {
       visitId,

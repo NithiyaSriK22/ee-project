@@ -1,4 +1,22 @@
-// Module 5 Architecture Placeholder: AI Clinical Summarization Engine
-import { Router } from 'express';
-const router = Router();
-export const summaryRoutes = router;
+// Module 5 — AI Clinical Summarization Engine
+export * from './summary.types.js';
+export * from './summary.schemas.js';
+export * from './summary.service.js';
+export * from './summary.controller.js';
+export * from './summary.repository.js';
+export * from './summary.routes.js';
+export * from './assembly/input-assembler.js';
+export * from './assembly/context-builder.js';
+export * from './assembly/conflict-detector.js';
+export * from './assembly/item-key-map.js';
+export * from './generation/summarization-provider.js';
+export * from './generation/prompt-manager.js';
+export * from './generation/generation-orchestrator.js';
+export * from './generation/provider-adapters/mock-provider-adapter.js';
+export * from './generation/provider-adapters/local-llm-adapter.js';
+export * from './validation/output-schema-validator.js';
+export * from './validation/grounding-validator.js';
+export * from './validation/deny-patterns.js';
+export * from './fallback/template-summary-builder.js';
+export * from './evaluation/evaluation-runner.js';
+export * from './evaluation/synthetic-cases/cases.js';

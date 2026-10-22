@@ -9,16 +9,19 @@ export default {
     extend: {
       colors: {
         clinical: {
-          bg: '#f1f5f9',
+          bg: '#f8fafc',
           surface: '#ffffff',
-          primary: '#0f766e', // Deep Clinical Teal
-          primaryHover: '#115e59',
-          accent: '#0284c7', // Slate Blue
+          primary: '#dc2626', // Iconic Hospital Red
+          primaryHover: '#b91c1c', // Deep Crimson
+          primaryLight: '#fef2f2', // Soft Red Tint
+          accent: '#ef4444', // Red-500
+          cross: '#dc2626', // Classic Red Cross
           dark: '#0f172a',
-          border: '#cbd5e1',
+          border: '#e2e8f0',
+          borderRed: '#fecaca',
           verified: '#059669',
           unverified: '#d97706',
-          unreadable: '#e11d48',
+          unreadable: '#dc2626',
         },
       },
     },

@@ -10,6 +10,7 @@ import {
 import { logger } from '../../config/logger.js';
 import { ConsentTypes } from '../../types/auth.types.js';
 import { DocumentTypes } from './documents.types.js';
+import { RedFlagsService } from '../redflags/redflags.service.js';
 
 export class DocumentsService {
   /**
@@ -84,6 +85,11 @@ export class DocumentsService {
     let validationSummary = null;
     if (ocrResult.success && ocrResult.extractedFields.length > 0) {
       validationSummary = await ValidationGateService.validateDocument(document.id);
+
+      // Incremental Red-Flag Evaluation after document validation (Module 6 Non-blocking hook)
+      RedFlagsService.evaluateVisit(visitId).catch((err) => {
+        logger.warn('Asynchronous red-flag evaluation caught error on document validation', { visitId, error: String(err) });
+      });
     }
 
     const refreshedDoc = await DocumentsRepository.findDocumentById(document.id);

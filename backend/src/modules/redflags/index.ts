@@ -1,4 +1,14 @@
-// Module 6 Architecture Placeholder: Red-Flag Detection & Emergency Triage
-import { Router } from 'express';
-const router = Router();
-export const redflagRoutes = router;
+export * from './redflags.types.js';
+export * from './redflags.schemas.js';
+export * from './engine/fact-catalog.js';
+export * from './engine/fact-extractor.js';
+export * from './engine/three-state-evaluator.js';
+export * from './engine/rule-evaluator.js';
+export * from './engine/rule-test-runner.js';
+export * from './alerts/alert-lifecycle.js';
+export * from './alerts/escalation-service.js';
+export * from './alerts/sse-broadcaster.js';
+export * from './redflags.repository.js';
+export * from './redflags.service.js';
+export * from './redflags.controller.js';
+export * from './redflags.routes.js';

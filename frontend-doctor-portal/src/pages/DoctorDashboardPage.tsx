@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Alert } from '../components/ui/Alert';
 import { ProvenanceTag } from '../components/ui/ProvenanceTag';
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react';
 
 export const DoctorDashboardPage: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6">
       {/* Top Clinical Banner */}
@@ -27,15 +30,15 @@ export const DoctorDashboardPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => alert('Module 1: Refreshing live queue state.')}
+            onClick={() => navigate('/review')}
           >
-            Refresh Queue
+            Open Queue
           </Button>
           <Button
             variant="primary"
             size="sm"
             leftIcon={<Stethoscope className="w-4 h-4" />}
-            onClick={() => alert('Module 1: Next patient consultation workflow will be active in Module 7.')}
+            onClick={() => navigate('/review')}
           >
             Start Next Review
           </Button>
@@ -55,7 +58,10 @@ export const DoctorDashboardPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-4 border-l-4 border-l-amber-500">
+        <Card
+          className="p-4 border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/review')}
+        >
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase">
             <span>Pending Doctor Review</span>
             <Clock className="w-4 h-4 text-amber-500" />
@@ -66,7 +72,10 @@ export const DoctorDashboardPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-4 border-l-4 border-l-rose-500">
+        <Card
+          className="p-4 border-l-4 border-l-rose-500 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/redflags')}
+        >
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase">
             <span>Red-Flag Triage Alerts</span>
             <Badge variant="urgent">Critical</Badge>

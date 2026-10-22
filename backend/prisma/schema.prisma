@@ -164,6 +164,7 @@ model KioskSession {
   visit_id           String               @unique @db.VarChar(100)
   patient_id         String               @db.Uuid
   visit_profile_id   String?              @unique @db.Uuid
+  kiosk_device_id    String?              @db.Uuid
   session_token_hash String               @unique @db.VarChar(255)
   status             String               @default("ACTIVE") @db.VarChar(50) // ACTIVE, ENDED, EXPIRED
   expires_at         DateTime             @db.Timestamptz(6)
@@ -172,9 +173,11 @@ model KioskSession {
 
   patient            Patient              @relation(fields: [patient_id], references: [id], onDelete: Cascade)
   visit_profile      PatientVisitProfile? @relation(fields: [visit_profile_id], references: [id], onDelete: Cascade)
+  kiosk_device       KioskDevice?         @relation(fields: [kiosk_device_id], references: [id], onDelete: SetNull)
 
   @@index([visit_id])
   @@index([patient_id])
+  @@index([kiosk_device_id])
   @@index([session_token_hash])
   @@map("kiosk_sessions")
 }
@@ -236,6 +239,7 @@ model InterviewQuestion {
   id                String            @id @default(uuid()) @db.Uuid
   template_id       String            @db.Uuid
   section           String            @db.VarChar(100) // CHIEF_COMPLAINT, PRESENT_ILLNESS_HISTORY, PAST_MEDICAL_HISTORY, MEDICATIONS, ALLERGIES, LIFESTYLE, FAMILY_HISTORY
+  question_code     String?           @db.VarChar(100)
   prompt_text       String            @db.Text
   prompt_audio_hint String?           @db.Text
   question_type     String            @db.VarChar(50) // YES_NO, YES_NO_WITH_DETAIL, FREE_TEXT, SINGLE_CHOICE, MULTI_CHOICE, NUMERIC, DATE, DURATION
@@ -253,6 +257,7 @@ model InterviewQuestion {
 
   @@index([template_id])
   @@index([section])
+  @@index([question_code])
   @@index([order])
   @@map("interview_questions")
 }
@@ -440,5 +445,478 @@ model ValidatedField {
   @@index([is_critical])
   @@index([evaluated_at])
   @@map("validated_fields")
+}
+
+// ==============================================================================
+// MODULE 5: AI CLINICAL SUMMARIZATION ENGINE
+// ==============================================================================
+
+model ClinicalSummary {
+  id                      String                  @id @default(uuid()) @db.Uuid
+  visit_id                String                  @db.VarChar(100)
+  patient_id              String?                 @db.Uuid
+  version                 Int                     @default(1)
+  status                  String                  @default("PENDING_DOCTOR_REVIEW") @db.VarChar(50) // DRAFT_GENERATED, PENDING_DOCTOR_REVIEW, STALE, FAILED
+  generation_mode         String                  @db.VarChar(50) // LLM, TEMPLATE_FALLBACK
+  model_id                String?                 @db.VarChar(100)
+  model_version           String?                 @db.VarChar(50)
+  prompt_template_version String?                 @db.VarChar(50)
+  input_hash              String                  @db.VarChar(64)
+  formulary_version_refs  String[]                @default([])
+  validation_outcome      Json?
+  generated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  superseded_by           String?                 @db.Uuid
+  created_at              DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime                @updatedAt @db.Timestamptz(6)
+
+  sections                SummarySection[]
+  generation_jobs         SummaryGenerationJob[]
+
+  @@unique([visit_id, version])
+  @@index([visit_id])
+  @@index([status])
+  @@index([generated_at])
+  @@index([input_hash])
+  @@map("clinical_summaries")
+}
+
+model SummarySection {
+  id         String             @id @default(uuid()) @db.Uuid
+  summary_id String             @db.Uuid
+  section    String             @db.VarChar(100) // CHIEF_COMPLAINT, HISTORY_OF_PRESENT_ILLNESS, PAST_MEDICAL_HISTORY, MEDICATIONS_AND_ALLERGIES, FAMILY_AND_PERSONAL_HISTORY, REVIEW_OF_SYSTEMS, PRIOR_INVESTIGATIONS
+  order      Int                @default(0)
+
+  summary    ClinicalSummary    @relation(fields: [summary_id], references: [id], onDelete: Cascade)
+  statements SummaryStatement[]
+
+  @@index([summary_id])
+  @@index([section])
+  @@map("summary_sections")
+}
+
+model SummaryStatement {
+  id         String                   @id @default(uuid()) @db.Uuid
+  section_id String                   @db.Uuid
+  text       String                   @db.Text
+  origin     String                   @db.VarChar(50) // MODEL, CODE_TEMPLATE, PATIENT_QUOTE
+  order      Int                      @default(0)
+
+  section    SummarySection           @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  sources    SummaryStatementSource[]
+
+  @@index([section_id])
+  @@index([origin])
+  @@map("summary_statements")
+}
+
+model SummaryStatementSource {
+  id             String           @id @default(uuid()) @db.Uuid
+  statement_id   String           @db.Uuid
+  source_type    String           @db.VarChar(50) // INTERVIEW, DOCUMENT, SYSTEM
+  source_ref     String           @db.VarChar(255)
+  source_item_id String?          @db.VarChar(100)
+
+  statement      SummaryStatement @relation(fields: [statement_id], references: [id], onDelete: Cascade)
+
+  @@index([statement_id])
+  @@index([source_type])
+  @@map("summary_statement_sources")
+}
+
+model SummaryPromptTemplate {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  version               String                 @unique @db.VarChar(50)
+  status                String                 @default("DRAFT") @db.VarChar(50) // DRAFT, IN_REVIEW, ACTIVE, RETIRED
+  system_prompt         String                 @db.Text
+  output_schema_version String                 @default("1.0") @db.VarChar(20)
+  created_by            String?                @db.Uuid
+  reviewed_by           String?                @db.Uuid
+  activated_at          DateTime?              @db.Timestamptz(6)
+  created_at            DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime               @updatedAt @db.Timestamptz(6)
+
+  evaluation_runs       SummaryEvaluationRun[]
+
+  @@index([status])
+  @@index([version])
+  @@map("summary_prompt_templates")
+}
+
+model SummaryEvaluationRun {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  prompt_template_id String?                @db.Uuid
+  prompt_version     String                 @db.VarChar(50)
+  model_id           String                 @db.VarChar(100)
+  passed             Boolean
+  total_cases        Int
+  passed_cases       Int
+  failed_cases       Int
+  metrics            Json
+  executed_at        DateTime               @default(now()) @db.Timestamptz(6)
+  executed_by        String?                @db.Uuid
+
+  prompt_template    SummaryPromptTemplate? @relation(fields: [prompt_template_id], references: [id], onDelete: SetNull)
+
+  @@index([prompt_version])
+  @@index([passed])
+  @@map("summary_evaluation_runs")
+}
+
+model SummaryGenerationJob {
+  id            String           @id @default(uuid()) @db.Uuid
+  visit_id      String           @db.VarChar(100)
+  status        String           @default("PENDING") @db.VarChar(50) // PENDING, GENERATING, READY, FAILED, STALE
+  attempts      Int              @default(0)
+  error_code    String?          @db.VarChar(100)
+  error_message String?          @db.Text
+  summary_id    String?          @db.Uuid
+  started_at    DateTime?        @db.Timestamptz(6)
+  completed_at  DateTime?        @db.Timestamptz(6)
+  created_at    DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime         @updatedAt @db.Timestamptz(6)
+
+  summary       ClinicalSummary? @relation(fields: [summary_id], references: [id], onDelete: SetNull)
+
+  @@index([visit_id])
+  @@index([status])
+  @@map("summary_generation_jobs")
+}
+
+// ==============================================================================
+// MODULE 6: RED-FLAG DETECTION & EMERGENCY TRIAGE ALERTS
+// ==============================================================================
+
+model KioskDevice {
+  id                   String         @id @default(uuid()) @db.Uuid
+  device_code          String         @unique @db.VarChar(100)
+  location_description String         @db.VarChar(255)
+  department           String         @default("General OPD") @db.VarChar(100)
+  ip_address           String?        @db.VarChar(50)
+  is_active            Boolean        @default(true)
+  created_at           DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime       @updatedAt @db.Timestamptz(6)
+
+  sessions             KioskSession[]
+  alerts               RedFlagAlert[]
+
+  @@index([device_code])
+  @@index([department])
+  @@map("kiosk_devices")
+}
+
+model RedFlagRule {
+  id                       String               @id @default(uuid()) @db.Uuid
+  rule_code                String               @unique @db.VarChar(100)
+  name                     String               @db.VarChar(255)
+  description              String               @db.Text
+  severity_tier            String               @db.VarChar(50) // IMMEDIATE, URGENT, STAFF_CHECK, MANUAL
+  condition_tree           Json
+  test_cases               Json?
+  raise_on_indeterminate   Boolean              @default(true)
+  recommended_staff_action String               @db.Text
+  status                   String               @default("DRAFT") @db.VarChar(50) // DRAFT, CLINICAL_REVIEW, ACTIVE, RETIRED
+  version                  Int                  @default(1)
+  is_illustrative          Boolean              @default(false)
+  clinically_reviewed_by   String?              @db.Uuid
+  clinically_reviewed_at   DateTime?            @db.Timestamptz(6)
+  effective_from           DateTime?            @db.Timestamptz(6)
+  created_by               String?              @db.Uuid
+  updated_by               String?              @db.Uuid
+  created_at               DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime             @updatedAt @db.Timestamptz(6)
+
+  versions                 RedFlagRuleVersion[]
+  alerts                   RedFlagAlert[]
+
+  @@index([rule_code])
+  @@index([status])
+  @@index([severity_tier])
+  @@map("red_flag_rules")
+}
+
+model RedFlagRuleVersion {
+  id                       String       @id @default(uuid()) @db.Uuid
+  rule_id                  String       @db.Uuid
+  version                  Int
+  rule_code                String       @db.VarChar(100)
+  name                     String       @db.VarChar(255)
+  description              String       @db.Text
+  severity_tier            String       @db.VarChar(50)
+  condition_tree           Json
+  raise_on_indeterminate   Boolean
+  recommended_staff_action String       @db.Text
+  status                   String       @db.VarChar(50)
+  clinically_reviewed_by   String?      @db.Uuid
+  clinically_reviewed_at   DateTime?    @db.Timestamptz(6)
+  created_at               DateTime     @default(now()) @db.Timestamptz(6)
+
+  rule                     RedFlagRule  @relation(fields: [rule_id], references: [id], onDelete: Cascade)
+
+  @@unique([rule_id, version])
+  @@index([rule_code, version])
+  @@map("red_flag_rule_versions")
+}
+
+model RedFlagFactMapping {
+  id          String   @id @default(uuid()) @db.Uuid
+  fact_key    String   @unique @db.VarChar(100) // e.g. chest_pain, breathing_difficulty
+  source_type String   @db.VarChar(50) // INTERVIEW_QUESTION, DOCUMENT_FIELD
+  source_key  String   @db.VarChar(100) // question_code, field_type, or prompt keyword
+  data_type   String   @default("BOOLEAN") @db.VarChar(50) // BOOLEAN, NUMBER, STRING
+  description String?  @db.Text
+  is_critical Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([fact_key])
+  @@index([source_key])
+  @@map("red_flag_fact_mappings")
+}
+
+model RedFlagAlert {
+  id                String                 @id @default(uuid()) @db.Uuid
+  visit_id          String                 @db.VarChar(100)
+  kiosk_device_id   String?                @db.Uuid
+  kiosk_location    String                 @db.VarChar(255) // e.g. "Kiosk 3, OPD Block A"
+  rule_id           String?                @db.Uuid
+  rule_code         String?                @db.VarChar(100)
+  rule_version      Int?
+  severity_tier     String                 @db.VarChar(50) // IMMEDIATE, URGENT, STAFF_CHECK, MANUAL
+  trigger_type      String                 @db.VarChar(50) // RULE_MATCH, INDETERMINATE, MANUAL
+  status            String                 @default("RAISED") @db.VarChar(50) // RAISED, ACKNOWLEDGED, IN_ASSESSMENT, RESOLVED, ESCALATED, DISMISSED
+  raised_at         DateTime               @default(now()) @db.Timestamptz(6)
+  acknowledged_by   String?                @db.Uuid
+  acknowledged_at   DateTime?              @db.Timestamptz(6)
+  resolved_by       String?                @db.Uuid
+  resolved_at       DateTime?              @db.Timestamptz(6)
+  resolution_type   String?                @db.VarChar(100)
+  resolution_note   String?                @db.Text
+  dismissal_reason  String?                @db.VarChar(100)
+  escalation_level  Int                    @default(0)
+  last_escalated_at DateTime?              @db.Timestamptz(6)
+  created_at        DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime               @updatedAt @db.Timestamptz(6)
+
+  rule              RedFlagRule?           @relation(fields: [rule_id], references: [id], onDelete: SetNull)
+  kiosk_device      KioskDevice?           @relation(fields: [kiosk_device_id], references: [id], onDelete: SetNull)
+  evidences         RedFlagAlertEvidence[]
+  events            RedFlagAlertEvent[]
+
+  @@index([visit_id])
+  @@index([rule_id])
+  @@index([status])
+  @@index([severity_tier])
+  @@index([raised_at])
+  @@map("red_flag_alerts")
+}
+
+model RedFlagAlertEvidence {
+  id                 String       @id @default(uuid()) @db.Uuid
+  alert_id           String       @db.Uuid
+  source_type        String       @db.VarChar(50) // INTERVIEW_ANSWER, VALIDATED_FIELD, MANUAL_REQUEST
+  source_id          String       @db.VarChar(255) // reference ID only
+  fact_key           String       @db.VarChar(100)
+  fact_value_snippet String?      @db.VarChar(255)
+  created_at         DateTime     @default(now()) @db.Timestamptz(6)
+
+  alert              RedFlagAlert @relation(fields: [alert_id], references: [id], onDelete: Cascade)
+
+  @@index([alert_id])
+  @@index([source_id])
+  @@map("red_flag_alert_evidences")
+}
+
+model RedFlagAlertEvent {
+  id          String       @id @default(uuid()) @db.Uuid
+  alert_id    String       @db.Uuid
+  event_type  String       @db.VarChar(100) // ALERT_RAISED, ALERT_DEDUPLICATED, ALERT_ACKNOWLEDGED, ALERT_ESCALATED, ALERT_RESOLVED, ALERT_DISMISSED, MANUAL_HELP_REQUESTED
+  from_status String?      @db.VarChar(50)
+  to_status   String?      @db.VarChar(50)
+  actor_id    String?      @db.Uuid
+  actor_role  String?      @db.VarChar(50)
+  details     Json?
+  timestamp   DateTime     @default(now()) @db.Timestamptz(6)
+
+  alert       RedFlagAlert @relation(fields: [alert_id], references: [id], onDelete: Cascade)
+
+  @@index([alert_id])
+  @@index([event_type])
+  @@index([timestamp])
+  @@map("red_flag_alert_events")
+}
+
+// ==============================================================================
+// MODULE 7: DOCTOR REVIEW & SUMMARY DASHBOARD
+// ==============================================================================
+
+model VisitQueueEntry {
+  id                 String    @id @default(uuid()) @db.Uuid
+  visit_id           String    @unique @db.VarChar(100)
+  department         String    @db.VarChar(100)
+  assigned_doctor_id String?   @db.Uuid
+  queue_status       String    @default("WAITING") @db.VarChar(50) // WAITING, READY_FOR_REVIEW, IN_CONSULTATION, COMPLETED
+  has_open_alert     Boolean   @default(false)
+  ready_at           DateTime? @db.Timestamptz(6)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@index([visit_id])
+  @@index([queue_status])
+  @@index([department])
+  @@index([assigned_doctor_id])
+  @@map("visit_queue_entries")
+}
+
+model DoctorReview {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  visit_id             String                 @db.VarChar(100)
+  base_summary_id      String?                @db.Uuid
+  base_summary_version Int                    @default(1)
+  status               String                 @default("IN_REVIEW") @db.VarChar(50) // IN_REVIEW, CONFIRMED, REJECTED, AMENDED
+  rejection_reason     String?                @db.VarChar(100)
+  rejection_note       String?                @db.Text
+  created_by_doctor_id String                 @db.Uuid
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @updatedAt @db.Timestamptz(6)
+
+  resolutions          ReviewItemResolution[]
+  edits                StatementEdit[]
+  additions            DoctorAddedStatement[]
+
+  @@index([visit_id])
+  @@index([status])
+  @@index([created_by_doctor_id])
+  @@map("doctor_reviews")
+}
+
+model ReviewItemResolution {
+  id              String       @id @default(uuid()) @db.Uuid
+  review_id       String       @db.Uuid
+  item_ref        String       @db.VarChar(255)
+  item_type       String       @db.VarChar(50) // DOCUMENT_FIELD, INTERVIEW_ANSWER, CONFLICT_MARKER, ALERT
+  resolution_type String       @db.VarChar(50) // VERIFIED_AGAINST_SOURCE, CORRECTED, MARKED_NOT_AVAILABLE, DEFER_TO_CONSULTATION
+  corrected_value String?      @db.Text
+  source_hash     String?      @db.VarChar(64)
+  viewed_source   Boolean      @default(false)
+  doctor_id       String       @db.Uuid
+  resolved_at     DateTime     @default(now()) @db.Timestamptz(6)
+  created_at      DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime     @updatedAt @db.Timestamptz(6)
+
+  review          DoctorReview @relation(fields: [review_id], references: [id], onDelete: Cascade)
+
+  @@index([review_id])
+  @@index([item_ref])
+  @@map("review_item_resolutions")
+}
+
+model StatementEdit {
+  id                    String       @id @default(uuid()) @db.Uuid
+  review_id             String       @db.Uuid
+  original_statement_id String       @db.VarChar(255)
+  edited_text           String       @db.Text
+  previous_text_ref     String?      @db.Text
+  doctor_id             String       @db.Uuid
+  created_at            DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime     @updatedAt @db.Timestamptz(6)
+
+  review                DoctorReview @relation(fields: [review_id], references: [id], onDelete: Cascade)
+
+  @@index([review_id])
+  @@index([original_statement_id])
+  @@map("statement_edits")
+}
+
+model DoctorAddedStatement {
+  id         String       @id @default(uuid()) @db.Uuid
+  review_id  String       @db.Uuid
+  section    String       @db.VarChar(100)
+  text       String       @db.Text
+  order      Int          @default(0)
+  doctor_id  String       @db.Uuid
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at DateTime     @updatedAt @db.Timestamptz(6)
+
+  review     DoctorReview @relation(fields: [review_id], references: [id], onDelete: Cascade)
+
+  @@index([review_id])
+  @@index([section])
+  @@map("doctor_added_statements")
+}
+
+model ReviewClaim {
+  id                     String   @id @default(uuid()) @db.Uuid
+  visit_id               String   @unique @db.VarChar(100)
+  claimed_by_doctor_id   String   @db.Uuid
+  claimed_by_doctor_name String?  @db.VarChar(255)
+  claimed_at             DateTime @default(now()) @db.Timestamptz(6)
+  expires_at             DateTime @db.Timestamptz(6)
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([visit_id])
+  @@index([claimed_by_doctor_id])
+  @@map("review_claims")
+}
+
+model ConfirmedRecord {
+  id                     String               @id @default(uuid()) @db.Uuid
+  visit_id               String               @db.VarChar(100)
+  version                Int                  @default(1)
+  based_on_summary_id    String?              @db.Uuid
+  summary_version        Int                  @default(1)
+  review_policy_version  String               @db.VarChar(50)
+  confirmed_by_doctor_id String               @db.Uuid
+  confirmed_by_doctor_name String?            @db.VarChar(255)
+  confirmed_at           DateTime             @default(now()) @db.Timestamptz(6)
+  attestation_version    String               @db.VarChar(50)
+  attestation_text       String?              @db.Text
+  supersedes_id          String?              @db.Uuid
+  amendment_reason       String?              @db.Text
+  created_at             DateTime             @default(now()) @db.Timestamptz(6)
+
+  statements             ConfirmedStatement[]
+
+  @@unique([visit_id, version])
+  @@index([visit_id])
+  @@index([confirmed_by_doctor_id])
+  @@index([confirmed_at])
+  @@map("confirmed_records")
+}
+
+model ConfirmedStatement {
+  id              String          @id @default(uuid()) @db.Uuid
+  record_id       String          @db.Uuid
+  section         String          @db.VarChar(100)
+  text            String          @db.Text
+  origin          String          @db.VarChar(50) // AI_CONFIRMED_UNCHANGED, DOCTOR_EDITED, DOCTOR_ADDED, CODE_PLACEHOLDER_RESOLVED, TO_CLARIFY
+  order           Int             @default(0)
+  ai_statement_id String?         @db.VarChar(255)
+  resolution_type String?         @db.VarChar(50)
+  source_refs     Json?
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+
+  record          ConfirmedRecord @relation(fields: [record_id], references: [id], onDelete: Cascade)
+
+  @@index([record_id])
+  @@index([section])
+  @@index([origin])
+  @@map("confirmed_statements")
+}
+
+model ReviewPolicy {
+  id           String    @id @default(uuid()) @db.Uuid
+  version      String    @unique @db.VarChar(50)
+  name         String    @db.VarChar(255)
+  is_active    Boolean   @default(true)
+  rules        Json
+  created_by   String?   @db.Uuid
+  activated_at DateTime? @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@index([version])
+  @@index([is_active])
+  @@map("review_policies")
 }
 

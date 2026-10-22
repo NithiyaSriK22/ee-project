@@ -7,6 +7,7 @@ const app_error_js_1 = require("../../errors/app-error.js");
 const logger_js_1 = require("../../config/logger.js");
 const auth_types_js_1 = require("../../types/auth.types.js");
 const interview_types_js_1 = require("../../types/interview.types.js");
+const redflags_service_js_1 = require("../redflags/redflags.service.js");
 class InterviewService {
     // ============================================================================
     // ADMIN TEMPLATE & QUESTION MANAGEMENT
@@ -269,6 +270,10 @@ class InterviewService {
             answeredVia: payload.answeredVia,
             isFinished,
         });
+        // Incremental Red-Flag Evaluation (Module 6 Non-blocking hook)
+        redflags_service_js_1.RedFlagsService.evaluateVisit(visitId).catch((err) => {
+            logger_js_1.logger.warn('Asynchronous red-flag evaluation caught error', { visitId, error: String(err) });
+        });
         const refreshedSession = await interview_repository_js_1.InterviewRepository.findSessionByVisitId(visitId);
         return {
             recordedAnswer: answer,
@@ -283,6 +288,10 @@ class InterviewService {
             throw new app_error_js_1.NotFoundError('Interview session not found for this visit');
         }
         const updated = await interview_repository_js_1.InterviewRepository.updateSessionStatus(session.id, interview_types_js_1.InterviewSessionStatus.COMPLETED, new Date());
+        // Final-pass Red-Flag Evaluation (Module 6 Non-blocking hook)
+        redflags_service_js_1.RedFlagsService.evaluateVisit(visitId).catch((err) => {
+            logger_js_1.logger.warn('Asynchronous red-flag evaluation caught error on interview completion', { visitId, error: String(err) });
+        });
         logger_js_1.logger.info('Clinical interview session COMPLETED', {
             visitId,
             totalAnswers: session.answers.length,

@@ -33,10 +33,17 @@ apiV1Router.use('/admin/interview-questions', index_js_4.adminQuestionRouter);
 apiV1Router.use('/kiosk/documents', index_js_5.kioskDocumentsRouter);
 apiV1Router.use('/documents', index_js_5.kioskDocumentsRouter); // alias
 apiV1Router.use('/admin/formulary', index_js_5.adminFormularyRouter);
-// Future Module Route Placeholders (Modules 5 - 10)
-apiV1Router.use('/validation', index_js_6.validationRoutes);
+// Module 5 Endpoints: AI Clinical Summarization Engine & Prompt Gating
 apiV1Router.use('/summary', index_js_7.summaryRoutes);
-apiV1Router.use('/redflags', index_js_8.redflagRoutes);
+apiV1Router.use('/kiosk/summary', index_js_7.kioskSummaryRouter);
+apiV1Router.use('/admin/summary-prompts', index_js_7.adminSummaryPromptRouter);
+// Module 6 Endpoints: Red-Flag Detection & Emergency Triage Alerts
+apiV1Router.use('/kiosk', index_js_8.kioskAlertsRouter);
+apiV1Router.use('/triage/alerts', index_js_8.triageAlertsRouter);
+apiV1Router.use('/redflags', index_js_8.redflagRoutes); // alias
+apiV1Router.use('/admin/redflag-rules', index_js_8.adminRedflagRulesRouter);
+// Future Module Route Placeholders (Modules 7 - 10)
+apiV1Router.use('/validation', index_js_6.validationRoutes);
 apiV1Router.use('/doctor-review', index_js_9.doctorReviewRoutes);
 apiV1Router.use('/notifications', index_js_10.notificationRoutes);
 apiV1Router.use('/admin', index_js_11.adminRoutes);

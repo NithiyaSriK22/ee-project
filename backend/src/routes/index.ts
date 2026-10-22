@@ -6,8 +6,13 @@ import { kioskSessionRoutes } from '../modules/kiosk-session/index.js';
 import { kioskInterviewRouter, adminTemplateRouter, adminQuestionRouter } from '../modules/interview/index.js';
 import { kioskDocumentsRouter, adminFormularyRouter } from '../modules/documents/index.js';
 import { validationRoutes } from '../modules/validation/index.js';
-import { summaryRoutes } from '../modules/summary/index.js';
-import { redflagRoutes } from '../modules/redflags/index.js';
+import { summaryRoutes, kioskSummaryRouter, adminSummaryPromptRouter } from '../modules/summary/index.js';
+import {
+  triageAlertsRouter,
+  kioskAlertsRouter,
+  adminRedflagRulesRouter,
+  redflagRoutes,
+} from '../modules/redflags/index.js';
 import { doctorReviewRoutes } from '../modules/doctor-review/index.js';
 import { notificationRoutes } from '../modules/notifications/index.js';
 import { adminRoutes } from '../modules/admin/index.js';
@@ -35,11 +40,23 @@ apiV1Router.use('/kiosk/documents', kioskDocumentsRouter);
 apiV1Router.use('/documents', kioskDocumentsRouter); // alias
 apiV1Router.use('/admin/formulary', adminFormularyRouter);
 
-// Future Module Route Placeholders (Modules 5 - 10)
-apiV1Router.use('/validation', validationRoutes);
+// Module 5 Endpoints: AI Clinical Summarization Engine & Prompt Gating
 apiV1Router.use('/summary', summaryRoutes);
-apiV1Router.use('/redflags', redflagRoutes);
-apiV1Router.use('/doctor-review', doctorReviewRoutes);
+apiV1Router.use('/kiosk/summary', kioskSummaryRouter);
+apiV1Router.use('/admin/summary-prompts', adminSummaryPromptRouter);
+
+// Module 6 Endpoints: Red-Flag Detection & Emergency Triage Alerts
+apiV1Router.use('/kiosk', kioskAlertsRouter);
+apiV1Router.use('/triage/alerts', triageAlertsRouter);
+apiV1Router.use('/redflags', redflagRoutes); // alias
+apiV1Router.use('/admin/redflag-rules', adminRedflagRulesRouter);
+
+// Module 7 Endpoints: Doctor Review & Summary Dashboard
+apiV1Router.use('/doctor', doctorReviewRoutes);
+apiV1Router.use('/doctor-review', doctorReviewRoutes); // alias
+
+// Future Module Route Placeholders (Modules 8 - 10)
+apiV1Router.use('/validation', validationRoutes);
 apiV1Router.use('/notifications', notificationRoutes);
 apiV1Router.use('/admin', adminRoutes);
 

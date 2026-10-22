@@ -1,0 +1,528 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SummaryRepository = void 0;
+const prisma_js_1 = require("../../database/prisma.js");
+const logger_js_1 = require("../../config/logger.js");
+const dev_fallback_summary_store_js_1 = require("./dev-fallback-summary-store.js");
+class SummaryRepository {
+    static isDbAvailable = null;
+    static async isDatabaseAvailable() {
+        if (this.isDbAvailable !== null)
+            return this.isDbAvailable;
+        try {
+            await Promise.race([
+                prisma_js_1.prisma.$queryRaw `SELECT 1`,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('DB Timeout')), 300)),
+            ]);
+            this.isDbAvailable = true;
+        }
+        catch {
+            this.isDbAvailable = false;
+        }
+        return this.isDbAvailable;
+    }
+    static async findSummaryById(id) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findSummaryById(id);
+        }
+        try {
+            const summary = await prisma_js_1.prisma.clinicalSummary.findUnique({
+                where: { id },
+                include: {
+                    sections: {
+                        orderBy: { order: 'asc' },
+                        include: {
+                            statements: {
+                                orderBy: { order: 'asc' },
+                                include: { sources: true },
+                            },
+                        },
+                    },
+                },
+            });
+            if (!summary)
+                return null;
+            return this.mapPrismaToDto(summary);
+        }
+        catch (err) {
+            logger_js_1.logger.warn('Database offline in findSummaryById, using dev fallback store', { id });
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findSummaryById(id);
+        }
+    }
+    static async findLatestSummaryByVisitId(visitId) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findLatestSummaryByVisitId(visitId);
+        }
+        try {
+            const summary = await prisma_js_1.prisma.clinicalSummary.findFirst({
+                where: { visit_id: visitId },
+                orderBy: { version: 'desc' },
+                include: {
+                    sections: {
+                        orderBy: { order: 'asc' },
+                        include: {
+                            statements: {
+                                orderBy: { order: 'asc' },
+                                include: { sources: true },
+                            },
+                        },
+                    },
+                },
+            });
+            if (!summary)
+                return null;
+            return this.mapPrismaToDto(summary);
+        }
+        catch (err) {
+            logger_js_1.logger.warn('Database offline in findLatestSummaryByVisitId, using dev fallback store', { visitId });
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findLatestSummaryByVisitId(visitId);
+        }
+    }
+    static async findSummaryVersionsByVisitId(visitId) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findSummaryVersionsByVisitId(visitId);
+        }
+        try {
+            const summaries = await prisma_js_1.prisma.clinicalSummary.findMany({
+                where: { visit_id: visitId },
+                orderBy: { version: 'desc' },
+                include: {
+                    sections: {
+                        orderBy: { order: 'asc' },
+                        include: {
+                            statements: {
+                                orderBy: { order: 'asc' },
+                                include: { sources: true },
+                            },
+                        },
+                    },
+                },
+            });
+            return summaries.map((s) => this.mapPrismaToDto(s));
+        }
+        catch (err) {
+            logger_js_1.logger.warn('Database offline in findSummaryVersionsByVisitId, using dev fallback store', { visitId });
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findSummaryVersionsByVisitId(visitId);
+        }
+    }
+    static async createSummary(summaryData) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.saveSummary(summaryData);
+        }
+        try {
+            const created = await prisma_js_1.prisma.clinicalSummary.create({
+                data: {
+                    id: summaryData.id,
+                    visit_id: summaryData.visitId,
+                    patient_id: summaryData.patientId,
+                    version: summaryData.version,
+                    status: summaryData.status,
+                    generation_mode: summaryData.generationMode,
+                    model_id: summaryData.modelId,
+                    model_version: summaryData.modelVersion,
+                    prompt_template_version: summaryData.promptTemplateVersion,
+                    input_hash: summaryData.inputHash,
+                    formulary_version_refs: summaryData.formularyVersionRefs,
+                    validation_outcome: summaryData.validationOutcome ? summaryData.validationOutcome : undefined,
+                    generated_at: new Date(summaryData.generatedAt),
+                    sections: {
+                        create: summaryData.sections.map((s) => ({
+                            section: s.section,
+                            order: s.order,
+                            statements: {
+                                create: s.statements.map((st) => ({
+                                    text: st.text,
+                                    origin: st.origin,
+                                    order: st.order,
+                                    sources: {
+                                        create: st.sources.map((src) => ({
+                                            source_type: src.sourceType,
+                                            source_ref: src.sourceRef,
+                                            source_item_id: src.sourceItemId,
+                                        })),
+                                    },
+                                })),
+                            },
+                        })),
+                    },
+                },
+                include: {
+                    sections: {
+                        orderBy: { order: 'asc' },
+                        include: {
+                            statements: {
+                                orderBy: { order: 'asc' },
+                                include: { sources: true },
+                            },
+                        },
+                    },
+                },
+            });
+            return this.mapPrismaToDto(created);
+        }
+        catch (err) {
+            logger_js_1.logger.warn('Database offline in createSummary, using dev fallback store', {
+                visitId: summaryData.visitId,
+            });
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.saveSummary(summaryData);
+        }
+    }
+    static async markSuperseded(oldSummaryId, newSummaryId) {
+        if (!(await this.isDatabaseAvailable())) {
+            dev_fallback_summary_store_js_1.devFallbackSummaryStore.markSuperseded(oldSummaryId, newSummaryId);
+            return;
+        }
+        try {
+            await prisma_js_1.prisma.clinicalSummary.update({
+                where: { id: oldSummaryId },
+                data: {
+                    status: 'STALE',
+                    superseded_by: newSummaryId,
+                },
+            });
+        }
+        catch (err) {
+            logger_js_1.logger.warn('Database offline in markSuperseded, updating dev fallback store');
+            dev_fallback_summary_store_js_1.devFallbackSummaryStore.markSuperseded(oldSummaryId, newSummaryId);
+        }
+    }
+    static async findActivePromptTemplate() {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findActivePromptTemplate();
+        }
+        try {
+            const tmpl = await prisma_js_1.prisma.summaryPromptTemplate.findFirst({
+                where: { status: 'ACTIVE' },
+                orderBy: { updated_at: 'desc' },
+            });
+            if (!tmpl) {
+                return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findActivePromptTemplate();
+            }
+            return {
+                id: tmpl.id,
+                version: tmpl.version,
+                status: tmpl.status,
+                systemPrompt: tmpl.system_prompt,
+                outputSchemaVersion: tmpl.output_schema_version,
+                createdBy: tmpl.created_by,
+                reviewedBy: tmpl.reviewed_by,
+                activatedAt: tmpl.activated_at,
+                createdAt: tmpl.created_at,
+                updatedAt: tmpl.updated_at,
+            };
+        }
+        catch {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findActivePromptTemplate();
+        }
+    }
+    static async findPromptTemplateById(id) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findPromptTemplateById(id);
+        }
+        try {
+            const tmpl = await prisma_js_1.prisma.summaryPromptTemplate.findUnique({
+                where: { id },
+            });
+            if (!tmpl)
+                return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findPromptTemplateById(id);
+            return {
+                id: tmpl.id,
+                version: tmpl.version,
+                status: tmpl.status,
+                systemPrompt: tmpl.system_prompt,
+                outputSchemaVersion: tmpl.output_schema_version,
+                createdBy: tmpl.created_by,
+                reviewedBy: tmpl.reviewed_by,
+                activatedAt: tmpl.activated_at,
+                createdAt: tmpl.created_at,
+                updatedAt: tmpl.updated_at,
+            };
+        }
+        catch {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findPromptTemplateById(id);
+        }
+    }
+    static async findPromptTemplateByVersion(version) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findPromptTemplateByVersion(version);
+        }
+        try {
+            const tmpl = await prisma_js_1.prisma.summaryPromptTemplate.findUnique({
+                where: { version },
+            });
+            if (!tmpl)
+                return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findPromptTemplateByVersion(version);
+            return {
+                id: tmpl.id,
+                version: tmpl.version,
+                status: tmpl.status,
+                systemPrompt: tmpl.system_prompt,
+                outputSchemaVersion: tmpl.output_schema_version,
+                createdBy: tmpl.created_by,
+                reviewedBy: tmpl.reviewed_by,
+                activatedAt: tmpl.activated_at,
+                createdAt: tmpl.created_at,
+                updatedAt: tmpl.updated_at,
+            };
+        }
+        catch {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findPromptTemplateByVersion(version);
+        }
+    }
+    static async listPromptTemplates() {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.listPromptTemplates();
+        }
+        try {
+            const templates = await prisma_js_1.prisma.summaryPromptTemplate.findMany({
+                orderBy: { created_at: 'desc' },
+            });
+            if (templates.length === 0) {
+                return dev_fallback_summary_store_js_1.devFallbackSummaryStore.listPromptTemplates();
+            }
+            return templates.map((tmpl) => ({
+                id: tmpl.id,
+                version: tmpl.version,
+                status: tmpl.status,
+                systemPrompt: tmpl.system_prompt,
+                outputSchemaVersion: tmpl.output_schema_version,
+                createdBy: tmpl.created_by,
+                reviewedBy: tmpl.reviewed_by,
+                activatedAt: tmpl.activated_at,
+                createdAt: tmpl.created_at,
+                updatedAt: tmpl.updated_at,
+            }));
+        }
+        catch {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.listPromptTemplates();
+        }
+    }
+    static async createPromptTemplate(data) {
+        if (!(await this.isDatabaseAvailable())) {
+            const tmpl = {
+                id: `prm-${Date.now()}`,
+                version: data.version,
+                status: 'DRAFT',
+                systemPrompt: data.systemPrompt,
+                outputSchemaVersion: data.outputSchemaVersion,
+                createdBy: data.createdBy,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.savePromptTemplate(tmpl);
+        }
+        try {
+            const created = await prisma_js_1.prisma.summaryPromptTemplate.create({
+                data: {
+                    version: data.version,
+                    system_prompt: data.systemPrompt,
+                    output_schema_version: data.outputSchemaVersion,
+                    status: 'DRAFT',
+                    created_by: data.createdBy,
+                },
+            });
+            return {
+                id: created.id,
+                version: created.version,
+                status: 'DRAFT',
+                systemPrompt: created.system_prompt,
+                outputSchemaVersion: created.output_schema_version,
+                createdBy: created.created_by,
+                createdAt: created.created_at,
+                updatedAt: created.updated_at,
+            };
+        }
+        catch {
+            const tmpl = {
+                id: `prm-${Date.now()}`,
+                version: data.version,
+                status: 'DRAFT',
+                systemPrompt: data.systemPrompt,
+                outputSchemaVersion: data.outputSchemaVersion,
+                createdBy: data.createdBy,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.savePromptTemplate(tmpl);
+        }
+    }
+    static async updatePromptTemplateStatus(id, status, extra) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.updatePromptStatus(id, status, extra);
+        }
+        try {
+            const updated = await prisma_js_1.prisma.summaryPromptTemplate.update({
+                where: { id },
+                data: {
+                    status,
+                    reviewed_by: extra?.reviewedBy,
+                    activated_at: extra?.activatedAt,
+                },
+            });
+            return {
+                id: updated.id,
+                version: updated.version,
+                status: updated.status,
+                systemPrompt: updated.system_prompt,
+                outputSchemaVersion: updated.output_schema_version,
+                createdBy: updated.created_by,
+                reviewedBy: updated.reviewed_by,
+                activatedAt: updated.activated_at,
+                createdAt: updated.created_at,
+                updatedAt: updated.updated_at,
+            };
+        }
+        catch {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.updatePromptStatus(id, status, extra);
+        }
+    }
+    static async saveEvaluationRun(run) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.saveEvaluationRun(run);
+        }
+        try {
+            await prisma_js_1.prisma.summaryEvaluationRun.create({
+                data: {
+                    id: run.id,
+                    prompt_template_id: run.promptTemplateId,
+                    prompt_version: run.promptVersion,
+                    model_id: run.modelId,
+                    passed: run.passed,
+                    total_cases: run.totalCases,
+                    passed_cases: run.passedCases,
+                    failed_cases: run.failedCases,
+                    metrics: run.metrics,
+                    executed_by: run.executedBy,
+                    executed_at: new Date(run.executedAt),
+                },
+            });
+            return run;
+        }
+        catch {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.saveEvaluationRun(run);
+        }
+    }
+    static async findLatestEvaluationRunForPrompt(promptVersion) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findLatestEvaluationRunForPrompt(promptVersion);
+        }
+        try {
+            const run = await prisma_js_1.prisma.summaryEvaluationRun.findFirst({
+                where: { prompt_version: promptVersion },
+                orderBy: { executed_at: 'desc' },
+            });
+            if (!run)
+                return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findLatestEvaluationRunForPrompt(promptVersion);
+            return {
+                id: run.id,
+                promptTemplateId: run.prompt_template_id,
+                promptVersion: run.prompt_version,
+                modelId: run.model_id,
+                passed: run.passed,
+                totalCases: run.total_cases,
+                passedCases: run.passed_cases,
+                failedCases: run.failed_cases,
+                metrics: run.metrics,
+                executedAt: run.executed_at,
+                executedBy: run.executed_by,
+            };
+        }
+        catch {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findLatestEvaluationRunForPrompt(promptVersion);
+        }
+    }
+    static async upsertGenerationJob(job) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.upsertGenerationJob({
+                id: `job-${Date.now()}`,
+                visitId: job.visitId,
+                status: job.status,
+                attempts: job.attempts,
+                errorCode: job.errorCode,
+                errorMessage: job.errorMessage,
+                summaryId: job.summaryId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            });
+        }
+        try {
+            return await prisma_js_1.prisma.summaryGenerationJob.create({
+                data: {
+                    visit_id: job.visitId,
+                    status: job.status,
+                    attempts: job.attempts,
+                    error_code: job.errorCode,
+                    error_message: job.errorMessage,
+                    summary_id: job.summaryId,
+                    started_at: new Date(),
+                },
+            });
+        }
+        catch {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.upsertGenerationJob({
+                id: `job-${Date.now()}`,
+                visitId: job.visitId,
+                status: job.status,
+                attempts: job.attempts,
+                errorCode: job.errorCode,
+                errorMessage: job.errorMessage,
+                summaryId: job.summaryId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            });
+        }
+    }
+    static async findJobByVisitId(visitId) {
+        if (!(await this.isDatabaseAvailable())) {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findGenerationJobByVisitId(visitId);
+        }
+        try {
+            return await prisma_js_1.prisma.summaryGenerationJob.findFirst({
+                where: { visit_id: visitId },
+                orderBy: { created_at: 'desc' },
+            });
+        }
+        catch {
+            return dev_fallback_summary_store_js_1.devFallbackSummaryStore.findGenerationJobByVisitId(visitId);
+        }
+    }
+    static mapPrismaToDto(raw) {
+        return {
+            id: raw.id,
+            visitId: raw.visit_id,
+            patientId: raw.patient_id,
+            version: raw.version,
+            status: raw.status,
+            generationMode: raw.generation_mode,
+            modelId: raw.model_id,
+            modelVersion: raw.model_version,
+            promptTemplateVersion: raw.prompt_template_version,
+            inputHash: raw.input_hash,
+            formularyVersionRefs: raw.formulary_version_refs || [],
+            validationOutcome: raw.validation_outcome,
+            generatedAt: raw.generated_at,
+            supersededBy: raw.superseded_by,
+            createdAt: raw.created_at,
+            updatedAt: raw.updated_at,
+            safetyLabel: 'AI-assisted draft — not confirmed by a doctor',
+            sections: (raw.sections || []).map((sec) => ({
+                id: sec.id,
+                section: sec.section,
+                order: sec.order,
+                statements: (sec.statements || []).map((stmt) => ({
+                    id: stmt.id,
+                    text: stmt.text,
+                    origin: stmt.origin,
+                    order: stmt.order,
+                    sources: (stmt.sources || []).map((src) => ({
+                        id: src.id,
+                        sourceType: src.source_type,
+                        sourceRef: src.source_ref,
+                        sourceItemId: src.source_item_id,
+                    })),
+                })),
+            })),
+        };
+    }
+}
+exports.SummaryRepository = SummaryRepository;

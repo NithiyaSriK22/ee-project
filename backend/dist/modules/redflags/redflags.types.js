@@ -1,0 +1,81 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AlertEventTypes = exports.ControlledResolutionTypes = exports.ControlledDismissalReasons = exports.TriggerTypes = exports.AlertStatuses = exports.RuleStatuses = exports.ConditionOperators = exports.RuleEvaluationOutcomes = exports.ThreeStateValues = exports.FactStates = exports.SeverityTiers = void 0;
+exports.SeverityTiers = {
+    IMMEDIATE: 'IMMEDIATE',
+    URGENT: 'URGENT',
+    STAFF_CHECK: 'STAFF_CHECK',
+    MANUAL: 'MANUAL',
+};
+exports.FactStates = {
+    KNOWN: 'KNOWN',
+    UNKNOWN: 'UNKNOWN',
+    NOT_APPLICABLE: 'NOT_APPLICABLE',
+};
+exports.ThreeStateValues = {
+    TRUE: 'TRUE',
+    FALSE: 'FALSE',
+    UNKNOWN: 'UNKNOWN',
+};
+exports.RuleEvaluationOutcomes = {
+    TRIGGERED: 'TRIGGERED',
+    INDETERMINATE: 'INDETERMINATE',
+    NOT_TRIGGERED: 'NOT_TRIGGERED',
+};
+exports.ConditionOperators = {
+    EQUALS: 'EQUALS',
+    NOT_EQUALS: 'NOT_EQUALS',
+    GREATER_THAN: 'GREATER_THAN',
+    GREATER_THAN_OR_EQUAL: 'GREATER_THAN_OR_EQUAL',
+    LESS_THAN: 'LESS_THAN',
+    LESS_THAN_OR_EQUAL: 'LESS_THAN_OR_EQUAL',
+    IN: 'IN',
+    NOT_IN: 'NOT_IN',
+    BETWEEN: 'BETWEEN',
+    EXISTS: 'EXISTS',
+    NOT_EXISTS: 'NOT_EXISTS',
+};
+exports.RuleStatuses = {
+    DRAFT: 'DRAFT',
+    CLINICAL_REVIEW: 'CLINICAL_REVIEW',
+    ACTIVE: 'ACTIVE',
+    RETIRED: 'RETIRED',
+};
+exports.AlertStatuses = {
+    RAISED: 'RAISED',
+    ACKNOWLEDGED: 'ACKNOWLEDGED',
+    IN_ASSESSMENT: 'IN_ASSESSMENT',
+    RESOLVED: 'RESOLVED',
+    ESCALATED: 'ESCALATED',
+    DISMISSED: 'DISMISSED',
+};
+exports.TriggerTypes = {
+    RULE_MATCH: 'RULE_MATCH',
+    INDETERMINATE: 'INDETERMINATE',
+    MANUAL: 'MANUAL',
+};
+exports.ControlledDismissalReasons = {
+    FALSE_POSITIVE_PATIENT_CORRECTION: 'FALSE_POSITIVE_PATIENT_CORRECTION',
+    EQUIPMENT_MISREAD: 'EQUIPMENT_MISREAD',
+    CLINICALLY_IRRELEVANT_SYMPTOM: 'CLINICALLY_IRRELEVANT_SYMPTOM',
+    DUPLICATE_INCIDENT: 'DUPLICATE_INCIDENT',
+    ASSISTED_PATIENT_STABLE: 'ASSISTED_PATIENT_STABLE',
+    OTHER_EXPLAINED: 'OTHER_EXPLAINED',
+};
+exports.ControlledResolutionTypes = {
+    CLINICAL_ASSESSMENT_COMPLETED: 'CLINICAL_ASSESSMENT_COMPLETED',
+    PATIENT_ESCALATED_TO_ED: 'PATIENT_ESCALATED_TO_ED',
+    ASSISTED_WITH_KIOSK: 'ASSISTED_WITH_KIOSK',
+    DISMISSED_FALSE_POSITIVE: 'DISMISSED_FALSE_POSITIVE',
+    TRANSFERRED_TO_DOCTOR: 'TRANSFERRED_TO_DOCTOR',
+};
+exports.AlertEventTypes = {
+    ALERT_RAISED: 'ALERT_RAISED',
+    ALERT_DEDUPLICATED: 'ALERT_DEDUPLICATED',
+    ALERT_ACKNOWLEDGED: 'ALERT_ACKNOWLEDGED',
+    ALERT_ASSESSMENT_STARTED: 'ALERT_ASSESSMENT_STARTED',
+    ALERT_ESCALATED: 'ALERT_ESCALATED',
+    ALERT_RESOLVED: 'ALERT_RESOLVED',
+    ALERT_DISMISSED: 'ALERT_DISMISSED',
+    MANUAL_HELP_REQUESTED: 'MANUAL_HELP_REQUESTED',
+};

@@ -91,8 +91,11 @@ class FormularyMatcher {
             // 4. Check Common Misreadings
             for (const misread of drug.commonMisreadings || []) {
                 const scoreMisread = this.calculateSimilarity(normalizedInput, misread);
-                if (scoreMisread > bestMatch.score) {
+                if (scoreMisread >= threshold && scoreMisread > bestMatch.score) {
                     bestMatch = { drug, matchedTerm: drug.canonicalName, score: Math.max(scoreMisread, 0.90) };
+                }
+                else if (scoreMisread > bestMatch.score) {
+                    bestMatch = { drug, matchedTerm: drug.canonicalName, score: scoreMisread };
                 }
             }
             // Early exit on exact match

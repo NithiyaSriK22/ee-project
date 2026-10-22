@@ -9,6 +9,7 @@ const app_error_js_1 = require("../../errors/app-error.js");
 const logger_js_1 = require("../../config/logger.js");
 const auth_types_js_1 = require("../../types/auth.types.js");
 const documents_types_js_1 = require("./documents.types.js");
+const redflags_service_js_1 = require("../redflags/redflags.service.js");
 class DocumentsService {
     /**
      * Uploads, executes OCR extraction, and immediately runs deterministic validation gate
@@ -60,6 +61,10 @@ class DocumentsService {
         let validationSummary = null;
         if (ocrResult.success && ocrResult.extractedFields.length > 0) {
             validationSummary = await validation_gate_service_js_1.ValidationGateService.validateDocument(document.id);
+            // Incremental Red-Flag Evaluation after document validation (Module 6 Non-blocking hook)
+            redflags_service_js_1.RedFlagsService.evaluateVisit(visitId).catch((err) => {
+                logger_js_1.logger.warn('Asynchronous red-flag evaluation caught error on document validation', { visitId, error: String(err) });
+            });
         }
         const refreshedDoc = await documents_repository_js_1.DocumentsRepository.findDocumentById(document.id);
         return {

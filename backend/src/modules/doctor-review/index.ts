@@ -1,4 +1,14 @@
-// Module 7 Architecture Placeholder: Doctor Review & Confirmation Dashboard
-import { Router } from 'express';
-const router = Router();
-export const doctorReviewRoutes = router;
+export * from './doctor-review.types.js';
+export * from './doctor-review.schemas.js';
+export * from './doctor-review.repository.js';
+export * from './queue/queue.service.js';
+export * from './review/must-resolve.evaluator.js';
+export * from './review/review-policy.service.js';
+export * from './review/claim.service.js';
+export * from './review/review.service.js';
+export * from './workspace/workspace.dto.js';
+export * from './workspace/workspace.service.js';
+export * from './confirmation/confirmation.service.js';
+export * from './confirmation/amendment.service.js';
+export * from './doctor-review.controller.js';
+export * from './doctor-review.routes.js';

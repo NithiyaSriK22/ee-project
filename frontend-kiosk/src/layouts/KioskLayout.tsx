@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { ShieldCheck, Eye, Type, Volume2 } from 'lucide-react';
 import { VoicePromptIndicator } from '../components/ui/VoicePromptIndicator';
+import { HelpButton, ConnectivityBanner } from '../features/help';
 
 export const KioskLayout: React.FC = () => {
   const [highContrast, setHighContrast] = useState(false);
@@ -19,6 +20,9 @@ export const KioskLayout: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex flex-col ${highContrast ? 'bg-black text-white' : 'bg-slate-50 text-slate-900'} antialiased select-none`}>
+      {/* Offline Connectivity Banner */}
+      <ConnectivityBanner />
+
       {/* Kiosk Top Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b-2 border-slate-200 px-6 py-4 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
@@ -40,6 +44,8 @@ export const KioskLayout: React.FC = () => {
           <div className="flex items-center gap-3">
             {/* Live voice indicator */}
             <VoicePromptIndicator mode="idle" label="Voice Assistant Ready" />
+
+            <HelpButton />
 
             {/* Accessibility Toggles */}
             <button
