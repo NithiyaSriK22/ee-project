@@ -1,0 +1,63 @@
+{
+  "documentId": "doc-demo-002",
+  "fileName": "rx_002_handwritten.svg",
+  "style": "HANDWRITING_AND_SMUDGED",
+  "hospital": {
+    "name": "Rajaji Memorial Government Hospital, Madurai",
+    "department": "Department of Medicine - Rheumatology Clinic",
+    "address": "Panagal Road, Alwarpuram, Madurai - 625020"
+  },
+  "doctor": {
+    "name": "Dr. K. Vasanth, MBBS, DNB (Internal Med)",
+    "regNo": "TNMC-49102",
+    "unit": "Unit-IV Outpatient Service"
+  },
+  "patient": {
+    "name": "Meena Sundaram",
+    "age": 52,
+    "gender": "Female",
+    "date": "2026-10-18"
+  },
+  "fields": [
+    {
+      "fieldId": "f-002-1",
+      "fieldType": "drug_name",
+      "groundTruthText": "Artisan-XR 100mg",
+      "expectedGeneric": null,
+      "expectedState": "MISMATCH_FLAGGED",
+      "notes": "Non-formulary experimental compound; fuzzy match score < 0.60 MATCH_FLOOR."
+    },
+    {
+      "fieldId": "f-002-2",
+      "fieldType": "dosage",
+      "groundTruthText": "OD",
+      "expectedGeneric": null,
+      "expectedState": "UNVERIFIED",
+      "notes": "Ambiguous abbreviation 'OD' resolves to UNVERIFIED with reason_code AMBIGUOUS_ABBREVIATION."
+    },
+    {
+      "fieldId": "f-002-3",
+      "fieldType": "drug_name",
+      "groundTruthText": "Amlodipine 5mg",
+      "expectedGeneric": "amlodipine",
+      "expectedState": "VERIFIED",
+      "notes": "Clear match against formulary amlodipine with runner-up amiloride > 0.10 margin."
+    },
+    {
+      "fieldId": "f-002-4",
+      "fieldType": "dosage",
+      "groundTruthText": "1-0-0",
+      "expectedGeneric": null,
+      "expectedState": "VERIFIED",
+      "notes": "Standard numeric pattern 1-0-0."
+    },
+    {
+      "fieldId": "f-002-5",
+      "fieldType": "allergy",
+      "groundTruthText": "Penicillin [smudged water stain]",
+      "expectedGeneric": null,
+      "expectedState": "UNREADABLE",
+      "notes": "Water stain / tear over allergy line produces confidence 0.22 (< OCR_MIN_USABLE 0.30)."
+    }
+  ]
+}

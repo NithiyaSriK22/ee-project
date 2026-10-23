@@ -1,0 +1,57 @@
+{
+  "documentId": "doc-demo-001",
+  "engine": "Tesseract-OCR-Mocked-Cached",
+  "processedAt": "2026-10-23T08:00:00Z",
+  "overallConfidence": 0.95,
+  "rawFields": [
+    {
+      "id": "raw-001-1",
+      "fieldType": "drug_name",
+      "rawText": "Paracetamol 650mg",
+      "ocrConfidence": 0.96,
+      "bbox": { "x": 60, "y": 180, "width": 240, "height": 30 }
+    },
+    {
+      "id": "raw-001-2",
+      "fieldType": "dosage",
+      "rawText": "1-0-1 after food",
+      "ocrConfidence": 0.94,
+      "bbox": { "x": 320, "y": 180, "width": 180, "height": 30 }
+    },
+    {
+      "id": "raw-001-3",
+      "fieldType": "drug_name",
+      "rawText": "Metformin 500mg",
+      "ocrConfidence": 0.97,
+      "bbox": { "x": 60, "y": 230, "width": 220, "height": 30 }
+    },
+    {
+      "id": "raw-001-4",
+      "fieldType": "dosage",
+      "rawText": "1-0-0 before food",
+      "ocrConfidence": 0.95,
+      "bbox": { "x": 320, "y": 230, "width": 180, "height": 30 }
+    },
+    {
+      "id": "raw-001-5",
+      "fieldType": "drug_name",
+      "rawText": "Cetirizine 10mg",
+      "ocrConfidence": 0.94,
+      "bbox": { "x": 60, "y": 280, "width": 210, "height": 30 }
+    },
+    {
+      "id": "raw-001-6",
+      "fieldType": "dosage",
+      "rawText": "0-0-1 at bedtime",
+      "ocrConfidence": 0.93,
+      "bbox": { "x": 320, "y": 280, "width": 170, "height": 30 }
+    },
+    {
+      "id": "raw-001-7",
+      "fieldType": "allergy",
+      "rawText": "Allergies: No known drug allergies",
+      "ocrConfidence": 0.92,
+      "bbox": { "x": 60, "y": 340, "width": 380, "height": 30 }
+    }
+  ]
+}

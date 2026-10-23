@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1050" width="800" height="1050" style="background:#ffffff; font-family:'Brush Script MT', 'Segoe Script', cursive, sans-serif;">
+  <defs>
+    <!-- Filter for smudge effect -->
+    <filter id="smudge" x="0" y="0" width="200%" height="200%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <!-- Paper background with aged tone -->
+  <rect x="20" y="20" width="760" height="1010" fill="#fbf8f2" stroke="#d5c8b5" stroke-width="2"/>
+
+  <!-- Hospital Header (Printed) -->
+  <text x="400" y="70" font-size="20" font-weight="bold" fill="#881337" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif">RAJAJI MEMORIAL GOVERNMENT HOSPITAL, MADURAI</text>
+  <text x="400" y="95" font-size="13" font-weight="bold" fill="#44403c" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif">Department of Medicine — Rheumatology &amp; Pain Clinic</text>
+  <text x="400" y="115" font-size="11" fill="#78716c" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif">Panagal Road, Alwarpuram, Madurai - 625020</text>
+  <line x1="50" y1="130" x2="750" y2="130" stroke="#b91c1c" stroke-width="2"/>
+
+  <!-- Doctor & Patient Details -->
+  <g font-family="'Helvetica Neue', Arial, sans-serif" font-size="13">
+    <text x="60" y="165" font-weight="bold" fill="#1c1917">Dr. K. Vasanth, MBBS, DNB (Internal Med)</text>
+    <text x="560" y="165" fill="#44403c">Reg. No: 49102</text>
+    <text x="60" y="190" fill="#1c1917">Pt: Meena Sundaram, 52 / F</text>
+    <text x="560" y="190" fill="#44403c">Date: 18-10-2026</text>
+    <text x="60" y="212" fill="#78716c" font-size="11">OPD Token: OPD-02 | MRN: TN-GH-2026-002</text>
+  </g>
+  <line x1="50" y1="225" x2="750" y2="225" stroke="#d7cdbe" stroke-width="1"/>
+
+  <!-- Rx Symbol -->
+  <text x="60" y="280" font-size="44" font-weight="bold" fill="#1e3a8a" font-family="'Georgia', serif">℞</text>
+
+  <!-- Handwritten Prescription Items (Simulated blue ballpoint ink) -->
+  <g font-size="22" fill="#1e3a8a" font-family="'Segoe Script', 'Brush Script MT', cursive">
+    <!-- Item 1: Non-formulary drug with ambiguous abbreviation OD -->
+    <text x="90" y="330" transform="rotate(-1 90 330)">1. Artisan-XR  100mg</text>
+    <text x="130" y="370" font-size="20">OD  x  10 days</text>
+    <text x="130" y="405" font-size="16" fill="#475569">(for knee osteoarthritis pain)</text>
+
+    <!-- Item 2: Standard formulary drug -->
+    <text x="90" y="470" transform="rotate(1 90 470)">2. Tab. Amlodipine  5mg</text>
+    <text x="130" y="510" font-size="20">1 - 0 - 0   daily  x  30 days</text>
+    <text x="130" y="545" font-size="16" fill="#475569">(HTN control)</text>
+  </g>
+
+  <!-- Smudged / Stained Allergy Section -->
+  <g transform="translate(60, 620)">
+    <!-- Simulated Water Stain / Ink bleed -->
+    <ellipse cx="280" cy="45" rx="220" ry="40" fill="#dbeafe" opacity="0.45" filter="url(#smudge)"/>
+    <ellipse cx="260" cy="45" rx="180" ry="30" fill="#cbd5e1" opacity="0.4" filter="url(#smudge)"/>
+
+    <text x="20" y="45" font-size="20" fill="#0f172a" font-family="'Segoe Script', cursive" opacity="0.35" filter="url(#smudge)">
+      Allergies: Penic~~~ [unreadable smudge]
+    </text>
+    <text x="350" y="75" font-size="11" fill="#b91c1c" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="bold">
+      [CAUTION: Smudged handwriting on physical chart]
+    </text>
+  </g>
+
+  <!-- Doctor Signature -->
+  <g transform="translate(500, 840)">
+    <path d="M 10,50 Q 60,0 120,40 T 180,30 Q 150,80 110,60" fill="none" stroke="#1e3a8a" stroke-width="2.5"/>
+    <text x="40" y="90" font-size="12" font-weight="bold" fill="#1c1917" font-family="'Helvetica Neue', Arial, sans-serif">Dr. K. Vasanth</text>
+    <text x="40" y="106" font-size="11" fill="#78716c" font-family="'Helvetica Neue', Arial, sans-serif">Reg No: 49102</text>
+  </g>
+
+  <!-- Demo Notice Banner -->
+  <rect x="30" y="990" width="740" height="30" fill="#fef2f2"/>
+  <text x="400" y="1010" font-size="10" font-weight="bold" fill="#b91c1c" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif">SYNTHETIC CLINICAL DEMO FIXTURE — NOT A REAL PRESCRIPTION</text>
+</svg>

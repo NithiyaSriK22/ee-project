@@ -1,0 +1,59 @@
+{
+  "documentId": "doc-demo-003",
+  "fileName": "rx_003_smudged.svg",
+  "style": "URGENT_TRIAGE",
+  "hospital": {
+    "name": "Tirunelveli Medical College Hospital",
+    "department": "Emergency Medical Services / Acute Cardiology",
+    "address": "High Ground, Palayamkottai, Tirunelveli - 627011"
+  },
+  "doctor": {
+    "name": "Dr. P. Sundarrajan, MD, DM (Cardio)",
+    "regNo": "TNMC-67120",
+    "unit": "Emergency CCU"
+  },
+  "patient": {
+    "name": "Arumugam Pillai",
+    "age": 61,
+    "gender": "Male",
+    "date": "2026-10-23"
+  },
+  "fields": [
+    {
+      "fieldId": "f-003-1",
+      "fieldType": "drug_name",
+      "groundTruthText": "Aspirin 75mg",
+      "expectedGeneric": "aspirin",
+      "expectedState": "VERIFIED"
+    },
+    {
+      "fieldId": "f-003-2",
+      "fieldType": "dosage",
+      "groundTruthText": "1-0-0 stat & daily",
+      "expectedGeneric": null,
+      "expectedState": "VERIFIED"
+    },
+    {
+      "fieldId": "f-003-3",
+      "fieldType": "drug_name",
+      "groundTruthText": "Clopidogrel 75mg",
+      "expectedGeneric": "clopidogrel",
+      "expectedState": "VERIFIED"
+    },
+    {
+      "fieldId": "f-003-4",
+      "fieldType": "dosage",
+      "groundTruthText": "1-0-0 daily",
+      "expectedGeneric": null,
+      "expectedState": "VERIFIED"
+    },
+    {
+      "fieldId": "f-003-5",
+      "fieldType": "allergy",
+      "groundTruthText": "Allergies: None recorded on chart",
+      "expectedGeneric": null,
+      "expectedState": "UNVERIFIED",
+      "notes": "Absence is never negative: 'None recorded on chart' is marked UNVERIFIED ('not found on document'), never 'none'."
+    }
+  ]
+}

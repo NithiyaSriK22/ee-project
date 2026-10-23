@@ -1,0 +1,66 @@
+/* THUNAI DESIGN TOKENS (U1 Theme: White, Cream and Red — No Dark Mode) */
+:root {
+  /* Surfaces & Backgrounds */
+  --thunai-bg-white: #ffffff;
+  --thunai-bg-cream: #faf7f2;
+  --thunai-bg-cream-light: #fdfbf7;
+  --thunai-bg-cream-card: #ffffff;
+  --thunai-bg-cream-dark: #f0e9dc;
+  --thunai-border: #e7e0d3;
+  --thunai-border-strong: #d3c7b5;
+
+  /* Primary Accent: Hospital & Tamil Red */
+  --thunai-red-primary: #b91c1c;   /* Crimson Red */
+  --thunai-red-hover: #991b1b;     /* Deep Red */
+  --thunai-red-deep: #7f1d1d;      /* Maroon Red */
+  --thunai-red-light: #fef2f2;     /* Red tint for cards and alerts */
+  --thunai-red-border: #fecaca;    /* Red border */
+
+  /* Text & Contrast */
+  --thunai-text-primary: #1c1917;   /* Deep charcoal / near black */
+  --thunai-text-secondary: #44403c; /* Dark stone */
+  --thunai-text-muted: #78716c;     /* Neutral stone */
+  --thunai-text-subtle: #a8a29e;    /* Light stone */
+
+  /* Clinical Validation Gate Field States (Non-negotiable) */
+  --state-verified: #15803d;        /* Green 700 */
+  --state-verified-bg: #f0fdf4;
+  --state-verified-border: #bbf7d0;
+
+  --state-unverified: #b45309;      /* Amber 700 */
+  --state-unverified-bg: #fffbeb;
+  --state-unverified-border: #fde68a;
+
+  --state-unreadable: #b91c1c;      /* Red 700 */
+  --state-unreadable-bg: #fef2f2;
+  --state-unreadable-border: #fecaca;
+
+  --state-mismatch: #dc2626;        /* Rose / Bright Red 600 */
+  --state-mismatch-bg: #fff1f2;
+  --state-mismatch-border: #fecdd3;
+
+  /* Origin Labels */
+  --origin-auto-bg: #eff6ff;
+  --origin-auto-text: #1e40af;
+  --origin-ai-bg: #f5f3ff;
+  --origin-ai-text: #5b21b6;
+  --origin-quote-bg: #f0fdf4;
+  --origin-quote-text: #166534;
+  --origin-doctor-bg: #fff7ed;
+  --origin-doctor-text: #9a3412;
+
+  /* Elevations & Radii */
+  --thunai-radius-sm: 6px;
+  --thunai-radius-md: 10px;
+  --thunai-radius-lg: 16px;
+  --thunai-radius-xl: 24px;
+  --thunai-shadow-card: 0 1px 3px rgba(44, 30, 20, 0.06), 0 1px 2px rgba(44, 30, 20, 0.04);
+  --thunai-shadow-modal: 0 10px 25px -5px rgba(44, 30, 20, 0.1), 0 8px 10px -6px rgba(44, 30, 20, 0.05);
+}
+
+/* Ensure no dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: light;
+  }
+}
