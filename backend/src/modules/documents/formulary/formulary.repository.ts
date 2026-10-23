@@ -1,4 +1,4 @@
-import { prisma } from '../../../database/prisma.js';
+import { prisma, checkDatabaseHealth } from '../../../database/prisma.js';
 import { FormularyStatus } from '../documents.types.js';
 import {
   SEED_FORMULARY_VERSION,
@@ -13,34 +13,58 @@ export class FormularyRepository {
    * initializing the authoritative seed dataset if none exists in database.
    */
   public static async getActiveFormularyDataset(): Promise<FormularyDataset> {
-    let activeVersion = await prisma.formularyVersion.findFirst({
-      where: {
-        status: FormularyStatus.ACTIVE,
-        is_active: true,
-      },
-      include: {
-        drugs: {
-          where: { is_active: true },
-        },
-      },
-    });
+    const isDbUp = await checkDatabaseHealth();
+    if (isDbUp) {
+      try {
+        let activeVersion = await prisma.formularyVersion.findFirst({
+          where: {
+            status: FormularyStatus.ACTIVE,
+            is_active: true,
+          },
+          include: {
+            drugs: {
+              where: { is_active: true },
+            },
+          },
+        });
 
-    // Auto-seed if database is clean
-    if (!activeVersion) {
-      activeVersion = await this.seedDefaultFormulary();
+        // Auto-seed if database is clean
+        if (!activeVersion) {
+          activeVersion = await this.seedDefaultFormulary();
+        }
+
+        if (activeVersion) {
+          return {
+            versionId: activeVersion.id,
+            versionCode: activeVersion.version_code,
+            drugs: activeVersion.drugs.map((d: any) => ({
+              id: d.id,
+              genericName: d.generic_name,
+              canonicalName: d.canonical_name,
+              brandNames: d.brand_names,
+              dosageForms: d.dosage_forms,
+              commonMisreadings: d.common_misreadings,
+              scheduleType: d.schedule_type,
+            })),
+          };
+        }
+      } catch (err) {
+        logger.warn('FormularyRepository: Database error fetching formulary, falling back to seed dataset', { error: String(err) });
+      }
     }
 
+    // High-resilience fallback: return in-memory static seed formulary
     return {
-      versionId: activeVersion.id,
-      versionCode: activeVersion.version_code,
-      drugs: activeVersion.drugs.map((d) => ({
-        id: d.id,
-        genericName: d.generic_name,
-        canonicalName: d.canonical_name,
-        brandNames: d.brand_names,
-        dosageForms: d.dosage_forms,
-        commonMisreadings: d.common_misreadings,
-        scheduleType: d.schedule_type,
+      versionId: 'ver-seed-fallback-2026',
+      versionCode: SEED_FORMULARY_VERSION.versionCode,
+      drugs: SEED_FORMULARY_DRUGS.map((d, index) => ({
+        id: `drug-seed-${index}`,
+        genericName: d.genericName,
+        canonicalName: d.canonicalName,
+        brandNames: d.brandNames,
+        dosageForms: d.dosageForms,
+        commonMisreadings: d.commonMisreadings,
+        scheduleType: d.scheduleType || 'SCHEDULE_H',
       })),
     };
   }

@@ -19,8 +19,27 @@ import { SummaryRepository } from './summary.repository.js';
 import { GenerationOrchestrator } from './generation/generation-orchestrator.js';
 import { SummaryEvaluationRunner } from './evaluation/evaluation-runner.js';
 import { SummarizationProvider } from './generation/summarization-provider.js';
+import { mockSummarizationProvider } from './generation/provider-adapters/mock-provider-adapter.js';
+import { createDefaultLocalLlmAdapter } from './generation/provider-adapters/local-llm-adapter.js';
+import { TemplateSummaryBuilder } from './fallback/template-summary-builder.js';
 
 export class SummaryService {
+  private static activeProvider: SummarizationProvider | null = null;
+
+  public static setProvider(provider: SummarizationProvider | null): void {
+    this.activeProvider = provider;
+  }
+
+  public static getProvider(): SummarizationProvider {
+    if (this.activeProvider) {
+      return this.activeProvider;
+    }
+    const envProvider = (process.env.SUMMARY_PROVIDER || process.env.SUMMARY_LLM_PROVIDER || 'mock').toLowerCase();
+    if (envProvider === 'local' || envProvider === 'local_llm') {
+      return createDefaultLocalLlmAdapter();
+    }
+    return mockSummarizationProvider;
+  }
   /**
    * Retrieves the latest clinical summary draft for a visit.
    * Gated by RBAC: Doctors, Staff, Admins. Kiosks are blocked from reading content.
@@ -99,6 +118,7 @@ export class SummaryService {
       forceRegenerate?: boolean;
       provider?: SummarizationProvider;
       triggeredBy?: string;
+      allowIncompleteDraft?: boolean;
     }
   ): Promise<ClinicalSummaryDto> {
     // 1. Fetch Module 3 Interview data
@@ -118,6 +138,38 @@ export class SummaryService {
     }
 
     if (!interviewData && (!documentsData || documentsData.length === 0)) {
+      if (options?.allowIncompleteDraft) {
+        const emptyInput = InputAssembler.assemble({
+          visitId,
+          interviewData: null,
+          documentsData: [],
+        });
+        const fallbackSections = TemplateSummaryBuilder.buildFallbackSummary(emptyInput);
+        const incompleteSummary: ClinicalSummaryDto = {
+          id: crypto.randomUUID(),
+          visitId,
+          patientId: null,
+          version: 1,
+          status: 'INSUFFICIENT_EVIDENCE',
+          generationMode: 'TEMPLATE_FALLBACK',
+          providerId: 'TEMPLATE_FALLBACK',
+          isMock: false,
+          modelId: null,
+          modelVersion: null,
+          promptTemplateVersion: null,
+          inputHash: emptyInput.inputHash,
+          formularyVersionRefs: [],
+          validationOutcome: null,
+          generatedAt: new Date(),
+          supersededBy: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          safetyLabel: 'Incomplete draft — insufficient clinical source information',
+          sections: fallbackSections,
+        };
+        return SummaryRepository.createSummary(incompleteSummary);
+      }
+
       throw new AppError(
         `Cannot assemble summary for visit '${visitId}': No completed interview answers or documents found.`,
         400,
@@ -177,6 +229,8 @@ export class SummaryService {
     // 6. Fetch ACTIVE Prompt Template
     const activePrompt = await SummaryRepository.findActivePromptTemplate();
 
+    const providerToUse = options?.provider || this.getProvider();
+
     // 7. Orchestrate generation (LLM with grounding validation + retry + template fallback)
     const generationResult = await GenerationOrchestrator.generateSummary({
       assembledInput,
@@ -184,8 +238,14 @@ export class SummaryService {
       patientId,
       version: nextVersion,
       promptTemplate: activePrompt || undefined,
-      provider: options?.provider,
+      provider: providerToUse,
     });
+
+    const safetyLabel = generationResult.generationMode === 'TEMPLATE_FALLBACK'
+      ? 'Template-only fallback draft — not confirmed by a doctor'
+      : generationResult.isMock
+      ? 'Mock AI draft (deterministic simulation) — not confirmed by a doctor'
+      : 'AI-assisted draft (Local LLM) — not confirmed by a doctor';
 
     // 8. Save new immutable version
     const newSummary: ClinicalSummaryDto = {
@@ -195,6 +255,8 @@ export class SummaryService {
       version: nextVersion,
       status: 'PENDING_DOCTOR_REVIEW',
       generationMode: generationResult.generationMode,
+      providerId: generationResult.providerId,
+      isMock: generationResult.isMock,
       modelId: generationResult.modelId,
       modelVersion: generationResult.modelVersion,
       promptTemplateVersion: generationResult.promptTemplateVersion,
@@ -205,7 +267,7 @@ export class SummaryService {
       supersededBy: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      safetyLabel: 'AI-assisted draft — not confirmed by a doctor',
+      safetyLabel,
       sections: generationResult.sections,
     };
 

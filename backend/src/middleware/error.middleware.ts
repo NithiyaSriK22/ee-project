@@ -28,6 +28,26 @@ export const globalErrorHandler = (
     return;
   }
 
+  // Handle express body-parser entity too large error
+  if ((err as any).type === 'entity.too.large') {
+    logger.warn(`Payload too large: ${err.message}`, { requestId, path: req.originalUrl });
+    ResponseUtil.error(res, 413, ErrorCode.VALIDATION_ERROR, 'File size exceeds maximum permitted limit of 15MB.');
+    return;
+  }
+
+  // Handle Multer upload errors
+  if (err.name === 'MulterError') {
+    logger.warn(`Multer upload error: ${err.message}`, { requestId, path: req.originalUrl });
+    const isSize = (err as any).code === 'LIMIT_FILE_SIZE';
+    ResponseUtil.error(
+      res,
+      400,
+      ErrorCode.VALIDATION_ERROR,
+      isSize ? 'File size exceeds maximum permitted limit of 15MB.' : `File upload error: ${err.message}`
+    );
+    return;
+  }
+
   // Unhandled / unexpected internal error
   logger.error(`Unhandled system error: ${err.message}`, {
     requestId,

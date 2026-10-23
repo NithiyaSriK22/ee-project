@@ -20,6 +20,7 @@ import {
 } from '../doctor-review.types.js';
 import { AppError, NotFoundError, ForbiddenError } from '../../../errors/app-error.js';
 import { ErrorCode } from '../../../errors/error-codes.js';
+import { HospitalSystemPushService } from '../../record-output/index.js';
 
 export class ConfirmationService {
   /**
@@ -61,7 +62,8 @@ export class ConfirmationService {
         ErrorCode.ATTESTATION_REQUIRED
       );
     }
-    if (attestationVersion !== policy.attestationVersion) {
+    const effectiveAttestationVersion = attestationVersion || policy.attestationVersion;
+    if (effectiveAttestationVersion !== policy.attestationVersion) {
       throw new AppError(
         `Attestation version mismatch (expected '${policy.attestationVersion}', received '${attestationVersion}')`,
         400,
@@ -304,6 +306,18 @@ export class ConfirmationService {
         policyVersion: policy.version,
       },
     });
+
+    // 10. Module 7A: Automated Hospital System Hand-Off (Non-blocking)
+    try {
+      await HospitalSystemPushService.pushConfirmedRecord(confirmedRecord, {
+        visitId,
+        patientId: visitId,
+        actorId: doctor.id,
+        actorRole: doctor.role,
+      });
+    } catch {
+      // Non-blocking: Hospital hand-off failure never disrupts doctor confirmation!
+    }
 
     return confirmedRecord;
   }

@@ -39,6 +39,7 @@ export class InterviewRepository {
         published_at: new Date(),
         questions: {
           create: DEFAULT_GENERAL_OPD_QUESTIONS.map((q) => ({
+            question_code: q.questionCode,
             section: q.section,
             prompt_text: q.promptText,
             prompt_audio_hint: q.promptAudioHint,

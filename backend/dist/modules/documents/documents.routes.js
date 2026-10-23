@@ -8,13 +8,16 @@ const auth_middleware_js_1 = require("../../middleware/auth.middleware.js");
 const validate_middleware_js_1 = require("../../middleware/validate.middleware.js");
 const auth_types_js_1 = require("../../types/auth.types.js");
 const documents_schemas_js_1 = require("./documents.schemas.js");
+const upload_middleware_js_1 = require("../../middleware/upload.middleware.js");
 // Kiosk Document Capture & Validation Router
 const kioskDocumentsRouter = (0, express_1.Router)();
 exports.kioskDocumentsRouter = kioskDocumentsRouter;
 kioskDocumentsRouter.use(auth_middleware_js_1.authenticateKioskSession);
-kioskDocumentsRouter.post('/upload', documents_controller_js_1.DocumentsController.uploadDocument);
+kioskDocumentsRouter.post('/upload', upload_middleware_js_1.optionalUploadMiddleware, documents_controller_js_1.DocumentsController.uploadDocument);
 kioskDocumentsRouter.get('/', documents_controller_js_1.DocumentsController.listVisitDocuments);
 kioskDocumentsRouter.get('/:id/status', documents_controller_js_1.DocumentsController.getDocumentStatus);
+kioskDocumentsRouter.get('/:id/file', documents_controller_js_1.DocumentsController.streamDocumentFile);
+kioskDocumentsRouter.get('/:id/image', documents_controller_js_1.DocumentsController.streamDocumentFile);
 kioskDocumentsRouter.get('/:id/validated-fields', documents_controller_js_1.DocumentsController.getValidatedFields);
 kioskDocumentsRouter.post('/:id/revalidate', documents_controller_js_1.DocumentsController.revalidate);
 // Admin Formulary Management Router

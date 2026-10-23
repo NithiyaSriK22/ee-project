@@ -1,0 +1,19 @@
+{
+  "id": "6bde3df7-1c1f-480e-825f-94c36e2a23d8",
+  "visit_id": "visit-stage4-001",
+  "patient_id": "2897ce67-89c4-4043-a384-a6e2aee6da36",
+  "document_type": "PRESCRIPTION",
+  "file_name": "failed_val_gate.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 55,
+  "storage_reference": "storage/documents/visit-stage4-001/eaba7fee-5008-4581-a00a-191203557fd8_1792784148840_failed_val_gate.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document could not be reliably digitized. Legibility confidence is below clinical threshold (confidence: 22%).",
+  "uploaded_at": "2026-10-23T19:35:48.845Z",
+  "created_at": "2026-10-23T19:35:48.845Z",
+  "updated_at": "2026-10-23T19:35:48.853Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

@@ -22,6 +22,14 @@ class InputAssembler {
             // Sort deterministically by questionId / answeredAt
             const sortedAnswers = [...options.interviewData.answers].sort((a, b) => a.questionId.localeCompare(b.questionId));
             for (const ans of sortedAnswers) {
+                // MODULE 3B PRIVACY ENFORCEMENT: Exclude sensitive/doctor-only items from AI summarizer input
+                const ansAny = ans;
+                if (ansAny.aiSummarizationAllowed === false ||
+                    ansAny.visibilityScope === 'DOCTOR_ONLY' ||
+                    ansAny.sensitivityLevel === 'HIGHLY_SENSITIVE' ||
+                    ansAny.isDeferredToDoctor === true) {
+                    continue;
+                }
                 const itemId = `itm_int_${String(itemSeq++).padStart(3, '0')}`;
                 const section = item_key_map_js_1.INTERVIEW_SECTION_TO_SUMMARY_SECTION[ans.section] || summary_types_js_1.SummarySections.CHIEF_COMPLAINT;
                 const { status, formattedValue, rawStr } = this.normalizeInterviewAnswer(ans);

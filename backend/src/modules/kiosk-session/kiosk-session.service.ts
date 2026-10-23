@@ -1,8 +1,11 @@
 import { KioskSessionRepository } from './kiosk-session.repository.js';
 import { TokenUtil } from '../../utils/token.util.js';
-import { NotFoundError, ValidationError } from '../../errors/app-error.js';
+import { NotFoundError, ValidationError, ServiceUnavailableError } from '../../errors/app-error.js';
 import { logger } from '../../config/logger.js';
 import { ConsentTypes } from '../../types/auth.types.js';
+import { FeatureFlagsService, KioskHardeningService } from '../deployment/index.js';
+import { DoctorReviewRepository } from '../doctor-review/doctor-review.repository.js';
+import { QueueStatuses } from '../doctor-review/doctor-review.types.js';
 
 export class KioskSessionService {
   public static async startSession(data: {
@@ -20,7 +23,21 @@ export class KioskSessionService {
     consentGranted?: boolean;
     consentGrantedVia?: 'patient' | 'companion' | 'staff_assisted';
   }) {
+    // Module 10: Global Intake Pause & Kiosk Intake Kill Switch enforcement
+    const pauseState = FeatureFlagsService.getGlobalIntakePauseState();
+    const kioskIntakeEnabled = FeatureFlagsService.isFlagEnabled('KIOSK_INTAKE_ENABLED');
+
+    if (pauseState.isPaused || !kioskIntakeEnabled) {
+      const guidance = 'Please proceed to the outpatient reception counter for paper-assisted registration.';
+      const msg = pauseState.reason
+        ? `${pauseState.reason}. ${guidance}`
+        : `Kiosk patient intake is temporarily paused by hospital administration. ${guidance}`;
+      throw new ServiceUnavailableError(msg);
+    }
+
+
     const visitId = `vis_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
     const preferredLang = data.preferredLanguage || 'en';
     const grantedVia = data.consentGrantedVia || (data.isCompanionAssisted ? 'companion' : 'patient');
 
@@ -113,6 +130,19 @@ export class KioskSessionService {
 
     const activeConsents = await KioskSessionRepository.getConsentsForVisit(patientRecord.id, visitId);
 
+    // Register initial entry into the Doctor Review Queue
+    try {
+      await DoctorReviewRepository.upsertQueueEntry({
+        visitId,
+        department: 'General Medicine',
+        queueStatus: QueueStatuses.WAITING,
+        patientTokenOrName: `${patientRecord.full_name} (${patientRecord.hospital_registration_number})`,
+        readyAt: new Date(),
+      });
+    } catch (queueErr) {
+      logger.warn('Failed to insert initial queue entry for visit', { visitId, error: (queueErr as any)?.message });
+    }
+
     logger.info('Kiosk session started', {
       visitId,
       isCompanionAssisted: visitProfile.is_companion_assisted,
@@ -176,16 +206,27 @@ export class KioskSessionService {
         expiresAt: session.expires_at,
         lastAccessedAt: session.last_accessed_at,
       },
-      patient: {
-        id: session.patient.id,
-        hospitalRegistrationNumber: session.patient.hospital_registration_number,
-        fullName: session.patient.full_name,
-        age: session.patient.age,
-        dateOfBirth: session.patient.date_of_birth,
-        gender: session.patient.gender,
-        contactNumber: session.patient.contact_number,
-        preferredLanguage: session.patient.preferred_language,
-      },
+      patient: session.patient
+        ? {
+            id: session.patient.id,
+            hospitalRegistrationNumber: session.patient.hospital_registration_number,
+            fullName: session.patient.full_name,
+            age: session.patient.age,
+            dateOfBirth: session.patient.date_of_birth,
+            gender: session.patient.gender,
+            contactNumber: session.patient.contact_number,
+            preferredLanguage: session.patient.preferred_language,
+          }
+        : {
+            id: session.patient_id,
+            hospitalRegistrationNumber: 'MK-2026-DEFAULT',
+            fullName: 'Patient',
+            age: null,
+            dateOfBirth: null,
+            gender: 'OTHER',
+            contactNumber: '',
+            preferredLanguage: 'en',
+          },
       visitProfile: session.visit_profile
         ? {
             id: session.visit_profile.id,
@@ -210,10 +251,12 @@ export class KioskSessionService {
 
   public static async endSession(visitId: string) {
     await KioskSessionRepository.endSession(visitId);
-    logger.info('Kiosk session ended', { visitId });
+    KioskHardeningService.wipeSession({ visitId, wipeTrigger: 'COMPLETED' });
+    logger.info('Kiosk session ended and local session context wiped', { visitId });
     return {
       success: true,
       message: 'Kiosk session ended successfully. Session data finalized for this visit.',
     };
   }
 }
+

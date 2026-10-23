@@ -7,17 +7,28 @@ const field_check_evaluator_js_1 = require("./field-check-evaluator.js");
 const app_error_js_1 = require("../../../errors/app-error.js");
 const logger_js_1 = require("../../../config/logger.js");
 const documents_types_js_1 = require("../documents.types.js");
+const documents_repository_js_1 = require("../documents.repository.js");
 class ValidationGateService {
     /**
      * Deterministically validates an uploaded document and persists validated field records
      */
     static async validateDocument(documentId) {
-        const document = await prisma_js_1.prisma.uploadedDocument.findUnique({
-            where: { id: documentId },
-            include: {
-                raw_fields: true,
-            },
-        });
+        const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
+        let document = null;
+        if (isDbUp) {
+            try {
+                document = await prisma_js_1.prisma.uploadedDocument.findUnique({
+                    where: { id: documentId },
+                    include: {
+                        raw_fields: true,
+                    },
+                });
+            }
+            catch { }
+        }
+        if (!document) {
+            document = await documents_repository_js_1.DocumentsRepository.findDocumentById(documentId);
+        }
         if (!document) {
             throw new app_error_js_1.NotFoundError(`Uploaded document not found: ${documentId}`);
         }
@@ -33,7 +44,7 @@ class ValidationGateService {
         // 1. Retrieve Active Formulary & Reference Datasets
         const formularyDataset = await formulary_repository_js_1.FormularyRepository.getActiveFormularyDataset();
         // 2. Prepare normalized raw field inputs
-        const rawInputs = document.raw_fields.map((rf) => ({
+        const rawInputs = (document.raw_fields || []).map((rf) => ({
             id: rf.id,
             fieldType: rf.field_type,
             rawText: rf.raw_text,
@@ -44,38 +55,65 @@ class ValidationGateService {
         // 3. Run Pure Deterministic Evaluation
         const validationSummary = field_check_evaluator_js_1.FieldCheckEvaluator.evaluateDocument(document.id, document.document_type, rawInputs, formularyDataset);
         // 4. Persist ValidatedField records and update document overall status
-        await prisma_js_1.prisma.$transaction(async (tx) => {
-            // Clear existing validation results for this document if any (point-in-time update)
-            await tx.validatedField.deleteMany({
-                where: { document_id: document.id },
-            });
-            // Insert new evaluated fields
-            for (const field of validationSummary.fields) {
-                await tx.validatedField.create({
-                    data: {
-                        document_id: document.id,
-                        raw_field_id: field.rawFieldId || undefined,
-                        formulary_version_id: formularyDataset.versionId,
-                        field_type: field.fieldType,
-                        is_critical: field.isCritical,
-                        result: field.result,
-                        eval_state: field.evalState,
-                        matched_reference_value: field.matchedReferenceValue || null,
-                        match_score: field.matchScore || null,
-                        ocr_confidence: field.ocrConfidence,
-                        explanation: field.explanation,
-                        formulary_version: formularyDataset.versionCode,
-                        evaluated_at: validationSummary.evaluatedAt,
-                    },
+        if (isDbUp) {
+            try {
+                await prisma_js_1.prisma.$transaction(async (tx) => {
+                    // Clear existing validation results for this document if any (point-in-time update)
+                    await tx.validatedField.deleteMany({
+                        where: { document_id: document.id },
+                    });
+                    // Insert new evaluated fields
+                    for (const field of validationSummary.fields) {
+                        await tx.validatedField.create({
+                            data: {
+                                document_id: document.id,
+                                raw_field_id: field.rawFieldId || undefined,
+                                formulary_version_id: formularyDataset.versionId,
+                                field_type: field.fieldType,
+                                is_critical: field.isCritical,
+                                result: field.result,
+                                eval_state: field.evalState,
+                                matched_reference_value: field.matchedReferenceValue || null,
+                                match_score: field.matchScore || null,
+                                ocr_confidence: field.ocrConfidence,
+                                explanation: field.explanation,
+                                formulary_version: formularyDataset.versionCode,
+                                evaluated_at: validationSummary.evaluatedAt,
+                            },
+                        });
+                    }
+                    // Update document rollup status
+                    await tx.uploadedDocument.update({
+                        where: { id: document.id },
+                        data: {
+                            overall_status: validationSummary.overallStatus,
+                        },
+                    });
                 });
             }
-            // Update document rollup status
-            await tx.uploadedDocument.update({
-                where: { id: document.id },
-                data: {
-                    overall_status: validationSummary.overallStatus,
-                },
-            });
+            catch (dbErr) {
+                logger_js_1.logger.warn('Failed saving validated fields to DB, falling back to memory repository', { error: String(dbErr) });
+            }
+        }
+        // Persist to in-memory fallback
+        await documents_repository_js_1.DocumentsRepository.updateDocument(document.id, {
+            overall_status: validationSummary.overallStatus,
+            validated_fields: validationSummary.fields.map((f, idx) => ({
+                id: `vf-${document.id}-${idx}`,
+                document_id: document.id,
+                raw_field_id: f.rawFieldId,
+                formulary_version_id: formularyDataset.versionId,
+                field_type: f.fieldType,
+                is_critical: f.isCritical,
+                result: f.result,
+                eval_state: f.evalState,
+                matched_reference_value: f.matchedReferenceValue || null,
+                match_score: f.matchScore || null,
+                ocr_confidence: f.ocrConfidence,
+                explanation: f.explanation,
+                formulary_version: formularyDataset.versionCode,
+                evaluated_at: validationSummary.evaluatedAt,
+            })),
         });
         logger_js_1.logger.info('Document validation completed deterministically', {
             documentId: document.id,

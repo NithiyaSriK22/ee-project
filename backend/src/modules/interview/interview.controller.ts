@@ -140,8 +140,14 @@ export class InterviewKioskController {
 
       const { visitId, patientId } = req.kioskSession;
       const requestedTemplateId = req.body?.templateId;
+      const headsetConnected = req.body?.headsetConnected;
 
-      const result = await InterviewService.startKioskInterview(visitId, patientId, requestedTemplateId);
+      const result = await InterviewService.startKioskInterview(
+        visitId,
+        patientId,
+        requestedTemplateId,
+        { headsetConnected }
+      );
       ResponseUtil.success(res, result, 'Clinical interview intake session started');
     } catch (error) {
       next(error);
@@ -170,6 +176,78 @@ export class InterviewKioskController {
       const { visitId, patientId } = req.kioskSession;
       const result = await InterviewService.submitAnswer(visitId, patientId, req.body);
       ResponseUtil.success(res, result, 'Answer recorded successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async configureGuardian(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.kioskSession) {
+        throw new AuthenticationError('Active kiosk session required');
+      }
+
+      const result = await InterviewService.configureGuardianMode(
+        req.kioskSession.visitId,
+        req.body
+      );
+      ResponseUtil.success(res, result, 'Guardian mode configured successfully for minor intake');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async configureSurrogate(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.kioskSession) {
+        throw new AuthenticationError('Active kiosk session required');
+      }
+
+      const result = await InterviewService.configureSurrogateMode(
+        req.kioskSession.visitId,
+        req.body,
+        (req.kioskSession as any).kioskDeviceId
+      );
+      ResponseUtil.success(res, result, 'Surrogate mode configured successfully for intake session');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async updateHeadset(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.kioskSession) {
+        throw new AuthenticationError('Active kiosk session required');
+      }
+
+      const connected = Boolean(req.body.connected);
+      const result = await InterviewService.updateHeadsetStatus(
+        req.kioskSession.visitId,
+        connected
+      );
+      ResponseUtil.success(
+        res,
+        { headsetConnected: result },
+        `Headset status updated to ${result ? 'CONNECTED' : 'DISCONNECTED'}`
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async deferToDoctor(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.kioskSession) {
+        throw new AuthenticationError('Active kiosk session required');
+      }
+
+      const { questionId, reason } = req.body;
+      const result = await InterviewService.deferQuestionToDoctor(
+        req.kioskSession.visitId,
+        questionId,
+        reason
+      );
+      ResponseUtil.success(res, result, 'Question deferred for private consultation with doctor');
     } catch (error) {
       next(error);
     }
@@ -208,4 +286,55 @@ export class InterviewKioskController {
       next(error);
     }
   }
+
+  public static async flagPatientUnwell(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.kioskSession) {
+        throw new AuthenticationError('Active kiosk session required');
+      }
+
+      const { reason } = req.body || {};
+      const result = await InterviewService.flagPatientUnwell(
+        req.kioskSession.visitId,
+        (req.kioskSession as any).kioskDeviceId,
+        reason
+      );
+      ResponseUtil.success(res, result, 'Patient unwell alert raised, intake halted for staff assistance');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async sensitiveSectionConsent(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.kioskSession) {
+        throw new AuthenticationError('Active kiosk session required');
+      }
+
+      const result = await InterviewService.processSensitiveSectionConsent(
+        req.kioskSession.visitId,
+        req.body
+      );
+      ResponseUtil.success(res, result, 'Sensitive section consent processed');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async triggerSensitiveDisclosure(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.kioskSession) {
+        throw new AuthenticationError('Active kiosk session required');
+      }
+
+      const result = await InterviewService.triggerSensitiveDisclosure(
+        req.kioskSession.visitId,
+        (req.kioskSession as any).kioskDeviceId
+      );
+      ResponseUtil.success(res, result, 'Sensitive disclosure alert routed with neutral text');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+

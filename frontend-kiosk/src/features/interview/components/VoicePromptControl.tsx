@@ -35,7 +35,7 @@ export const VoicePromptControl: React.FC<VoicePromptControlProps> = ({
           aria-label="Repeat spoken question"
         >
           {isSpeaking ? <VolumeX className="w-5 h-5 text-teal-400" /> : <Volume2 className="w-5 h-5 text-teal-400" />}
-          <span>{isSpeaking ? 'Playing Voice Question...' : 'Listen / Repeat Question'}</span>
+          <span>{isSpeaking ? 'Playing Voice Question...' : 'Repeat Question'}</span>
         </button>
 
         {/* Speak answer toggle */}

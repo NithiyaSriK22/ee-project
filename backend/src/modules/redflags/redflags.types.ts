@@ -3,6 +3,7 @@ export const SeverityTiers = {
   URGENT: 'URGENT',
   STAFF_CHECK: 'STAFF_CHECK',
   MANUAL: 'MANUAL',
+  SENSITIVE_DISCLOSURE: 'SENSITIVE_DISCLOSURE',
 } as const;
 
 export type SeverityTier = (typeof SeverityTiers)[keyof typeof SeverityTiers];

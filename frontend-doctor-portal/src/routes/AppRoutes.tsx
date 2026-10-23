@@ -4,7 +4,7 @@ import { DoctorLayout } from '../layouts/DoctorLayout';
 import { DoctorDashboardPage } from '../pages/DoctorDashboardPage';
 import { DoctorLoginPage } from '../features/auth/pages/DoctorLoginPage';
 import { ProtectedRoute } from '../features/auth/components/ProtectedRoute';
-import { InterviewTemplateManagerPage } from '../features/admin/pages/InterviewTemplateManagerPage';
+import { InterviewTemplateManagerPage, AdminShell } from '../features/admin';
 import { SummaryPreviewPage } from '../features/summary';
 import {
   TriageQueuePage,
@@ -18,6 +18,8 @@ import {
   RawViewPage,
   ConfirmedRecordPage,
 } from '../features/doctor-review';
+import { NotificationListPage } from '../features/notifications';
+import { TranslationsAdminPage } from '../features/translation-admin';
 import { NotFoundPage } from '../pages/NotFoundPage';
 
 export const AppRoutes: React.FC = () => {
@@ -30,7 +32,7 @@ export const AppRoutes: React.FC = () => {
       <Route
         path="/"
         element={
-          <ProtectedRoute allowedRoles={['DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN']}>
+          <ProtectedRoute allowedRoles={['DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN', 'ANALYST', 'AUDITOR']}>
             <DoctorLayout />
           </ProtectedRoute>
         }
@@ -53,12 +55,51 @@ export const AppRoutes: React.FC = () => {
         <Route path="redflags/rules/:id/tests" element={<RuleTestRunner />} />
         <Route path="redflags/rules/:id/review" element={<ClinicalReviewPage />} />
 
+        {/* Module 8 Operational Notifications */}
+        <Route path="notifications" element={<NotificationListPage />} />
+
+        {/* Module 8 Multilingual Translations & Clinical Governance */}
+        <Route
+          path="admin/translations"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN', 'DOCTOR']}>
+              <TranslationsAdminPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Module 3 Admin Template & Question Bank Manager */}
         <Route
           path="admin/templates"
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}>
               <InterviewTemplateManagerPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Module 9 Administration, Analytics, Audit & Monitoring Console */}
+        <Route
+          path="admin/analytics"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'ANALYST', 'AUDITOR']}>
+              <AdminShell />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'ANALYST', 'AUDITOR']}>
+              <AdminShell />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="audit"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'AUDITOR']}>
+              <AdminShell />
             </ProtectedRoute>
           }
         />

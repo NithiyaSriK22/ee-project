@@ -82,10 +82,28 @@ export const FormularyStatus = {
 
 export type FormularyStatusType = (typeof FormularyStatus)[keyof typeof FormularyStatus];
 
-// Threshold Constants
+// Threshold Constants (Calibrated via Module 5A Ground-Truth Program)
 export const VALIDATION_THRESHOLDS = {
   MIN_USABLE_OCR_CONFIDENCE: 0.40,      // Below 40% is marked UNREADABLE
   HIGH_OCR_CONFIDENCE: 0.70,            // Minimum confidence for automated VERIFIED
   FORMULARY_SIMILARITY_THRESHOLD: 0.80, // Minimum fuzzy string similarity score (80%)
   DEFAULT_FORMULARY_VERSION: 'NFI-EML-2026.1',
 };
+
+export function updateGovernedValidationThresholds(thresholds: {
+  minUsableOcrConfidence?: number;
+  highOcrConfidence?: number;
+  formularySimilarityThreshold?: number;
+}): typeof VALIDATION_THRESHOLDS {
+  if (thresholds.minUsableOcrConfidence !== undefined) {
+    VALIDATION_THRESHOLDS.MIN_USABLE_OCR_CONFIDENCE = thresholds.minUsableOcrConfidence;
+  }
+  if (thresholds.highOcrConfidence !== undefined) {
+    VALIDATION_THRESHOLDS.HIGH_OCR_CONFIDENCE = thresholds.highOcrConfidence;
+  }
+  if (thresholds.formularySimilarityThreshold !== undefined) {
+    VALIDATION_THRESHOLDS.FORMULARY_SIMILARITY_THRESHOLD = thresholds.formularySimilarityThreshold;
+  }
+  return VALIDATION_THRESHOLDS;
+}
+

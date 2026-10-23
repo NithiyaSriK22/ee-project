@@ -250,6 +250,11 @@ class DevFallbackRedflagsStore {
     return alert;
   }
 
+  public saveAlert(alert: RedFlagAlertDTO): RedFlagAlertDTO {
+    this.alerts.set(alert.id, alert);
+    return alert;
+  }
+
   public addEvidenceToAlert(
     alertId: string,
     evidences: Array<{

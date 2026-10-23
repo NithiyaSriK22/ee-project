@@ -1,0 +1,33 @@
+# Stage 1: Build static bundle
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# Stage 2: Serve via lean, hardened Nginx
+FROM nginx:1.25-alpine AS runner
+
+# Remove default nginx static assets
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy compiled SPA assets
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy hardened nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Security: Set permissions
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

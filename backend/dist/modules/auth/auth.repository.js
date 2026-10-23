@@ -1,33 +1,61 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthRepository = void 0;
+exports.checkDatabaseAvailability = checkDatabaseAvailability;
 const prisma_js_1 = require("../../database/prisma.js");
 const dev_fallback_store_js_1 = require("./dev-fallback-store.js");
 const logger_js_1 = require("../../config/logger.js");
+let isDbReachable = null;
+let lastDbCheck = 0;
+async function checkDatabaseAvailability() {
+    const now = Date.now();
+    if (isDbReachable !== null && now - lastDbCheck < 15000) {
+        return isDbReachable;
+    }
+    try {
+        const checkPromise = prisma_js_1.prisma.$queryRaw `SELECT 1`;
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('DB check timeout')), 250));
+        await Promise.race([checkPromise, timeoutPromise]);
+        isDbReachable = true;
+    }
+    catch {
+        isDbReachable = false;
+    }
+    lastDbCheck = now;
+    return isDbReachable;
+}
 class AuthRepository {
     static async findUserByEmail(email) {
-        try {
-            return await prisma_js_1.prisma.staffUser.findUnique({
-                where: { email: email.toLowerCase() },
-            });
+        const available = await checkDatabaseAvailability();
+        if (available) {
+            try {
+                const user = await prisma_js_1.prisma.staffUser.findUnique({
+                    where: { email: email.toLowerCase() },
+                });
+                if (user)
+                    return user;
+            }
+            catch (error) {
+                logger_js_1.logger.warn('Database error in findUserByEmail', { email });
+            }
         }
-        catch (error) {
-            logger_js_1.logger.warn('Database unreachable in findUserByEmail, using offline dev fallback store', {
-                email,
-            });
-            return dev_fallback_store_js_1.devFallbackAuthStore.findUserByEmail(email);
-        }
+        return dev_fallback_store_js_1.devFallbackAuthStore.findUserByEmail(email);
     }
     static async findUserById(id) {
-        try {
-            return await prisma_js_1.prisma.staffUser.findUnique({
-                where: { id },
-            });
+        const available = await checkDatabaseAvailability();
+        if (available) {
+            try {
+                const user = await prisma_js_1.prisma.staffUser.findUnique({
+                    where: { id },
+                });
+                if (user)
+                    return user;
+            }
+            catch (error) {
+                logger_js_1.logger.warn('Database error in findUserById', { id });
+            }
         }
-        catch (error) {
-            logger_js_1.logger.warn('Database unreachable in findUserById, using offline dev fallback store', { id });
-            return dev_fallback_store_js_1.devFallbackAuthStore.findUserById(id);
-        }
+        return dev_fallback_store_js_1.devFallbackAuthStore.findUserById(id);
     }
     static async createStaffUser(data) {
         try {

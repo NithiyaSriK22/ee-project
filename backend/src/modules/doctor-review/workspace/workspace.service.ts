@@ -16,6 +16,7 @@ import {
   WorkspaceSummaryPayload,
   WorkspaceSectionItem,
   WorkspaceStatementItem,
+  ConfidentialSensitiveResponseItem,
 } from './workspace.dto.js';
 import {
   DoctorReviewStatuses,
@@ -122,32 +123,30 @@ export class WorkspaceService {
 
     // 6. Fetch Module 4 Validated Document Fields
     let docFields: any[] = [];
-    if (isDbUp) {
-      try {
-        const docs = await DocumentsService.getValidatedDocumentFieldsForVisit(visitId);
-        for (const doc of docs) {
-          for (const f of doc.validatedFields) {
-            docFields.push({
-              id: f.id,
-              documentId: doc.documentId,
-              documentType: doc.documentType,
-              fileName: doc.fileName,
-              fieldType: f.fieldType,
-              isCritical: f.isCritical,
-              result: f.result,
-              evalState: f.evalState,
-              matchedReferenceValue: f.matchedReferenceValue,
-              matchScore: f.matchScore,
-              ocrConfidence: f.ocrConfidence,
-              explanation: f.explanation,
-              rawText: (f as any).rawText,
-              sourceSnippetRef: (f as any).sourceSnippetRef,
-            });
-          }
+    try {
+      const docs = await DocumentsService.getValidatedDocumentFieldsForVisit(visitId);
+      for (const doc of docs) {
+        for (const f of doc.validatedFields) {
+          docFields.push({
+            id: f.id,
+            documentId: doc.documentId,
+            documentType: doc.documentType,
+            fileName: doc.fileName,
+            fieldType: f.fieldType,
+            isCritical: f.isCritical,
+            result: f.result,
+            evalState: f.evalState,
+            matchedReferenceValue: f.matchedReferenceValue,
+            matchScore: f.matchScore,
+            ocrConfidence: f.ocrConfidence,
+            explanation: f.explanation,
+            rawText: (f as any).rawText,
+            sourceSnippetRef: (f as any).sourceSnippetRef,
+          });
         }
-      } catch {
-        docFields = [];
       }
+    } catch {
+      docFields = [];
     }
 
     // 7. Fetch Module 3 Interview Answers
@@ -201,6 +200,71 @@ export class WorkspaceService {
       policy
     );
 
+    // 10b. Detect unreadable/failed uploaded documents and enforce doctor inspection (P2.2)
+    let failedDocuments: any[] = [];
+    try {
+      const allDocs = await DocumentsService.listVisitDocuments(visitId);
+      failedDocuments = (allDocs || [])
+        .filter((d: any) => d.ocr_status === 'FAILED' || d.overall_status === 'EXTRACTION_FAILED')
+        .map((d: any) => {
+          const missingFields: string[] = [];
+          if (d.document_type === 'PRESCRIPTION') {
+            missingFields.push('Medication Name', 'Dosage & Frequency', 'Allergies & Reactions');
+          } else if (d.document_type === 'LAB_REPORT') {
+            missingFields.push('Investigation Name', 'Lab Result Value', 'Reference Range');
+          } else {
+            missingFields.push('Clinical Findings', 'Physician Orders');
+          }
+
+          return {
+            id: d.id,
+            fileName: d.file_name,
+            documentType: d.document_type,
+            ocrStatus: d.ocr_status || 'FAILED',
+            ocrErrorMessage: d.ocr_error_message || 'Document could not be reliably digitized. Please review the original document.',
+            uploadedAt: d.uploaded_at instanceof Date ? d.uploaded_at.toISOString() : String(d.uploaded_at || new Date().toISOString()),
+            missingFields,
+            extractedTextSnippet: d.ocr_error_message?.includes('recognized:') ? d.ocr_error_message : '[No legible text extracted — manual review required]',
+            confidence: 0,
+            unverifiedNotice: 'Document could not be reliably digitized. Please review the original document.',
+          };
+        });
+
+      for (const fDoc of failedDocuments) {
+        const itemRef = `doc-failed:${fDoc.id}`;
+        const sourceHash = MustResolveEvaluator.computeSourceHash(`FAILED:${fDoc.id}:${fDoc.fileName}`);
+        const resolution = resolutions.find((r) => r.itemRef === itemRef);
+        const isResolved = !!(resolution && (!resolution.sourceHash || resolution.sourceHash === sourceHash));
+
+        const isHandwritten = fDoc.fileName?.toLowerCase().includes('handwritten') || fDoc.ocrErrorMessage?.toLowerCase().includes('handwritten');
+
+        evaluatorResult.mustResolveItems.unshift({
+          itemRef,
+          itemType: 'DOCUMENT_FIELD' as any,
+          title: isHandwritten
+            ? 'Handwritten prescription could not be automatically digitized'
+            : 'Document could not be reliably digitized. Please review the original document.',
+          description: `Document digitization failed for "${fDoc.fileName}". Manual review against original high-resolution scan required. Missing fields: ${fDoc.missingFields.join(', ')}.`,
+          sourceType: 'DOCUMENT',
+          sourceRef: fDoc.id,
+          sourceSnippetRef: 'original_scan',
+          rawExtractedValue: '[HANDWRITTEN UNREADABLE]',
+          matchedReferenceValue: null,
+          ocrConfidence: 0,
+          verificationState: 'UNREADABLE',
+          sourceHash,
+          isResolved,
+          resolution: isResolved ? resolution : null,
+        });
+
+        if (!isResolved) {
+          evaluatorResult.unresolvedCount++;
+        }
+      }
+    } catch {
+      failedDocuments = [];
+    }
+
     // 11. Assemble Structured Summary Sections with Doctor Edits & Additions
     let summaryPayload: WorkspaceSummaryPayload | null = null;
     if (m5Summary) {
@@ -251,11 +315,22 @@ export class WorkspaceService {
         };
       });
 
+      const isMock = m5Summary.isMock ?? (m5Summary.modelId === 'medikiosk-constrained-summary-v1');
+      const providerId = m5Summary.providerId || (isMock ? 'MOCK_PROVIDER' : (m5Summary.modelId ? 'LOCAL_LLM' : null));
+      const safetyLabel = m5Summary.safetyLabel || (m5Summary.generationMode === 'TEMPLATE_FALLBACK'
+        ? 'Template-only fallback draft — not confirmed by a doctor'
+        : isMock
+        ? 'Mock AI draft (deterministic simulation) — not confirmed by a doctor'
+        : 'AI-assisted draft (Local LLM) — not confirmed by a doctor');
+
       summaryPayload = {
         id: m5Summary.id,
         version: m5Summary.version,
         status: m5Summary.status,
         generationMode: m5Summary.generationMode,
+        providerId,
+        isMock,
+        safetyLabel,
         modelId: m5Summary.modelId,
         modelVersion: m5Summary.modelVersion,
         isStale: isStale || m5Summary.status === 'STALE',
@@ -264,7 +339,40 @@ export class WorkspaceService {
       };
     }
 
-    // 12. Audit Access
+    // 12. Assemble Confidential Sensitive Responses for Doctor Review (Module 3B)
+    const confidentialSensitiveResponses: ConfidentialSensitiveResponseItem[] = [];
+    for (const ans of interviewAnswers) {
+      const isSensitive =
+        ans.sensitivityLevel === 'SENSITIVE' ||
+        ans.sensitivityLevel === 'HIGHLY_SENSITIVE' ||
+        ans.visibilityScope === 'DOCTOR_ONLY' ||
+        ans.isDeferredToDoctor ||
+        (ans.answerValue && typeof ans.answerValue === 'object' && ans.answerValue.status === 'DEFERRED_TO_DOCTOR');
+
+      if (isSensitive) {
+        const verbatimVal =
+          typeof ans.answerValue === 'object' && ans.answerValue !== null
+            ? (ans.answerValue.status === 'DEFERRED_TO_DOCTOR'
+                ? `[DEFERRED TO DOCTOR]: ${ans.answerValue.deferralReason || 'Patient requested private discussion'}`
+                : String(ans.answerValue.value ?? JSON.stringify(ans.answerValue)))
+            : String(ans.answerValue ?? '');
+
+        confidentialSensitiveResponses.push({
+          id: ans.id,
+          questionId: ans.questionId || ans.id,
+          section: ans.section || 'SENSITIVE',
+          promptText: ans.promptText,
+          answerValue: ans.answerValue,
+          verbatimDisplay: verbatimVal,
+          provenance: ans.provenance || 'Patient (Self-Reported)',
+          isDeferredToDoctor: !!(ans.isDeferredToDoctor || (ans.answerValue && ans.answerValue.status === 'DEFERRED_TO_DOCTOR')),
+          sensitivityLevel: ans.sensitivityLevel || 'SENSITIVE',
+          visibilityScope: ans.visibilityScope || 'DOCTOR_ONLY',
+        });
+      }
+    }
+
+    // 13. Audit Access
     await DoctorReviewRepository.recordAuditEvent({
       action: DoctorReviewAuditEvents.SUMMARY_VIEWED,
       visitId,
@@ -282,6 +390,7 @@ export class WorkspaceService {
       mustResolveItems: evaluatorResult.mustResolveItems,
       unresolvedCount: evaluatorResult.unresolvedCount,
       passiveFlags: evaluatorResult.passiveFlags,
+      confidentialSensitiveResponses,
       reviewState: {
         reviewId: activeReview?.id || null,
         status: activeReview?.status || DoctorReviewStatuses.IN_REVIEW,
@@ -294,8 +403,16 @@ export class WorkspaceService {
       policyVersion: policy.version,
       attestation,
       rawViewAvailable: true,
+      timelineAvailable: true,
+      failedDocuments,
+      longitudinalDiff: {
+        hasPriorVisit: false,
+        priorVisitDate: null,
+        totalChanges: 0,
+      },
     };
   }
+
 
   /**
    * Assembles the Raw View (Fallback view without AI summary)

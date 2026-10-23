@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AnsweredVia = exports.InterviewSessionStatus = exports.TemplateStatus = exports.QuestionTypes = exports.InterviewSections = void 0;
+exports.AnswerStatus = exports.GuardianRelationships = exports.SurrogateReasons = exports.VisibilityScopes = exports.SensitivityLevels = exports.AnsweredVia = exports.InterviewSessionStatus = exports.TemplateStatus = exports.QuestionTypes = exports.InterviewSections = void 0;
 exports.InterviewSections = {
     CHIEF_COMPLAINT: 'CHIEF_COMPLAINT',
     PRESENT_ILLNESS_HISTORY: 'PRESENT_ILLNESS_HISTORY',
@@ -37,4 +37,37 @@ exports.AnsweredVia = {
     TOUCH: 'touch',
     STAFF_ASSISTED: 'staff_assisted',
     COMPANION_ASSISTED: 'companion_assisted',
+    GUARDIAN: 'guardian',
+    SURROGATE: 'surrogate',
+    PATIENT: 'patient',
+};
+exports.SensitivityLevels = {
+    NORMAL: 'NORMAL',
+    SENSITIVE: 'SENSITIVE',
+    HIGHLY_SENSITIVE: 'HIGHLY_SENSITIVE',
+};
+exports.VisibilityScopes = {
+    STAFF_VISIBLE: 'STAFF_VISIBLE',
+    CLINICAL_STAFF: 'CLINICAL_STAFF',
+    DOCTOR_ONLY: 'DOCTOR_ONLY',
+};
+exports.SurrogateReasons = {
+    PATIENT_UNWELL: 'PATIENT_UNWELL',
+    COGNITIVE_IMPAIRMENT: 'COGNITIVE_IMPAIRMENT',
+    PHYSICAL_DISABILITY: 'PHYSICAL_DISABILITY',
+    LANGUAGE_BARRIER: 'LANGUAGE_BARRIER',
+    REFUSED_DEVICE: 'REFUSED_DEVICE',
+    OTHER: 'OTHER',
+};
+exports.GuardianRelationships = {
+    PARENT: 'PARENT',
+    LEGAL_GUARDIAN: 'LEGAL_GUARDIAN',
+    SIBLING: 'SIBLING',
+    SPOUSE: 'SPOUSE',
+    OTHER: 'OTHER',
+};
+exports.AnswerStatus = {
+    ANSWERED: 'ANSWERED',
+    SKIPPED: 'SKIPPED',
+    DEFERRED_TO_DOCTOR: 'DEFERRED_TO_DOCTOR',
 };

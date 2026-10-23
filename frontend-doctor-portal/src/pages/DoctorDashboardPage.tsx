@@ -103,12 +103,12 @@ export const DoctorDashboardPage: React.FC = () => {
         header={
           <div className="flex items-center gap-2">
             <Info className="w-4 h-4 text-teal-700" />
-            <span>Clinical Provenance & Explainability Architecture (Module 1 Foundation)</span>
+            <span>Clinical Provenance & Explainability Architecture</span>
           </div>
         }
       >
         <div className="mb-4 text-sm text-slate-600 leading-relaxed">
-          MediKiosk strictly enforces deterministic field validation before AI summarization. Every clinical field displays its source, confidence score, and verification state. The physician retains final authority to edit, confirm, or reject any field.
+          THUNAI strictly enforces deterministic field validation before AI summarization. Every clinical field displays its source, confidence score, and verification state. The physician retains final authority to edit, confirm, or reject any field.
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

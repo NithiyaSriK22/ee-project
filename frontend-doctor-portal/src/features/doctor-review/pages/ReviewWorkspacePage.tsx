@@ -16,11 +16,15 @@ import { SummarySection } from '../components/SummarySection';
 import { MustResolveCard } from '../components/MustResolveCard';
 import { ProvenancePanel } from '../components/ProvenancePanel';
 import { ConfirmBar } from '../components/ConfirmBar';
+import { DocumentSnippetViewer } from '../components/DocumentSnippetViewer';
 import {
   RefreshCw,
   AlertTriangle,
   Sparkles,
   Layers,
+  Eye,
+  ShieldAlert,
+  FileText,
 } from 'lucide-react';
 
 export const ReviewWorkspacePage: React.FC = () => {
@@ -40,6 +44,9 @@ export const ReviewWorkspacePage: React.FC = () => {
   const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
   const [rejectionReason, setRejectionReason] = useState<RejectionReason>(RejectionReasons.INACCURATE);
   const [rejectionNote, setRejectionNote] = useState<string>('');
+
+  // Failed OCR Document High-Resolution Inspection Modal (P2.2)
+  const [inspectingDocumentId, setInspectingDocumentId] = useState<string | null>(null);
 
   // Fetch queue
   const fetchQueue = useCallback(async () => {
@@ -306,15 +313,105 @@ export const ReviewWorkspacePage: React.FC = () => {
                   alertDisclaimer={workspace.alertDisclaimer}
                 />
 
+                {/* Stage 4: Prominent Amber Warning for Failed/Unreadable Digitization */}
+                {workspace.failedDocuments && workspace.failedDocuments.length > 0 && (
+                  <div className="space-y-3">
+                    {workspace.failedDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="p-4 bg-amber-50 rounded-xl border-2 border-amber-400 text-amber-950 flex flex-col gap-3 shadow-xs"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-amber-200 flex items-center justify-center shrink-0 text-amber-800 mt-0.5">
+                              <AlertTriangle className="w-4.5 h-4.5 text-amber-700" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-sm text-amber-950 flex flex-wrap items-center gap-2">
+                                <span>Document could not be reliably digitized. Please review the original document.</span>
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-200 text-amber-900 border border-amber-300">
+                                  OCR: {doc.ocrStatus || 'FAILED'}
+                                </span>
+                              </div>
+                              <div className="text-xs text-amber-900 mt-0.5 flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                                <span>
+                                  Source File: <strong className="font-mono">{doc.fileName}</strong> ({doc.documentType || 'PRESCRIPTION'})
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setInspectingDocumentId(doc.id)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs rounded-lg transition-colors shadow-xs shrink-0 cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Click to view original high-resolution scan</span>
+                          </button>
+                        </div>
+
+                        {/* Extraction Details & Missing Fields */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-2 border-t border-amber-200 text-xs">
+                          <div className="p-2.5 bg-amber-100/70 rounded-lg border border-amber-300">
+                            <span className="font-semibold text-amber-900 block mb-0.5">Missing or Uncertain Fields:</span>
+                            <span className="text-amber-900 font-mono text-[11px] font-medium">
+                              {doc.missingFields && doc.missingFields.length > 0
+                                ? doc.missingFields.join(', ')
+                                : 'All core clinical fields unverified (manual extraction required)'}
+                            </span>
+                          </div>
+                          <div className="p-2.5 bg-amber-100/70 rounded-lg border border-amber-300">
+                            <span className="font-semibold text-amber-900 block mb-0.5">Available Extracted Text:</span>
+                            <span className="text-amber-900 font-mono text-[11px] truncate block">
+                              {doc.extractedTextSnippet || '[No legible text extracted — manual review required]'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Distinction between verified and unverified information */}
+                        <div className="flex items-center gap-2 text-[11px] text-amber-950 bg-amber-200/60 p-2 rounded-lg border border-amber-300">
+                          <ShieldAlert className="w-4 h-4 text-amber-800 shrink-0" />
+                          <span>
+                            <strong>Unverified Information Notice:</strong> Unreadable and unverified extractions are withheld from confirmed records to prevent clinical errors. All entries require physician verification.
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* AI Draft Status Indicator */}
-                <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 flex items-start gap-2.5 text-xs text-blue-950">
-                  <Sparkles className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className={`p-3 rounded-xl border flex items-start gap-2.5 text-xs ${
+                  workspace.summary?.isMock
+                    ? 'bg-amber-50/70 border-amber-300 text-amber-950'
+                    : workspace.summary?.generationMode === 'TEMPLATE_FALLBACK'
+                    ? 'bg-slate-50 border-slate-300 text-slate-800'
+                    : 'bg-blue-50/60 border-blue-200 text-blue-950'
+                }`}>
+                  <Sparkles className={`w-4 h-4 flex-shrink-0 mt-0.5 ${workspace.summary?.isMock ? 'text-amber-600' : 'text-blue-600'}`} />
                   <div>
-                    <span className="font-bold">AI Clinical Draft Summary (v{workspace.summary?.version || 1}): </span>
-                    <span>
-                      Mode: <strong className="font-mono">{workspace.summary?.generationMode || 'LLM'}</strong>.
-                      This draft is an intake organization aid and NOT a medical fact until confirmed by the physician.
-                    </span>
+                    <div className="font-bold flex items-center gap-2">
+                      <span>{workspace.summary?.isMock ? 'Simulated AI Draft Summary' : 'AI Clinical Draft Summary'} (v{workspace.summary?.version || 1})</span>
+                      {workspace.summary?.isMock && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-300">
+                          MOCK SIMULATION — NOT REAL AI
+                        </span>
+                      )}
+                      {workspace.summary?.generationMode === 'TEMPLATE_FALLBACK' && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-800 border border-slate-300">
+                          TEMPLATE FALLBACK
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1">
+                      <span>
+                        Mode: <strong className="font-mono">{workspace.summary?.generationMode || 'LLM'}</strong>
+                        {workspace.summary?.providerId && <span className="ml-1 text-slate-600 font-mono">[{workspace.summary.providerId}]</span>}.
+                        {' '}
+                        {workspace.summary?.safetyLabel || 'This draft is an intake organization aid and NOT a medical fact until confirmed by the physician.'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -456,6 +553,36 @@ export const ReviewWorkspacePage: React.FC = () => {
               >
                 Confirm Rejection
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* High-Resolution Document Inspection Modal (P2.2) */}
+      {inspectingDocumentId && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-amber-300 overflow-hidden">
+            <div className="p-4 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <h3 className="font-bold text-sm text-amber-950">
+                  Original Handwritten Document Inspection
+                </h3>
+              </div>
+              <button
+                onClick={() => setInspectingDocumentId(null)}
+                className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-colors"
+              >
+                Close Preview
+              </button>
+            </div>
+            <div className="p-4">
+              <DocumentSnippetViewer
+                documentId={inspectingDocumentId}
+                verificationState="UNREADABLE"
+                rawExtractedValue="Handwritten prescription could not be automatically digitized. Please inspect the original optical scan directly."
+                onClose={() => setInspectingDocumentId(null)}
+              />
             </div>
           </div>
         </div>

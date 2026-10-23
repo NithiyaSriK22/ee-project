@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './config/query-client';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { KioskSessionProvider } from './features/registration/context/KioskSessionContext';
+import { LanguageProvider } from './features/language/useLanguage';
 import { AppRoutes } from './routes/AppRoutes';
 
 export const App: React.FC = () => {
@@ -11,9 +12,11 @@ export const App: React.FC = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <KioskSessionProvider>
-            <AppRoutes />
-          </KioskSessionProvider>
+          <LanguageProvider>
+            <KioskSessionProvider>
+              <AppRoutes />
+            </KioskSessionProvider>
+          </LanguageProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

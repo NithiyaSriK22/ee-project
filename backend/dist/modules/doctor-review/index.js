@@ -1,7 +1,30 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.doctorReviewRoutes = void 0;
-// Module 7 Architecture Placeholder: Doctor Review & Confirmation Dashboard
-const express_1 = require("express");
-const router = (0, express_1.Router)();
-exports.doctorReviewRoutes = router;
+__exportStar(require("./doctor-review.types.js"), exports);
+__exportStar(require("./doctor-review.schemas.js"), exports);
+__exportStar(require("./doctor-review.repository.js"), exports);
+__exportStar(require("./queue/queue.service.js"), exports);
+__exportStar(require("./review/must-resolve.evaluator.js"), exports);
+__exportStar(require("./review/review-policy.service.js"), exports);
+__exportStar(require("./review/claim.service.js"), exports);
+__exportStar(require("./review/review.service.js"), exports);
+__exportStar(require("./workspace/workspace.dto.js"), exports);
+__exportStar(require("./workspace/workspace.service.js"), exports);
+__exportStar(require("./confirmation/confirmation.service.js"), exports);
+__exportStar(require("./confirmation/amendment.service.js"), exports);
+__exportStar(require("./doctor-review.controller.js"), exports);
+__exportStar(require("./doctor-review.routes.js"), exports);

@@ -22,7 +22,7 @@ export class HealthService {
 
     return {
       status: isDbConnected ? 'healthy' : 'degraded',
-      service: 'medikiosk-backend',
+      service: 'thunai-backend',
       version: '1.0.0',
       environment: env.NODE_ENV,
       uptimeSeconds: Math.floor(process.uptime()),

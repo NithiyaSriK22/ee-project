@@ -23,16 +23,25 @@ class DatabaseClient {
         }
         return DatabaseClient.instance;
     }
+    static cachedStatus = null;
     static async testConnection() {
+        const now = Date.now();
+        if (DatabaseClient.cachedStatus && now - DatabaseClient.cachedStatus.checkedAt < 5000) {
+            return DatabaseClient.cachedStatus.result;
+        }
         try {
             const client = DatabaseClient.getInstance();
-            await client.$queryRaw `SELECT 1`;
+            const checkPromise = client.$queryRaw `SELECT 1`;
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('PostgreSQL connection check timed out (server unreachable at localhost:5432)')), 500));
+            await Promise.race([checkPromise, timeoutPromise]);
+            DatabaseClient.cachedStatus = { result: true, checkedAt: now };
             return true;
         }
         catch (error) {
-            logger_js_1.logger.warn('Database connection check failed (is PostgreSQL running?)', {
+            logger_js_1.logger.warn('Database connectivity check: PostgreSQL server unreachable', {
                 error: error instanceof Error ? error.message : String(error),
             });
+            DatabaseClient.cachedStatus = { result: false, checkedAt: now };
             return false;
         }
     }

@@ -12,8 +12,15 @@ import {
   InterviewSessionStatus,
   QuestionTypes,
   BranchingRule,
+  AnsweredVia,
+  AnswerStatus,
+  SensitivityLevels,
+  VisibilityScopes,
 } from '../../types/interview.types.js';
 import { RedFlagsService } from '../redflags/redflags.service.js';
+import { SpecialPopulationsService } from '../special-populations/special-populations.service.js';
+import { DoctorReviewRepository } from '../doctor-review/doctor-review.repository.js';
+import { QueueStatuses } from '../doctor-review/doctor-review.types.js';
 
 export class InterviewService {
   // ============================================================================
@@ -272,8 +279,13 @@ export class InterviewService {
   public static async startKioskInterview(
     visitId: string,
     patientId: string,
-    requestedTemplateId?: string
+    requestedTemplateId?: string,
+    options?: { headsetConnected?: boolean }
   ) {
+    if (options?.headsetConnected !== undefined) {
+      SpecialPopulationsService.setHeadsetStatus(visitId, options.headsetConnected);
+    }
+
     // 1. Consent Gate Check (Module 2 Requirement 16)
     const consentRecord = await prisma.consent.findUnique({
       where: {
@@ -291,11 +303,26 @@ export class InterviewService {
       );
     }
 
+    // Module 3B: Minor & Guardian Verification Gate
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+    });
+
+    if (patient) {
+      const guardianCheck = SpecialPopulationsService.validateGuardianRequirement(patient, visitId);
+      if (guardianCheck.required && !guardianCheck.verified) {
+        throw new ValidationError(
+          guardianCheck.message ||
+            'Patient is a minor. An adult guardian must provide verified consent before clinical intake.'
+        );
+      }
+    }
+
     // 2. Resume existing session if one is already active for this visit
     const existingSession = await InterviewRepository.findSessionByVisitId(visitId);
     if (existingSession && existingSession.status === InterviewSessionStatus.IN_PROGRESS) {
       logger.info('Resuming existing interview session for visit', { visitId });
-      return this.formatSessionState(existingSession);
+      return this.formatSessionState(existingSession, patient);
     }
 
     // 3. Find active template (or requested template if valid)
@@ -313,9 +340,17 @@ export class InterviewService {
       throw new NotFoundError('No active interview template available for this OPD intake.');
     }
 
-    const firstQuestion = template.questions[0];
+    // Module 3B: Non-Inferential Question Gating
+    const applicableQuestions = patient
+      ? SpecialPopulationsService.filterApplicableQuestions(template.questions as any, {
+          age: patient.age,
+          gender: patient.gender,
+        })
+      : template.questions;
+
+    const firstQuestion = applicableQuestions[0] || template.questions[0];
     if (!firstQuestion) {
-      throw new ValidationError('Interview template does not contain any questions.');
+      throw new ValidationError('Interview template does not contain any applicable questions.');
     }
 
     // 4. Create new InterviewSession
@@ -324,7 +359,7 @@ export class InterviewService {
       patientId,
       templateId: template.id,
       templateVersion: template.version,
-      currentQuestionId: firstQuestion.id,
+      currentQuestionId: (firstQuestion as any).id,
     });
 
     logger.info('New interview session started for visit', {
@@ -333,7 +368,7 @@ export class InterviewService {
       version: template.version,
     });
 
-    return this.formatSessionState(session);
+    return this.formatSessionState(session, patient);
   }
 
   public static async getCurrentQuestion(visitId: string) {
@@ -342,7 +377,11 @@ export class InterviewService {
       throw new NotFoundError('Active interview session not found for this visit');
     }
 
-    return this.formatSessionState(session);
+    const patient = await prisma.patient.findUnique({
+      where: { id: session.patient_id },
+    });
+
+    return this.formatSessionState(session, patient);
   }
 
   public static async submitAnswer(
@@ -354,6 +393,9 @@ export class InterviewService {
       answeredVia: string;
       languageUsed?: string;
       isSkipped?: boolean;
+      isDeferredToDoctor?: boolean;
+      provenanceLabel?: string;
+      deferralReason?: string;
     }
   ) {
     const session = await InterviewRepository.findSessionByVisitId(visitId);
@@ -371,8 +413,45 @@ export class InterviewService {
       throw new ValidationError('Question does not belong to the active interview template.');
     }
 
-    // Server-side validation of answer against question type
-    this.validateAnswerValue(question, payload.answerValue, payload.isSkipped);
+    const privacyState = SpecialPopulationsService.getVisitState(visitId);
+
+    // Module 3B: Companion-Present / Defer to Doctor Check
+    const isDeferred =
+      payload.isDeferredToDoctor === true ||
+      (typeof payload.answerValue === 'object' &&
+        payload.answerValue !== null &&
+        payload.answerValue.status === AnswerStatus.DEFERRED_TO_DOCTOR);
+
+    if (isDeferred) {
+      SpecialPopulationsService.deferQuestionToDoctor(visitId, question.id);
+      payload.answerValue = {
+        status: AnswerStatus.DEFERRED_TO_DOCTOR,
+        deferralReason:
+          payload.deferralReason ||
+          'Patient opted to discuss privately with doctor during consultation',
+      };
+    } else {
+      // Server-side validation of answer against question type
+      this.validateAnswerValue(question, payload.answerValue, payload.isSkipped);
+    }
+
+    // Resolve effective answeredVia and provenance
+    let effectiveAnsweredVia = payload.answeredVia;
+    if (privacyState.guardianDetails && (effectiveAnsweredVia === AnsweredVia.TOUCH || effectiveAnsweredVia === 'touch')) {
+      effectiveAnsweredVia = AnsweredVia.GUARDIAN;
+    } else if (privacyState.surrogateDetails && (effectiveAnsweredVia === AnsweredVia.TOUCH || effectiveAnsweredVia === 'touch')) {
+      effectiveAnsweredVia = AnsweredVia.SURROGATE;
+    }
+
+    const provenance =
+      payload.provenanceLabel ||
+      SpecialPopulationsService.formatAnswerProvenance(
+        effectiveAnsweredVia,
+        privacyState.guardianDetails,
+        privacyState.surrogateDetails
+      );
+
+    const masking = SpecialPopulationsService.maskSensitiveReadBack(payload.answerValue, question as any);
 
     // Save/upsert raw answer record with provenance and critical metadata copied
     const answer = await InterviewRepository.upsertAnswer({
@@ -380,17 +459,22 @@ export class InterviewService {
       visitId,
       questionId: question.id,
       answerValue: payload.answerValue,
-      answeredVia: payload.answeredVia,
+      answeredVia: effectiveAnsweredVia,
       languageUsed: payload.languageUsed || 'en',
       isCritical: question.is_critical,
       isSkipped: payload.isSkipped ?? false,
     });
 
-    // Evaluate next question based on branching logic or sequential order
+    const patient = await prisma.patient.findUnique({
+      where: { id: session.patient_id },
+    });
+
+    // Evaluate next question based on branching logic or sequential order (gated non-inferentially)
     const nextQuestionId = this.determineNextQuestionId(
       session.template.questions,
       question,
-      payload.answerValue
+      payload.answerValue,
+      patient
     );
 
     // Update current question on session
@@ -401,7 +485,8 @@ export class InterviewService {
     logger.info('Interview answer recorded', {
       visitId,
       questionId: question.id,
-      answeredVia: payload.answeredVia,
+      answeredVia: effectiveAnsweredVia,
+      isDeferred,
       isFinished,
     });
 
@@ -413,12 +498,20 @@ export class InterviewService {
     const refreshedSession = await InterviewRepository.findSessionByVisitId(visitId);
 
     return {
-      recordedAnswer: answer,
+      recordedAnswer: {
+        ...answer,
+        provenance,
+        isDeferredToDoctor: isDeferred,
+        isMasked: masking.isMasked,
+        readBackDisplayText: masking.displayText,
+        readBackAudioConfirmation: masking.audioConfirmation,
+      },
       nextQuestionId,
       isFinished,
-      sessionState: refreshedSession ? this.formatSessionState(refreshedSession) : null,
+      sessionState: refreshedSession ? this.formatSessionState(refreshedSession, patient) : null,
     };
   }
+
 
   public static async completeInterview(visitId: string) {
     const session = await InterviewRepository.findSessionByVisitId(visitId);
@@ -431,6 +524,16 @@ export class InterviewService {
       InterviewSessionStatus.COMPLETED,
       new Date()
     );
+
+    // Advance doctor queue entry status to READY_FOR_REVIEW
+    DoctorReviewRepository.upsertQueueEntry({
+      visitId,
+      department: 'General Medicine',
+      queueStatus: QueueStatuses.READY_FOR_REVIEW,
+      readyAt: new Date(),
+    }).catch((err) => {
+      logger.warn('Failed to update queue entry on interview completion', { visitId, error: String(err) });
+    });
 
     // Final-pass Red-Flag Evaluation (Module 6 Non-blocking hook)
     RedFlagsService.evaluateVisit(visitId).catch((err) => {
@@ -457,23 +560,28 @@ export class InterviewService {
    * Module 4/5/6 Clean Interface:
    * Retrieves completed interview answers with clinical provenance metadata
    */
-  public static async getCompletedAnswers(visitId: string) {
+  public static async getCompletedAnswers(visitId: string, user?: { role?: string; id?: string }) {
     const session = await InterviewRepository.findSessionByVisitId(visitId);
     if (!session) {
       throw new NotFoundError(`No interview session found for visit: ${visitId}`);
     }
 
     const answers = await InterviewRepository.findAnswersByVisitId(visitId);
+    const privacyState = SpecialPopulationsService.getVisitState(visitId);
 
-    return {
-      visitId: session.visit_id,
-      patientId: session.patient_id,
-      templateId: session.template_id,
-      templateVersion: session.template_version,
-      status: session.status,
-      startedAt: session.started_at,
-      completedAt: session.completed_at,
-      answers: answers.map((a) => ({
+    let mappedAnswers = answers.map((a) => {
+      const isDeferred =
+        privacyState.deferredQuestionIds.has(a.question_id) ||
+        (typeof a.answer_value === 'object' &&
+          (a.answer_value as any)?.status === AnswerStatus.DEFERRED_TO_DOCTOR);
+      const masking = SpecialPopulationsService.maskSensitiveReadBack(a.answer_value, a.question as any);
+      const provenance = SpecialPopulationsService.formatAnswerProvenance(
+        a.answered_via,
+        privacyState.guardianDetails,
+        privacyState.surrogateDetails
+      );
+
+      return {
         id: a.id,
         questionId: a.question_id,
         section: a.question.section,
@@ -485,7 +593,39 @@ export class InterviewService {
         isCritical: a.is_critical,
         isSkipped: a.is_skipped,
         answeredAt: a.answered_at,
-      })),
+        // Module 3B metadata:
+        sensitivityLevel:
+          (a.question as any).sensitivity_level || (a.question as any).sensitivityLevel || SensitivityLevels.NORMAL,
+        visibilityScope:
+          (a.question as any).visibility_scope || (a.question as any).visibilityScope || VisibilityScopes.STAFF_VISIBLE,
+        isDeferredToDoctor: isDeferred,
+        provenance,
+        isMasked: masking.isMasked,
+        maskedDisplayText: masking.displayText,
+        aiSummarizationAllowed:
+          (a.question as any).ai_summarization_allowed ?? (a.question as any).aiSummarizationAllowed ?? true,
+      };
+    });
+
+    // Module 3B Section 9: If requesting user is staff (and NOT a doctor or super admin), scrub DOCTOR_ONLY and sensitive fields
+    if (user && user.role !== 'DOCTOR' && user.role !== 'SUPER_ADMIN') {
+      mappedAnswers = SpecialPopulationsService.scrubForStaffAttendants(mappedAnswers);
+    }
+
+    return {
+      visitId: session.visit_id,
+      patientId: session.patient_id,
+      templateId: session.template_id,
+      templateVersion: session.template_version,
+      status: session.status,
+      startedAt: session.started_at,
+      completedAt: session.completed_at,
+      answers: mappedAnswers,
+      guardianDetails: privacyState.guardianDetails ? {
+        ...privacyState.guardianDetails,
+        legalNotice: "Point to confirm with hospital legal advisers: Guardian consent must meet applicable data-protection law requirements for children's data under local jurisdiction. Wording and age thresholds are configurable hospital policies.",
+      } : null,
+      surrogateDetails: privacyState.surrogateDetails || null,
     };
   }
 
@@ -495,6 +635,10 @@ export class InterviewService {
     isSkipped?: boolean
   ) {
     if (isSkipped) return;
+
+    if (typeof value === 'object' && value !== null && value.status === AnswerStatus.DEFERRED_TO_DOCTOR) {
+      return; // Deferral to doctor is a valid clinical intake choice
+    }
 
     if (value === null || value === undefined || value === '') {
       if (question.is_required) {
@@ -527,13 +671,14 @@ export class InterviewService {
         break;
 
       case QuestionTypes.SINGLE_CHOICE:
+      case QuestionTypes.DURATION:
         if (Array.isArray(question.answer_options) && question.answer_options.length > 0) {
           const valStr = String(typeof value === 'object' ? value.value : value).trim();
-          const optionValues = question.answer_options.map((opt: any) =>
-            typeof opt === 'object' ? opt.value : String(opt)
+          const optionPermitted = question.answer_options.flatMap((opt: any) =>
+            typeof opt === 'object' ? [opt.value, opt.code, opt.label].filter(Boolean) : [String(opt)]
           );
-          if (!optionValues.includes(valStr)) {
-            throw new ValidationError(`Answer must be one of the permitted options: ${optionValues.join(', ')}`);
+          if (!optionPermitted.includes(valStr)) {
+            throw new ValidationError(`Answer must be one of the permitted options: ${optionPermitted.join(', ')}`);
           }
         }
         break;
@@ -550,13 +695,14 @@ export class InterviewService {
   public static determineNextQuestionId(
     questions: Array<{ id: string; order: number; branching_logic?: any }>,
     currentQuestion: { id: string; order: number; branching_logic?: any },
-    answerValue: any
+    answerValue: any,
+    patient?: any
   ): string | null {
     // 1. Check if branching logic triggers a specific next question
     if (currentQuestion.branching_logic && Array.isArray(currentQuestion.branching_logic)) {
       for (const rule of currentQuestion.branching_logic as unknown as BranchingRule[]) {
         const expected = rule.trigger_condition.answer;
-        const actual = typeof answerValue === 'object' ? answerValue.value : answerValue;
+        const actual = typeof answerValue === 'object' ? answerValue?.value : answerValue;
 
         if (expected !== undefined) {
           if (
@@ -569,17 +715,32 @@ export class InterviewService {
       }
     }
 
-    // 2. Default linear progression: find question with next highest order
-    const nextLinear = questions
-      .filter((q) => q.order > currentQuestion.order)
-      .sort((a, b) => a.order - b.order)[0];
+    // 2. Default linear progression: find question with next highest order (gated non-inferentially)
+    let candidateQuestions = questions.filter((q) => q.order > currentQuestion.order);
+    if (patient) {
+      candidateQuestions = candidateQuestions.filter(
+        (q) => SpecialPopulationsService.isQuestionApplicable(q as any, patient).applicable
+      );
+    }
+
+    const nextLinear = candidateQuestions.sort((a, b) => a.order - b.order)[0];
 
     return nextLinear ? nextLinear.id : null;
   }
 
-  public static formatSessionState(session: any) {
-    const questions = session.template?.questions || [];
+  public static formatSessionState(session: any, patient?: any) {
+    let questions = session.template?.questions || [];
     const answers = session.answers || [];
+
+    // Module 3B: Non-Inferential Question Gating on template questions
+    if (patient) {
+      questions = SpecialPopulationsService.filterApplicableQuestions(questions as any, {
+        age: patient.age,
+        gender: patient.gender,
+      });
+    }
+
+    const privacyState = SpecialPopulationsService.getVisitState(session.visit_id);
 
     const answeredQuestionIds = new Set(answers.map((a: any) => a.question_id));
     const totalQuestions = questions.length;
@@ -600,6 +761,22 @@ export class InterviewService {
       ? questions.findIndex((q: any) => q.id === currentQuestion.id) + 1
       : totalQuestions;
 
+    let audioPrivacy: {
+      audioPlaybackAllowed: boolean;
+      outputRoute: 'HEADSET' | 'LOUDSPEAKER' | 'MUTED';
+      privacyNotice?: string;
+    } = {
+      audioPlaybackAllowed: true,
+      outputRoute: (privacyState.headsetConnected ? 'HEADSET' : 'LOUDSPEAKER') as 'HEADSET' | 'LOUDSPEAKER' | 'MUTED',
+    };
+
+    if (currentQuestion) {
+      audioPrivacy = SpecialPopulationsService.resolveAudioPrivacy(
+        currentQuestion as any,
+        privacyState.headsetConnected
+      );
+    }
+
     return {
       session: {
         id: session.id,
@@ -611,6 +788,16 @@ export class InterviewService {
         startedAt: session.started_at,
         completedAt: session.completed_at,
       },
+      privacy: {
+        headsetConnected: privacyState.headsetConnected,
+        audioPlaybackAllowed: audioPrivacy.audioPlaybackAllowed,
+        outputRoute: audioPrivacy.outputRoute,
+        privacyNotice: audioPrivacy.privacyNotice,
+        isMinor: !!privacyState.guardianDetails,
+        guardianDetails: privacyState.guardianDetails || null,
+        surrogateDetails: privacyState.surrogateDetails || null,
+        mode: privacyState.guardianDetails ? 'GUARDIAN' : privacyState.surrogateDetails ? 'SURROGATE' : 'PATIENT',
+      },
       template: {
         id: session.template?.id,
         name: session.template?.name,
@@ -621,6 +808,7 @@ export class InterviewService {
       currentQuestion: currentQuestion
         ? {
             id: currentQuestion.id,
+            questionCode: currentQuestion.question_code,
             section: currentQuestion.section,
             promptText: currentQuestion.prompt_text,
             promptAudioHint: currentQuestion.prompt_audio_hint,
@@ -629,10 +817,18 @@ export class InterviewService {
             isCritical: currentQuestion.is_critical,
             isRequired: currentQuestion.is_required,
             order: currentQuestion.order,
+            sensitivityLevel: (currentQuestion as any).sensitivity_level || (currentQuestion as any).sensitivityLevel || SensitivityLevels.NORMAL,
+            visibilityScope: (currentQuestion as any).visibility_scope || (currentQuestion as any).visibilityScope || VisibilityScopes.STAFF_VISIBLE,
+            audioAllowedInPublic: (currentQuestion as any).audio_allowed_in_public ?? (currentQuestion as any).audioAllowedInPublic ?? true,
+            audioPlaybackAllowed: audioPrivacy.audioPlaybackAllowed,
+            outputRoute: audioPrivacy.outputRoute,
+            privacyNotice: audioPrivacy.privacyNotice,
+            aiSummarizationAllowed: (currentQuestion as any).ai_summarization_allowed ?? (currentQuestion as any).aiSummarizationAllowed ?? true,
           }
         : null,
       allQuestions: questions.map((q: any) => ({
         id: q.id,
+        questionCode: q.question_code,
         section: q.section,
         promptText: q.prompt_text,
         promptAudioHint: q.prompt_audio_hint,
@@ -665,4 +861,177 @@ export class InterviewService {
       },
     };
   }
+
+  // ============================================================================
+  // MODULE 3B: SPECIAL POPULATIONS, SURROGATE & PRIVACY CONFIGURATION
+  // ============================================================================
+
+  public static async configureGuardianMode(
+    visitId: string,
+    details: {
+      guardianName: string;
+      guardianRelationship: string;
+      guardianPhone?: string;
+      guardianConsentVerified: boolean;
+      minorAssentObtained?: boolean;
+    }
+  ) {
+    return SpecialPopulationsService.recordGuardianDetails(visitId, details);
+  }
+
+  public static async configureSurrogateMode(
+    visitId: string,
+    details: {
+      surrogateName: string;
+      surrogateRelationship: string;
+      surrogatePhone?: string;
+      reason: any;
+      acuteDistressNoted?: boolean;
+    },
+    kioskLocation?: string
+  ) {
+    return SpecialPopulationsService.recordSurrogateDetails(visitId, details, kioskLocation);
+  }
+
+  public static async updateHeadsetStatus(visitId: string, connected: boolean) {
+    return SpecialPopulationsService.setHeadsetStatus(visitId, connected);
+  }
+
+  public static async deferQuestionToDoctor(
+    visitId: string,
+    questionId: string,
+    _reason?: string
+  ) {
+    SpecialPopulationsService.deferQuestionToDoctor(visitId, questionId);
+    return {
+      success: true,
+      questionId,
+      status: AnswerStatus.DEFERRED_TO_DOCTOR,
+      message: 'Question deferred for private discussion with doctor during consultation',
+    };
+  }
+
+  /**
+   * MODULE 3B Section 5: Staff flags "patient unwell or unable"
+   * Halts the interview intake immediately and triggers Module 6 manual-alert path.
+   */
+  public static async flagPatientUnwell(
+    visitId: string,
+    kioskDeviceId?: string | null,
+    reason?: string
+  ) {
+    const session = await InterviewRepository.findSessionByVisitId(visitId);
+    if (session) {
+      await InterviewRepository.updateSessionStatus(session.id, InterviewSessionStatus.ABANDONED);
+    }
+
+    const alert = await RedFlagsService.flagPatientUnwellOrUnable(visitId, kioskDeviceId, reason);
+    return {
+      success: true,
+      status: 'HALTED_FOR_STAFF',
+      alertId: alert.id,
+      message: 'Intake halted. Staff dispatched to assist patient directly.',
+    };
+  }
+
+  /**
+   * MODULE 3B Section 10: Separate consent for sensitive sections
+   * Offers: CONTINUE, SKIP_SECTION, DEFER_ALL_TO_DOCTOR
+   * Supports companion-present "answer privately" path
+   */
+  public static async processSensitiveSectionConsent(
+    visitId: string,
+    payload: {
+      section: string;
+      action: 'CONSENT_GIVEN' | 'SKIP_SECTION' | 'DEFER_ALL_TO_DOCTOR';
+      companionPresent?: boolean;
+      requestedPrivateMode?: boolean;
+    }
+  ) {
+    const session = await InterviewRepository.findSessionByVisitId(visitId);
+    if (!session) {
+      throw new NotFoundError(`No interview session found for visit: ${visitId}`);
+    }
+
+    const questionsInSection = session.template.questions.filter((q) => q.section === payload.section);
+    let nextQuestionId: string | null = null;
+
+    if (payload.action === 'SKIP_SECTION') {
+      // Mark all questions in this section as skipped
+      for (const q of questionsInSection) {
+        await InterviewRepository.upsertAnswer({
+          sessionId: session.id,
+          visitId,
+          questionId: q.id,
+          answerValue: 'SKIPPED_SECTION_BY_PATIENT',
+          answeredVia: 'touch',
+          languageUsed: 'en',
+          isCritical: q.is_critical,
+          isSkipped: true,
+        });
+      }
+
+      // Find the first question belonging to the NEXT section
+      const remainingQuestions = session.template.questions.filter(
+        (q) => q.section !== payload.section && q.order > (questionsInSection[questionsInSection.length - 1]?.order || 0)
+      );
+      nextQuestionId = remainingQuestions[0]?.id || null;
+      await InterviewRepository.updateSessionCurrentQuestion(session.id, nextQuestionId);
+    } else if (payload.action === 'DEFER_ALL_TO_DOCTOR') {
+      // Mark all questions in this section as DEFERRED_TO_DOCTOR
+      for (const q of questionsInSection) {
+        SpecialPopulationsService.deferQuestionToDoctor(visitId, q.id);
+        await InterviewRepository.upsertAnswer({
+          sessionId: session.id,
+          visitId,
+          questionId: q.id,
+          answerValue: {
+            status: AnswerStatus.DEFERRED_TO_DOCTOR,
+            deferralReason: 'Patient opted to discuss sensitive section privately with doctor',
+          },
+          answeredVia: 'touch',
+          languageUsed: 'en',
+          isCritical: q.is_critical,
+          isSkipped: false,
+        });
+      }
+
+      const remainingQuestions = session.template.questions.filter(
+        (q) => q.section !== payload.section && q.order > (questionsInSection[questionsInSection.length - 1]?.order || 0)
+      );
+      nextQuestionId = remainingQuestions[0]?.id || null;
+      await InterviewRepository.updateSessionCurrentQuestion(session.id, nextQuestionId);
+    } else {
+      // CONSENT_GIVEN: Next question is the first question of this section
+      nextQuestionId = questionsInSection[0]?.id || null;
+      await InterviewRepository.updateSessionCurrentQuestion(session.id, nextQuestionId);
+    }
+
+    return {
+      success: true,
+      section: payload.section,
+      action: payload.action,
+      nextQuestionId,
+      companionPrivateModeOffered: payload.companionPresent ?? false,
+      message:
+        payload.action === 'SKIP_SECTION'
+          ? `Section ${payload.section} skipped by patient.`
+          : payload.action === 'DEFER_ALL_TO_DOCTOR'
+          ? `Section ${payload.section} deferred to doctor consultation.`
+          : `Consent recorded for section ${payload.section}.`,
+    };
+  }
+
+  /**
+   * MODULE 3B Section 8: Sensitive Disclosure Trigger
+   * When designated sensitive indicator is answered, raises neutral floor alert
+   */
+  public static async triggerSensitiveDisclosure(
+    visitId: string,
+    kioskDeviceId?: string | null,
+    kioskLocation?: string
+  ) {
+    return RedFlagsService.raiseSensitiveDisclosureAlert(visitId, kioskDeviceId, kioskLocation);
+  }
 }
+

@@ -270,7 +270,56 @@ Module 6 implements an explainable, deterministic red-flag screening engine. It 
 
 ---
 
-## 9. Regulatory & Clinical Safety Notice
-> **Notice**: MediKiosk is a clinical decision-support tool. Emergency red-flag screening falls under Software as a Medical Device (SaMD) principles under CDSCO guidance. The platform assists physician workflow and never acts as an autonomous diagnostic authority. The red-flag rule set, sensitivity bias thresholds, escalation timings, and evaluation results must be reviewed by clinicians and hospital data governance authorities before real-world pilot deployment.
+## 9. Modules 7–10 Implementation Overview
+
+### Module 7: Doctor Review Workspace & Confirmed Records
+- **Must-Resolve Clinical Gates**: Hard barrier preventing physician confirmation until unreadable prescription fields, allergy ambiguities, and triggered red flags are explicitly reviewed.
+- **Explainability & Provenance**: Sentence-level grounding tags linking each clinical statement back to interview answer IDs or document OCR bounding boxes.
+- **Versioned Confirmed Records**: Immutable physician-signed medical records with attestation tracking and auditable amendment trails.
+
+### Module 8: Multilingual Layer, Accessibility & Offline Sync
+- **Language Independence**: Seamless voice- and touch-guided interviews across English, Hindi, Tamil, and Bengali.
+- **Offline Resilience**: Encrypted client-side IndexedDB caching allowing uninterrupted kiosk interviews during hospital Wi-Fi drops with automatic idempotent synchronization.
+
+### Module 9: Administration Console, Analytics & Tamper-Evident Audit
+- **Aggregated Operational Telemetry**: Real-time intake metrics, language distribution, OCR accuracy, and alert latency tracking without individual patient data exposure.
+- **Cryptographic Audit Hash Chain**: Merkle-style SHA-256 chained audit logs ensuring forensic, tamper-evident recording of every clinical record interaction.
+- **Pilot Evaluation Baselines**: Mandatory pre-intervention time-study baselines required before any "time-saved" efficiency claims can be published.
+
+### Module 10: Production Deployment, Security, Clinical Safety Release & Pilot Readiness
+- **Production Hardening**: Non-root minimal alpine containers, Content Security Policy, dual-origin CORS, HSTS, and rate-limiting with Emergency Help Request exemptions.
+- **Automated Release Gates**: 10 automated clinical safety criteria evaluated before code release or kiosk activation, with an audited Emergency Override mechanism for the Chief Medical Officer.
+- **Server-Controlled Kill Switches**: 8 independent flags (`AI_SUMMARIZATION_ENABLED`, `VOICE_ENABLED`, `ASSISTANT_ENABLED`, `OCR_ENABLED`, `MACHINE_TRANSLATION_ENABLED`, `SMS_ENABLED`, `SYNTHETIC_ALERT_CHECK_ENABLED`, `KIOSK_INTAKE_ENABLED`) enabling instant degradation without code deploys.
+- **Global Intake Pause**: One-click administrative pause halting new patient intake across the kiosk fleet in $<10$ seconds while leaving doctor review workspaces fully operational.
+- **Kiosk Fleet Hardening & Session Wipe**: Unique per-hardware enrollment, single-app locked appliance configuration, and cryptographically verified consecutive session data wipe.
+- **Alert Reliability Canary & Downtime Status Board**: Continuous sub-second alert delivery monitoring and a public unauthenticated `/status` page with plain-language patient and staff guidance.
+- **Disaster Recovery**: Tested isolated database restore drills verifying PITR currency, SHA-256 archive hashes, and cryptographic audit chain validity.
+
+---
+
+## 10. Clinical Safety & Governance Documentation Index
+
+The following production documentation files describe the real implementation and provide sign-off templates for hospital leadership:
+
+1. [OPEN_DECISIONS.md](file:///c:/Users/ELCOT/Desktop/ee%20project/OPEN_DECISIONS.md) — 11 explicit human decisions (hosting, data residency, retention, languages, rules, downtime, pilot scope, regulatory pathway).
+2. [CLINICAL_SAFETY.md](file:///c:/Users/ELCOT/Desktop/ee%20project/CLINICAL_SAFETY.md) — Clinical safety case, hazard log (10 hazards mapped to tests), intended use statement, and training plans.
+3. [PILOT_PLAN.md](file:///c:/Users/ELCOT/Desktop/ee%20project/PILOT_PLAN.md) — 5-stage pilot rollout plan, quantitative go/no-go gates, and stop authority protocols.
+4. [DOWNTIME_PROCEDURE.md](file:///c:/Users/ELCOT/Desktop/ee%20project/DOWNTIME_PROCEDURE.md) — Downtime procedures, degradation matrix, and post-incident reconciliation checklist.
+5. [DISASTER_RECOVERY.md](file:///c:/Users/ELCOT/Desktop/ee%20project/DISASTER_RECOVERY.md) — RPO/RTO objectives, PITR continuous archiving, and isolated restore drill runbooks.
+6. [OPERATIONS.md](file:///c:/Users/ELCOT/Desktop/ee%20project/OPERATIONS.md) — Operations runbooks (kill switches, service restarts, secret rotation, kiosk tampering).
+7. [KIOSK_DEPLOYMENT.md](file:///c:/Users/ELCOT/Desktop/ee%20project/KIOSK_DEPLOYMENT.md) — Kiosk hardware specifications, single-app OS lockdown, and session wipe verification.
+8. [SECURITY.md](file:///c:/Users/ELCOT/Desktop/ee%20project/SECURITY.md) — Defense-in-depth security architecture, STRIDE threat model (11 vectors), and pentest criteria.
+9. [ENVIRONMENT.md](file:///c:/Users/ELCOT/Desktop/ee%20project/ENVIRONMENT.md) — Catalog of environment variables, rotation schedules, and production secret validators.
+10. [PRIVACY.md](file:///c:/Users/ELCOT/Desktop/ee%20project/PRIVACY.md) — Data classification matrix, DPDP Act 2023 compliance, and data subject rights procedures.
+11. [RELEASE_PROCESS.md](file:///c:/Users/ELCOT/Desktop/ee%20project/RELEASE_PROCESS.md) — Separation of code releases from clinical content governance and release gates.
+12. [ARCHITECTURE.md](file:///c:/Users/ELCOT/Desktop/ee%20project/ARCHITECTURE.md) — Complete target deployment architecture diagram and network segmentation.
+13. [DATABASE.md](file:///c:/Users/ELCOT/Desktop/ee%20project/DATABASE.md) — PostgreSQL 16 database design, indexes, and zero-downtime migration standards.
+14. [API.md](file:///c:/Users/ELCOT/Desktop/ee%20project/API.md) — Comprehensive API endpoint reference across Modules 1–10.
+15. [DEPLOYMENT.md](file:///c:/Users/ELCOT/Desktop/ee%20project/DEPLOYMENT.md) — Step-by-step production deployment guide with Docker Compose.
+
+---
+
+## 11. Mandatory Regulatory Notice
+> **Notice**: MediKiosk is an assistive clinical case-taking tool. It is **NOT CLEARED FOR UNSUPERVISED CLINICAL USE** and **DOES NOT MAKE DIAGNOSTIC OR THERAPEUTIC DECISIONS**. The platform is not ready for a real hospital until clinicians, privacy and legal advisers, hospital IT, and hospital leadership have completed and signed the open decisions and governance artifacts described above.
 
 

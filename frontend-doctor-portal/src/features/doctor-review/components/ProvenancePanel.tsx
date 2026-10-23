@@ -11,7 +11,9 @@ import {
   HelpCircle,
   RefreshCw,
   Sparkles,
+  Languages,
 } from 'lucide-react';
+import { translationsApi } from '../../translation-admin/translations.api';
 
 interface ProvenancePanelProps {
   selectedStatement: WorkspaceStatementItem | null;
@@ -34,6 +36,39 @@ export const ProvenancePanel: React.FC<ProvenancePanelProps> = ({
     ocrConfidence?: number | null;
     verificationState?: string | null;
   } | null>(null);
+
+  const [answerTranslations, setAnswerTranslations] = useState<
+    Record<string, { translatedText: string; disclaimer: string; loading?: boolean }>
+  >({});
+
+  const handleTranslateAnswer = async (sourceRef: string, text: string, lang: string) => {
+    setAnswerTranslations((prev) => ({
+      ...prev,
+      [sourceRef]: { translatedText: '', disclaimer: '', loading: true },
+    }));
+    try {
+      const res = await translationsApi.translateTextForDoctor(text, lang, 'en');
+      if (res) {
+        setAnswerTranslations((prev) => ({
+          ...prev,
+          [sourceRef]: {
+            translatedText: res.translatedText,
+            disclaimer: res.disclaimer,
+            loading: false,
+          },
+        }));
+      }
+    } catch (err: any) {
+      setAnswerTranslations((prev) => ({
+        ...prev,
+        [sourceRef]: {
+          translatedText: 'Translation service unavailable',
+          disclaimer: 'Machine translation error',
+          loading: false,
+        },
+      }));
+    }
+  };
 
   useEffect(() => {
     if (!selectedStatement) {
@@ -231,13 +266,60 @@ export const ProvenancePanel: React.FC<ProvenancePanelProps> = ({
                       <p className="font-medium text-slate-800">{src.interviewDetails.questionPrompt}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Patient Answer</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">
+                        Patient Answer (Verbatim)
+                      </span>
                       <p className="font-bold text-teal-900 font-mono">
                         {typeof src.interviewDetails.answerValue === 'object'
                           ? JSON.stringify(src.interviewDetails.answerValue)
                           : String(src.interviewDetails.answerValue)}
                       </p>
                     </div>
+
+                    {/* Module 8: Doctor Translation Aid for non-English responses */}
+                    {src.interviewDetails.languageUsed &&
+                      src.interviewDetails.languageUsed !== 'en' &&
+                      typeof src.interviewDetails.answerValue === 'string' && (
+                        <div className="mt-2 pt-2 border-t border-slate-200">
+                          {answerTranslations[src.sourceRef]?.translatedText ? (
+                            <div className="p-2.5 bg-blue-50/70 rounded-lg border border-blue-200 text-xs">
+                              <div className="flex items-center gap-1.5 font-bold text-blue-900 mb-1">
+                                <Languages className="w-3.5 h-3.5 text-blue-600" />
+                                <span className="px-1.5 py-0.2 rounded bg-blue-100 text-[10px] text-blue-800 font-semibold">
+                                  {answerTranslations[src.sourceRef].disclaimer ||
+                                    'Machine translation — verify with patient'}
+                                </span>
+                              </div>
+                              <p className="text-slate-800 font-medium">
+                                {answerTranslations[src.sourceRef].translatedText}
+                              </p>
+                              <span className="text-[10px] text-slate-500 italic block mt-1">
+                                Original {src.interviewDetails.languageUsed.toUpperCase()} text preserved above.
+                                Secondary reference only.
+                              </span>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={answerTranslations[src.sourceRef]?.loading}
+                              onClick={() =>
+                                handleTranslateAnswer(
+                                  src.sourceRef,
+                                  String(src.interviewDetails!.answerValue),
+                                  src.interviewDetails!.languageUsed!
+                                )
+                              }
+                              className="text-[11px] font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors cursor-pointer"
+                            >
+                              <Languages className="w-3 h-3" />
+                              {answerTranslations[src.sourceRef]?.loading
+                                ? 'Translating...'
+                                : 'Translate to English (Verification Aid)'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
                     <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] text-slate-500">
                       <span>Via: <strong className="text-slate-700">{src.interviewDetails.answeredVia}</strong></span>
                       {src.interviewDetails.languageUsed && (

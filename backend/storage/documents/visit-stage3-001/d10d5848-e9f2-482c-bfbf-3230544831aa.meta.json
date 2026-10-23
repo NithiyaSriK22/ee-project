@@ -1,0 +1,19 @@
+{
+  "id": "d10d5848-e9f2-482c-bfbf-3230544831aa",
+  "visit_id": "visit-stage3-001",
+  "patient_id": "d40f3c73-c6ce-47db-ac1f-e17f035a58f6",
+  "document_type": "PRESCRIPTION",
+  "file_name": "presc_stage3.pdf",
+  "mime_type": "application/pdf",
+  "file_size_bytes": 99,
+  "storage_reference": "storage/documents/visit-stage3-001/e8257e00-5de8-4976-b383-e241ce99a407_1792783001766_presc_stage3.pdf",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document image appears blank or unreadable (file size below threshold).",
+  "uploaded_at": "2026-10-23T19:16:41.773Z",
+  "created_at": "2026-10-23T19:16:41.773Z",
+  "updated_at": "2026-10-23T19:16:41.794Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

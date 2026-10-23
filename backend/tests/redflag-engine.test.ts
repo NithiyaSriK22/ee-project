@@ -26,10 +26,30 @@ import {
   RuleStatuses,
   FactStates,
 } from '../src/modules/redflags/redflags.types.js';
+import { prisma } from '../src/database/prisma.js';
 
 describe('MODULE 6 — Red-Flag Detection & Emergency Triage Alerts', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     devFallbackRedflagsStore.clearAll();
+    try {
+      await prisma.redFlagAlertEvent.deleteMany({});
+      await prisma.redFlagAlertEvidence.deleteMany({});
+      await prisma.redFlagAlert.deleteMany({});
+      await prisma.redFlagRule.deleteMany({
+        where: {
+          rule_code: {
+            in: [
+              'RF-DEDUP',
+              'RF-TEST-FAIL',
+              'RF-SEP-DUTIES',
+              'RF-ROLE-CHECK',
+              'RF-JOURNEY-001',
+              'RF-TEST-CASE',
+            ],
+          },
+        },
+      });
+    } catch {}
   });
 
   // ============================================================================

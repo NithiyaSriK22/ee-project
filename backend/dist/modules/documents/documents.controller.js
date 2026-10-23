@@ -1,6 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentsController = void 0;
+const node_path_1 = __importDefault(require("node:path"));
 const documents_service_js_1 = require("./documents.service.js");
 const response_util_js_1 = require("../../utils/response.util.js");
 const app_error_js_1 = require("../../errors/app-error.js");
@@ -15,15 +19,33 @@ class DocumentsController {
             // Handle Multer upload or JSON base64 upload
             if (req.file) {
                 const f = req.file;
+                if (!f.buffer || f.size === 0) {
+                    throw new app_error_js_1.ValidationError('Uploaded file is empty (0 bytes). Please upload a valid document.');
+                }
                 fileData = {
                     buffer: f.buffer,
-                    originalname: f.originalname,
+                    originalname: f.originalname || 'uploaded_document.bin',
                     mimetype: f.mimetype,
                     size: f.size,
                 };
             }
-            else if (req.body?.fileBase64) {
-                const buffer = Buffer.from(req.body.fileBase64, 'base64');
+            else if (req.body?.fileBase64 !== undefined) {
+                if (typeof req.body.fileBase64 !== 'string' || req.body.fileBase64.trim() === '') {
+                    throw new app_error_js_1.ValidationError('Uploaded file is empty (0 bytes). Please upload a valid document.');
+                }
+                let buffer;
+                try {
+                    buffer = Buffer.from(req.body.fileBase64, 'base64');
+                }
+                catch {
+                    throw new app_error_js_1.ValidationError('Malformed base64 file data provided.');
+                }
+                if (buffer.length === 0) {
+                    throw new app_error_js_1.ValidationError('Uploaded file is empty (0 bytes). Please upload a valid document.');
+                }
+                if (buffer.length > 15 * 1024 * 1024) {
+                    throw new app_error_js_1.ValidationError('File size exceeds maximum permitted limit of 15MB.');
+                }
                 fileData = {
                     buffer,
                     originalname: req.body.fileName || 'scanned_prescription.jpg',
@@ -94,6 +116,26 @@ class DocumentsController {
             }
             const docs = await documents_service_js_1.DocumentsService.listVisitDocuments(req.kioskSession.visitId);
             response_util_js_1.ResponseUtil.success(res, docs, 'Visit documents retrieved successfully');
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    static async streamDocumentFile(req, res, next) {
+        try {
+            if (!req.kioskSession) {
+                throw new app_error_js_1.AuthenticationError('Active kiosk session required');
+            }
+            const { id } = req.params;
+            if (!id)
+                throw new app_error_js_1.ValidationError('Document ID is required');
+            const fileInfo = await documents_service_js_1.DocumentsService.getDocumentFile(id, req.kioskSession.visitId);
+            const safeFileName = node_path_1.default.basename(fileInfo.fileName).replace(/["\r\n]/g, '_');
+            res.setHeader('Content-Type', fileInfo.mimeType);
+            res.setHeader('Content-Disposition', `inline; filename="${safeFileName}"`);
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('Cache-Control', 'private, max-age=300');
+            res.sendFile(fileInfo.filePath);
         }
         catch (error) {
             next(error);

@@ -5,9 +5,11 @@ export const UserRoles = {
   DOCTOR: 'DOCTOR',
   ADMIN: 'ADMIN',
   SUPER_ADMIN: 'SUPER_ADMIN',
+  ANALYST: 'ANALYST',
+  AUDITOR: 'AUDITOR',
 } as const;
 
-export type StaffRole = 'STAFF_ATTENDANT' | 'DOCTOR' | 'ADMIN' | 'SUPER_ADMIN';
+export type StaffRole = 'STAFF_ATTENDANT' | 'DOCTOR' | 'ADMIN' | 'SUPER_ADMIN' | 'ANALYST' | 'AUDITOR';
 
 export const StaffUserStatus = {
   ACTIVE: 'ACTIVE',

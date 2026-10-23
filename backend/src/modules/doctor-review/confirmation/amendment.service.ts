@@ -9,6 +9,7 @@ import {
 } from '../doctor-review.types.js';
 import { AppError, NotFoundError, ForbiddenError } from '../../../errors/app-error.js';
 import { ErrorCode } from '../../../errors/error-codes.js';
+import { HospitalSystemPushService } from '../../record-output/index.js';
 
 export class AmendmentService {
   /**
@@ -92,6 +93,18 @@ export class AmendmentService {
         amendmentReason,
       },
     });
+
+    // Re-push amended version to hospital system (Section 4: Amendments re-push with the version)
+    try {
+      await HospitalSystemPushService.pushConfirmedRecord(newRecord, {
+        visitId: previousRecord.visitId,
+        patientId: previousRecord.visitId,
+        actorId: doctor.id,
+        actorRole: doctor.role,
+      });
+    } catch {
+      // Non-blocking: hospital push failure never blocks amendment!
+    }
 
     return newRecord;
   }

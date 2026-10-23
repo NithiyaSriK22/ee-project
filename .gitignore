@@ -41,3 +41,6 @@ pnpm-debug.log*
 # Prisma
 /backend/prisma/migrations/dev.db
 /backend/prisma/migrations/dev.db-journal
+
+# Local PostgreSQL Data
+/backend/data/postgres/

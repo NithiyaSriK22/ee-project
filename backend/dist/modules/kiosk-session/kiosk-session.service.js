@@ -6,8 +6,21 @@ const token_util_js_1 = require("../../utils/token.util.js");
 const app_error_js_1 = require("../../errors/app-error.js");
 const logger_js_1 = require("../../config/logger.js");
 const auth_types_js_1 = require("../../types/auth.types.js");
+const index_js_1 = require("../deployment/index.js");
+const doctor_review_repository_js_1 = require("../doctor-review/doctor-review.repository.js");
+const doctor_review_types_js_1 = require("../doctor-review/doctor-review.types.js");
 class KioskSessionService {
     static async startSession(data) {
+        // Module 10: Global Intake Pause & Kiosk Intake Kill Switch enforcement
+        const pauseState = index_js_1.FeatureFlagsService.getGlobalIntakePauseState();
+        const kioskIntakeEnabled = index_js_1.FeatureFlagsService.isFlagEnabled('KIOSK_INTAKE_ENABLED');
+        if (pauseState.isPaused || !kioskIntakeEnabled) {
+            const guidance = 'Please proceed to the outpatient reception counter for paper-assisted registration.';
+            const msg = pauseState.reason
+                ? `${pauseState.reason}. ${guidance}`
+                : `Kiosk patient intake is temporarily paused by hospital administration. ${guidance}`;
+            throw new app_error_js_1.ServiceUnavailableError(msg);
+        }
         const visitId = `vis_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
         const preferredLang = data.preferredLanguage || 'en';
         const grantedVia = data.consentGrantedVia || (data.isCompanionAssisted ? 'companion' : 'patient');
@@ -85,6 +98,19 @@ class KioskSessionService {
             expiresAt: sessionTokenResult.expiresAt,
         });
         const activeConsents = await kiosk_session_repository_js_1.KioskSessionRepository.getConsentsForVisit(patientRecord.id, visitId);
+        // Register initial entry into the Doctor Review Queue
+        try {
+            await doctor_review_repository_js_1.DoctorReviewRepository.upsertQueueEntry({
+                visitId,
+                department: 'General Medicine',
+                queueStatus: doctor_review_types_js_1.QueueStatuses.WAITING,
+                patientTokenOrName: `${patientRecord.full_name} (${patientRecord.hospital_registration_number})`,
+                readyAt: new Date(),
+            });
+        }
+        catch (queueErr) {
+            logger_js_1.logger.warn('Failed to insert initial queue entry for visit', { visitId, error: queueErr?.message });
+        }
         logger_js_1.logger.info('Kiosk session started', {
             visitId,
             isCompanionAssisted: visitProfile.is_companion_assisted,
@@ -141,16 +167,27 @@ class KioskSessionService {
                 expiresAt: session.expires_at,
                 lastAccessedAt: session.last_accessed_at,
             },
-            patient: {
-                id: session.patient.id,
-                hospitalRegistrationNumber: session.patient.hospital_registration_number,
-                fullName: session.patient.full_name,
-                age: session.patient.age,
-                dateOfBirth: session.patient.date_of_birth,
-                gender: session.patient.gender,
-                contactNumber: session.patient.contact_number,
-                preferredLanguage: session.patient.preferred_language,
-            },
+            patient: session.patient
+                ? {
+                    id: session.patient.id,
+                    hospitalRegistrationNumber: session.patient.hospital_registration_number,
+                    fullName: session.patient.full_name,
+                    age: session.patient.age,
+                    dateOfBirth: session.patient.date_of_birth,
+                    gender: session.patient.gender,
+                    contactNumber: session.patient.contact_number,
+                    preferredLanguage: session.patient.preferred_language,
+                }
+                : {
+                    id: session.patient_id,
+                    hospitalRegistrationNumber: 'MK-2026-DEFAULT',
+                    fullName: 'Patient',
+                    age: null,
+                    dateOfBirth: null,
+                    gender: 'OTHER',
+                    contactNumber: '',
+                    preferredLanguage: 'en',
+                },
             visitProfile: session.visit_profile
                 ? {
                     id: session.visit_profile.id,
@@ -174,7 +211,8 @@ class KioskSessionService {
     }
     static async endSession(visitId) {
         await kiosk_session_repository_js_1.KioskSessionRepository.endSession(visitId);
-        logger_js_1.logger.info('Kiosk session ended', { visitId });
+        index_js_1.KioskHardeningService.wipeSession({ visitId, wipeTrigger: 'COMPLETED' });
+        logger_js_1.logger.info('Kiosk session ended and local session context wiped', { visitId });
         return {
             success: true,
             message: 'Kiosk session ended successfully. Session data finalized for this visit.',

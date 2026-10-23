@@ -6,7 +6,7 @@ import { logger } from '../../config/logger.js';
 let isDbReachable: boolean | null = null;
 let lastDbCheck = 0;
 
-async function checkDatabaseAvailability(): Promise<boolean> {
+export async function checkDatabaseAvailability(): Promise<boolean> {
   const now = Date.now();
   if (isDbReachable !== null && now - lastDbCheck < 15000) {
     return isDbReachable;
@@ -31,9 +31,10 @@ export class AuthRepository {
     const available = await checkDatabaseAvailability();
     if (available) {
       try {
-        return await prisma.staffUser.findUnique({
+        const user = await prisma.staffUser.findUnique({
           where: { email: email.toLowerCase() },
         });
+        if (user) return user;
       } catch (error) {
         logger.warn('Database error in findUserByEmail', { email });
       }
@@ -45,9 +46,10 @@ export class AuthRepository {
     const available = await checkDatabaseAvailability();
     if (available) {
       try {
-        return await prisma.staffUser.findUnique({
+        const user = await prisma.staffUser.findUnique({
           where: { id },
         });
+        if (user) return user;
       } catch (error) {
         logger.warn('Database error in findUserById', { id });
       }

@@ -1,0 +1,19 @@
+{
+  "id": "97095707-3827-4e7d-8a4d-9d391f5e284d",
+  "visit_id": "visit-stage3-001",
+  "patient_id": "d40f3c73-c6ce-47db-ac1f-e17f035a58f6",
+  "document_type": "PRESCRIPTION",
+  "file_name": "tamper_sig.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 89,
+  "storage_reference": "storage/documents/visit-stage3-001/465c048e-ee79-4dc9-af93-4b93f7a905fd_1792786041881_tamper_sig.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document image appears blank or unreadable (file size below threshold).",
+  "uploaded_at": "2026-10-23T20:07:21.885Z",
+  "created_at": "2026-10-23T20:07:21.885Z",
+  "updated_at": "2026-10-23T20:07:21.894Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

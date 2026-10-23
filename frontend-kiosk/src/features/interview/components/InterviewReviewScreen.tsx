@@ -39,7 +39,7 @@ export const InterviewReviewScreen: React.FC<InterviewReviewScreenProps> = ({
   // Helper to format answer into friendly plain language
   const formatAnswerText = (answer: InterviewAnswerItem) => {
     if (answer.isSkipped) {
-      return <span className="text-slate-500 italic">Skipped / Not answered</span>;
+      return <span className="text-slate-500 italic">Not answered</span>;
     }
 
     const val = answer.answerValue;

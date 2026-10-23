@@ -21,6 +21,19 @@ _next) => {
         response_util_js_1.ResponseUtil.error(res, err.statusCode, err.code, err.message, err.details);
         return;
     }
+    // Handle express body-parser entity too large error
+    if (err.type === 'entity.too.large') {
+        logger_js_1.logger.warn(`Payload too large: ${err.message}`, { requestId, path: req.originalUrl });
+        response_util_js_1.ResponseUtil.error(res, 413, error_codes_js_1.ErrorCode.VALIDATION_ERROR, 'File size exceeds maximum permitted limit of 15MB.');
+        return;
+    }
+    // Handle Multer upload errors
+    if (err.name === 'MulterError') {
+        logger_js_1.logger.warn(`Multer upload error: ${err.message}`, { requestId, path: req.originalUrl });
+        const isSize = err.code === 'LIMIT_FILE_SIZE';
+        response_util_js_1.ResponseUtil.error(res, 400, error_codes_js_1.ErrorCode.VALIDATION_ERROR, isSize ? 'File size exceeds maximum permitted limit of 15MB.' : `File upload error: ${err.message}`);
+        return;
+    }
     // Unhandled / unexpected internal error
     logger_js_1.logger.error(`Unhandled system error: ${err.message}`, {
         requestId,

@@ -26,20 +26,32 @@ model SystemConfig {
 }
 
 model AuditLog {
-  id            String   @id @default(uuid()) @db.Uuid
-  action        String   @db.VarChar(100)
-  entity_type   String   @db.VarChar(100)
-  entity_id     String?  @db.VarChar(100)
-  actor_id      String?  @db.VarChar(100)
-  actor_role    String?  @db.VarChar(50)
-  request_id    String?  @db.VarChar(100)
-  ip_address    String?  @db.VarChar(50)
-  metadata      Json?
-  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  id              String    @id @default(uuid()) @db.Uuid
+  sequence_number BigInt    @default(autoincrement()) @unique
+  occurred_at     DateTime  @default(now()) @db.Timestamptz(6)
+  actor_type      String    @default("STAFF") @db.VarChar(50) // STAFF, KIOSK_DEVICE, SYSTEM
+  actor_id        String?   @db.VarChar(100)
+  actor_role      String?   @db.VarChar(50)
+  action          String    @db.VarChar(100)
+  entity_type     String    @db.VarChar(100)
+  entity_id       String?   @db.VarChar(100)
+  visit_ref       String?   @db.VarChar(100)
+  result          String    @default("SUCCESS") @db.VarChar(50) // SUCCESS, DENIED, FAILED
+  reason_code     String?   @db.VarChar(100)
+  reason_text     String?   @db.Text
+  request_id      String?   @db.VarChar(100)
+  ip_address      String?   @db.VarChar(100)
+  user_agent      String?   @db.VarChar(255)
+  metadata        Json?
+  prev_hash       String    @default("0000000000000000000000000000000000000000000000000000000000000000") @db.VarChar(64)
+  record_hash     String    @default("0000000000000000000000000000000000000000000000000000000000000000") @db.VarChar(64)
 
+  @@index([occurred_at])
+  @@index([actor_id, occurred_at])
+  @@index([entity_type, entity_id, occurred_at])
   @@index([action])
-  @@index([entity_type, entity_id])
-  @@index([created_at])
+  @@index([request_id])
+  @@index([visit_ref])
   @@map("audit_logs")
 }
 
@@ -919,4 +931,453 @@ model ReviewPolicy {
   @@index([is_active])
   @@map("review_policies")
 }
+
+// ==============================================================================
+// MODULE 8: MULTILINGUAL, ACCESSIBILITY, KIOSK HELP & OPERATIONAL NOTIFICATIONS
+// ==============================================================================
+
+model SupportedLanguage {
+  id                  String   @id @default(uuid()) @db.Uuid
+  code                String   @unique @db.VarChar(10) // e.g. en, ta, hi
+  display_name        String   @db.VarChar(100) // Native script: English, தமிழ், हिन्दी
+  text_direction      String   @default("ltr") @db.VarChar(10) // ltr, rtl
+  ui_status           String   @default("READY") @db.VarChar(50) // READY, PARTIAL, DISABLED
+  voice_input_status  String   @default("SUPPORTED") @db.VarChar(50) // SUPPORTED, UNTESTED, UNSUPPORTED
+  voice_output_status String   @default("SUPPORTED") @db.VarChar(50) // SUPPORTED, UNTESTED, UNSUPPORTED
+  enabled             Boolean  @default(true)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([code])
+  @@index([enabled])
+  @@map("supported_languages")
+}
+
+model UiStringBundle {
+  id          String    @id @default(uuid()) @db.Uuid
+  language    String    @db.VarChar(10)
+  version     String    @db.VarChar(50)
+  status      String    @default("DRAFT") @db.VarChar(50) // DRAFT, IN_REVIEW, APPROVED, RETIRED
+  strings     Json      // Key-value map of UI text tokens
+  created_by  String?   @db.Uuid
+  reviewed_by String?   @db.Uuid
+  reviewed_at DateTime? @db.Timestamptz(6)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@unique([language, version])
+  @@index([language])
+  @@index([status])
+  @@map("ui_string_bundles")
+}
+
+model QuestionTranslation {
+  id                String    @id @default(uuid()) @db.Uuid
+  question_code     String    @db.VarChar(100)
+  language          String    @db.VarChar(10)
+  template_version  String    @default("1.0.0") @db.VarChar(50)
+  prompt_text       String    @db.Text
+  prompt_audio_hint String?   @db.Text
+  status            String    @default("DRAFT") @db.VarChar(50) // DRAFT, IN_REVIEW, APPROVED, RETIRED
+  version           Int       @default(1)
+  is_critical       Boolean   @default(false)
+  created_by        String?   @db.Uuid
+  reviewed_by       String?   @db.Uuid
+  reviewed_at       DateTime? @db.Timestamptz(6)
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@unique([question_code, language, version])
+  @@index([question_code])
+  @@index([language])
+  @@index([status])
+  @@map("question_translations")
+}
+
+model OptionTranslation {
+  id              String    @id @default(uuid()) @db.Uuid
+  option_code     String    @db.VarChar(100)
+  question_code   String?   @db.VarChar(100)
+  language        String    @db.VarChar(10)
+  label           String    @db.VarChar(255)
+  spoken_synonyms String[]  @default([])
+  status          String    @default("DRAFT") @db.VarChar(50) // DRAFT, IN_REVIEW, APPROVED, RETIRED
+  version         Int       @default(1)
+  created_by      String?   @db.Uuid
+  reviewed_by     String?   @db.Uuid
+  reviewed_at     DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@unique([option_code, language, version])
+  @@index([option_code])
+  @@index([question_code])
+  @@index([language])
+  @@index([status])
+  @@map("option_translations")
+}
+
+model QuestionHelpText {
+  id                String    @id @default(uuid()) @db.Uuid
+  question_code     String    @db.VarChar(100)
+  language          String    @db.VarChar(10)
+  plain_explanation String    @db.Text
+  status            String    @default("DRAFT") @db.VarChar(50) // DRAFT, IN_REVIEW, APPROVED, RETIRED
+  version           Int       @default(1)
+  created_by        String?   @db.Uuid
+  reviewed_by       String?   @db.Uuid
+  reviewed_at       DateTime? @db.Timestamptz(6)
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@unique([question_code, language, version])
+  @@index([question_code])
+  @@index([language])
+  @@index([status])
+  @@map("question_help_texts")
+}
+
+model KioskHelpArticle {
+  id          String    @id @default(uuid()) @db.Uuid
+  topic       String    @db.VarChar(100) // how_to_use, document_scan, what_next, call_staff
+  language    String    @db.VarChar(10)
+  title       String    @db.VarChar(255)
+  body        String    @db.Text
+  status      String    @default("DRAFT") @db.VarChar(50) // DRAFT, IN_REVIEW, APPROVED, RETIRED
+  version     Int       @default(1)
+  created_by  String?   @db.Uuid
+  reviewed_by String?   @db.Uuid
+  reviewed_at DateTime? @db.Timestamptz(6)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@unique([topic, language, version])
+  @@index([topic])
+  @@index([language])
+  @@index([status])
+  @@map("kiosk_help_articles")
+}
+
+model TranslationReview {
+  id            String   @id @default(uuid()) @db.Uuid
+  item_ref      String   @db.VarChar(255) // type:id or type:code:lang:version
+  language      String   @db.VarChar(10)
+  reviewer_id   String   @db.Uuid
+  reviewer_name String?  @db.VarChar(255)
+  reviewed_at   DateTime @default(now()) @db.Timestamptz(6)
+  decision      String   @db.VarChar(50) // APPROVED, REJECTED, NEEDS_REVISION
+  note          String?  @db.Text
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([item_ref])
+  @@index([language])
+  @@index([decision])
+  @@map("translation_reviews")
+}
+
+model Notification {
+  id                String    @id @default(uuid()) @db.Uuid
+  type              String    @db.VarChar(100) // SUMMARY_READY, SUMMARY_FAILED, INTERVIEW_ABANDONED, DOCUMENT_RESCAN_NEEDED, VOICE_ASSIST_SUGGESTED, KIOSK_OFFLINE, KIOSK_ONLINE, QUEUE_STATUS_UPDATE, SYSTEM_ANNOUNCEMENT
+  recipient_id      String?   @db.Uuid
+  recipient_role    String?   @db.VarChar(50) // DOCTOR, STAFF_ATTENDANT, ADMIN
+  title             String    @db.VarChar(255)
+  message           String    @db.Text // NON-CLINICAL ONLY
+  channel           String    @default("IN_APP") @db.VarChar(50) // IN_APP, KIOSK_SCREEN, SMS
+  visit_id          String?   @db.VarChar(100)
+  kiosk_device_id   String?   @db.VarChar(100)
+  deduplication_key String    @db.VarChar(255)
+  is_read           Boolean   @default(false)
+  read_at           DateTime? @db.Timestamptz(6)
+  expires_at        DateTime? @db.Timestamptz(6)
+  metadata          Json?
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @updatedAt @db.Timestamptz(6)
+
+  deliveries        NotificationDelivery[]
+
+  @@unique([recipient_id, deduplication_key])
+  @@index([recipient_id, is_read])
+  @@index([recipient_role])
+  @@index([type])
+  @@index([channel])
+  @@index([visit_id])
+  @@index([deduplication_key])
+  @@index([created_at])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id                String   @id @default(uuid()) @db.Uuid
+  staff_user_id     String   @db.Uuid
+  notification_type String   @db.VarChar(100)
+  channel           String   @db.VarChar(50)
+  enabled           Boolean  @default(true)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([staff_user_id, notification_type, channel])
+  @@index([staff_user_id])
+  @@map("notification_preferences")
+}
+
+model NotificationDelivery {
+  id              String       @id @default(uuid()) @db.Uuid
+  notification_id String       @db.Uuid
+  channel         String       @db.VarChar(50)
+  status          String       @default("PENDING") @db.VarChar(50) // PENDING, DELIVERED, FAILED
+  attempts        Int          @default(0)
+  error_message   String?      @db.Text
+  delivered_at    DateTime?    @db.Timestamptz(6)
+  created_at      DateTime     @default(now()) @db.Timestamptz(6)
+
+  notification    Notification @relation(fields: [notification_id], references: [id], onDelete: Cascade)
+
+  @@index([notification_id])
+  @@index([channel])
+  @@index([status])
+  @@map("notification_deliveries")
+}
+
+model KioskDeviceHeartbeat {
+  id               String   @id @default(uuid()) @db.Uuid
+  device_code      String   @unique @db.VarChar(100)
+  status           String   @default("ONLINE") @db.VarChar(50) // ONLINE, OFFLINE, DEGRADED
+  last_seen_at     DateTime @default(now()) @db.Timestamptz(6)
+  ip_address       String?  @db.VarChar(50)
+  software_version String?  @db.VarChar(50)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([device_code])
+  @@index([status])
+  @@index([last_seen_at])
+  @@map("kiosk_device_heartbeats")
+}
+
+model SyncReceipt {
+  id               String   @id @default(uuid()) @db.Uuid
+  idempotency_key  String   @unique @db.VarChar(255)
+  visit_id         String   @db.VarChar(100)
+  batch_type       String   @default("ANSWERS") @db.VarChar(50)
+  item_count       Int      @default(1)
+  processed_at     DateTime @default(now()) @db.Timestamptz(6)
+  client_timestamp DateTime @db.Timestamptz(6)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([idempotency_key])
+  @@index([visit_id])
+  @@map("sync_receipts")
+}
+
+// ==============================================================================
+// MODULE 9: ADMINISTRATION, ANALYTICS, AUDIT & SYSTEM MONITORING
+// ==============================================================================
+
+
+model AuditChainCheckpoint {
+  id                   String   @id @default(uuid()) @db.Uuid
+  checkpoint_sequence  Int      @default(autoincrement()) @unique
+  head_sequence_number BigInt
+  head_hash            String   @db.VarChar(64)
+  verified_count       Int
+  status               String   @default("VERIFIED") @db.VarChar(50) // VERIFIED, CORRUPTED
+  verified_at          DateTime @default(now()) @db.Timestamptz(6)
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([checkpoint_sequence])
+  @@index([verified_at])
+  @@map("audit_chain_checkpoints")
+}
+
+model AnalyticsEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  event_name  String   @db.VarChar(100)
+  category    String   @db.VarChar(100) // INTAKE, DOCUMENTS, SUMMARY, ALERTS, REVIEW, LANGUAGE, SYSTEM
+  actor_type  String   @db.VarChar(50) // STAFF, KIOSK_DEVICE, SYSTEM
+  actor_ref   String?  @db.VarChar(100)
+  visit_ref   String?  @db.VarChar(100)
+  entity_type String   @db.VarChar(100)
+  entity_id   String?  @db.VarChar(100)
+  occurred_at DateTime @default(now()) @db.Timestamptz(6)
+  request_id  String?  @db.VarChar(100)
+  attributes  Json
+
+  @@index([event_name, occurred_at])
+  @@index([category, occurred_at])
+  @@index([occurred_at])
+  @@index([request_id])
+  @@map("analytics_events")
+}
+
+model DailyAggregate {
+  id              String   @id @default(uuid()) @db.Uuid
+  date            String   @db.VarChar(10) // YYYY-MM-DD
+  metric_key      String   @db.VarChar(100)
+  dimensions      Json?
+  dimensions_hash String   @default("global") @db.VarChar(64)
+  value           Float    @default(0)
+  sample_count    Int      @default(0)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([date, metric_key, dimensions_hash])
+  @@index([metric_key, date])
+  @@index([date])
+  @@map("daily_aggregates")
+}
+
+model MetricDefinition {
+  id                     String   @id @default(uuid()) @db.Uuid
+  metric_key             String   @unique @db.VarChar(100)
+  name                   String   @db.VarChar(255)
+  description            String   @db.Text
+  category               String   @db.VarChar(100)
+  unit                   String   @default("count") @db.VarChar(50)
+  numerator_def          String?  @db.Text
+  denominator_def        String?  @db.Text
+  source_events          Json
+  dimensions_allowed     Json
+  min_group_size_applies Boolean  @default(true)
+  version                Int      @default(1)
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([metric_key])
+  @@index([category])
+  @@map("metric_definitions")
+}
+
+model OutboxEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  event_name    String    @db.VarChar(100)
+  event_type    String    @db.VarChar(50) // CRITICAL_AUDIT, NORMAL_ANALYTICS
+  payload       Json
+  status        String    @default("PENDING") @db.VarChar(50) // PENDING, PUBLISHED, FAILED
+  retry_count   Int       @default(0)
+  error_message String?   @db.Text
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  published_at  DateTime? @db.Timestamptz(6)
+
+  @@index([status, event_type])
+  @@index([created_at])
+  @@map("outbox_events")
+}
+
+model ReportRun {
+  id                 String    @id @default(uuid()) @db.Uuid
+  report_type        String    @db.VarChar(100)
+  date_range_start   DateTime  @db.Timestamptz(6)
+  date_range_end     DateTime  @db.Timestamptz(6)
+  reporting_timezone String    @default("Asia/Kolkata") @db.VarChar(50)
+  parameters         Json?
+  status             String    @default("QUEUED") @db.VarChar(50) // QUEUED, PROCESSING, COMPLETED, FAILED
+  download_url       String?   @db.Text
+  data_summary       Json?
+  expires_at         DateTime  @db.Timestamptz(6)
+  generated_by       String    @db.VarChar(100)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  completed_at       DateTime? @db.Timestamptz(6)
+
+  @@index([report_type, status])
+  @@index([generated_by])
+  @@index([created_at])
+  @@map("report_runs")
+}
+
+model ExportJob {
+  id              String    @id @default(uuid()) @db.Uuid
+  export_type     String    @db.VarChar(100) // ANALYTICS_AGGREGATES, AUDIT_LOGS, ACCESS_REPORTS
+  format          String    @default("CSV") @db.VarChar(20) // CSV, JSON
+  filters         Json?
+  status          String    @default("QUEUED") @db.VarChar(50) // QUEUED, PROCESSING, COMPLETED, FAILED
+  download_url    String?   @db.Text
+  row_count       Int       @default(0)
+  expires_at      DateTime  @db.Timestamptz(6)
+  created_by      String    @db.VarChar(100)
+  created_by_role String    @db.VarChar(50)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  completed_at    DateTime? @db.Timestamptz(6)
+
+  @@index([export_type, status])
+  @@index([created_by])
+  @@index([created_at])
+  @@map("export_jobs")
+}
+
+model HealthSample {
+  id         String   @id @default(uuid()) @db.Uuid
+  component  String   @db.VarChar(100)
+  status     String   @db.VarChar(50) // HEALTHY, DEGRADED, UNAVAILABLE, UNKNOWN
+  latency_ms Int      @default(0)
+  details    Json?
+  sampled_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([component, sampled_at])
+  @@index([status])
+  @@map("health_samples")
+}
+
+model KioskDeviceRegistry {
+  id                      String   @id @default(uuid()) @db.Uuid
+  device_code             String   @unique @db.VarChar(100)
+  facility_name           String   @db.VarChar(255)
+  location_description    String   @db.VarChar(255)
+  status                  String   @default("ONLINE") @db.VarChar(50) // ONLINE, OFFLINE, DEGRADED
+  ip_address              String?  @db.VarChar(50)
+  software_version        String?  @db.VarChar(50)
+  cache_version           String?  @db.VarChar(50)
+  camera_status           String   @default("OK") @db.VarChar(50)
+  microphone_status       String   @default("OK") @db.VarChar(50)
+  speaker_status          String   @default("OK") @db.VarChar(50)
+  offline_sessions_queued Int      @default(0)
+  last_heartbeat_at       DateTime @default(now()) @db.Timestamptz(6)
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([device_code])
+  @@index([status])
+  @@index([facility_name])
+  @@map("kiosk_device_registry")
+}
+
+model RetentionSetting {
+  id            String   @id @default(uuid()) @db.Uuid
+  setting_key   String   @unique @db.VarChar(100)
+  setting_value Int
+  description   String?  @db.Text
+  updated_by    String?  @db.VarChar(100)
+  updated_at    DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("retention_settings")
+}
+
+model LegalHold {
+  id          String    @id @default(uuid()) @db.Uuid
+  scope       String    @db.VarChar(100) // ALL, AUDIT_LOGS, ANALYTICS_EVENTS, VISITS
+  reason      String    @db.Text
+  active      Boolean   @default(true)
+  placed_by   String    @db.VarChar(100)
+  released_by String?   @db.VarChar(100)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  released_at DateTime? @db.Timestamptz(6)
+
+  @@index([scope, active])
+  @@map("legal_holds")
+}
+
+model PilotBaseline {
+  id                 String   @id @default(uuid()) @db.Uuid
+  metric_key         String   @unique @db.VarChar(100)
+  baseline_value     Float
+  unit               String   @db.VarChar(50)
+  source_description String   @db.Text
+  measured_by        String   @db.VarChar(255)
+  sample_size        Int
+  measured_at        DateTime @db.Timestamptz(6)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([metric_key])
+  @@map("pilot_baselines")
+}
+
 

@@ -38,6 +38,7 @@ class InterviewRepository {
                 published_at: new Date(),
                 questions: {
                     create: seed_templates_js_1.DEFAULT_GENERAL_OPD_QUESTIONS.map((q) => ({
+                        question_code: q.questionCode,
                         section: q.section,
                         prompt_text: q.promptText,
                         prompt_audio_hint: q.promptAudioHint,

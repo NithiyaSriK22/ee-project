@@ -1,4 +1,4 @@
-export type StaffRole = 'STAFF_ATTENDANT' | 'DOCTOR' | 'ADMIN' | 'SUPER_ADMIN';
+export type StaffRole = 'STAFF_ATTENDANT' | 'DOCTOR' | 'ADMIN' | 'SUPER_ADMIN' | 'ANALYST' | 'AUDITOR';
 
 export type StaffUserStatus = 'ACTIVE' | 'SUSPENDED' | 'DISABLED' | 'PENDING_VERIFICATION';
 

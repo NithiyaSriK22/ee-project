@@ -1,0 +1,139 @@
+version: '3.8'
+
+# -----------------------------------------------------------------------------
+# MediKiosk Production Topology (Module 10)
+# Network Segmentation:
+#  - db_network: Internal backend <-> postgres (completely isolated)
+#  - app_network: Reverse proxy <-> backend, doctor portal, kiosk
+#  - hospital_kiosk_segment: Isolated VLAN for kiosk hardware
+# -----------------------------------------------------------------------------
+
+services:
+  # 1. Hardened PostgreSQL with connection limits and volume persistence
+  postgres:
+    image: postgres:16-alpine
+    container_name: medikiosk-prod-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-medikiosk_admin}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME:-medikiosk_production}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./backend/prisma/migrations:/docker-entrypoint-initdb.d/migrations:ro
+    networks:
+      - db_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-medikiosk_admin} -d ${DATABASE_NAME:-medikiosk_production}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4096M
+
+  # 2. MediKiosk Backend API (Modular Monolith)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medikiosk-prod-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://${DATABASE_USER:-medikiosk_admin}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME:-medikiosk_production}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+      AUDIT_SIGNING_KEY: ${AUDIT_SIGNING_KEY}
+      KIOSK_DEVICE_SIGNING_SECRET: ${KIOSK_DEVICE_SIGNING_SECRET}
+      CORS_ORIGIN_KIOSK: ${CORS_ORIGIN_KIOSK:-https://kiosk.hospital.internal}
+      CORS_ORIGIN_DOCTOR: ${CORS_ORIGIN_DOCTOR:-https://doctor.hospital.internal}
+      STORAGE_LOCAL_DIR: /app/secure_storage
+      MAX_RESTORE_DRILL_AGE_DAYS: 30
+      ALERT_LATENCY_TARGET_MS: 2000
+    volumes:
+      - secure_storage_data:/app/secure_storage
+    networks:
+      - db_network
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 2048M
+
+  # 3. Doctor Review Portal (Static SPA)
+  doctor-portal:
+    build:
+      context: ./frontend-doctor-portal
+      dockerfile: Dockerfile
+    container_name: medikiosk-prod-doctor-portal
+    restart: unless-stopped
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # 4. Kiosk Patient Intake Application (Static SPA)
+  kiosk-frontend:
+    build:
+      context: ./frontend-kiosk
+      dockerfile: Dockerfile
+    container_name: medikiosk-prod-kiosk-app
+    restart: unless-stopped
+    networks:
+      - app_network
+      - hospital_kiosk_segment
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # 5. Reverse Proxy / TLS Termination / WAF
+  reverse-proxy:
+    image: nginx:1.25-alpine
+    container_name: medikiosk-prod-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/reverse-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - backend
+      - doctor-portal
+      - kiosk-frontend
+    networks:
+      - app_network
+      - hospital_kiosk_segment
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  secure_storage_data:
+    driver: local
+
+networks:
+  db_network:
+    internal: true
+  app_network:
+    driver: bridge
+  hospital_kiosk_segment:
+    driver: bridge

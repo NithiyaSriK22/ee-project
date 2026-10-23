@@ -1,44 +1,67 @@
-import { prisma } from '../../database/prisma.js';
+import { prisma, checkDatabaseHealth } from '../../database/prisma.js';
+import { devFallbackPatientStore } from './dev-fallback-patient-store.js';
 
 export class PatientsRepository {
   public static async findPatientById(id: string) {
-    return prisma.patient.findUnique({
-      where: { id },
-      include: {
-        visit_profiles: {
-          orderBy: { created_at: 'desc' },
-          take: 5,
-        },
-      },
-    });
+    const isDbUp = await checkDatabaseHealth();
+    if (isDbUp) {
+      try {
+        const patient = await prisma.patient.findUnique({
+          where: { id },
+          include: {
+            visit_profiles: {
+              orderBy: { created_at: 'desc' },
+              take: 5,
+            },
+          },
+        });
+        if (patient) return patient;
+      } catch {}
+    }
+
+    return devFallbackPatientStore.findPatientById(id);
   }
 
   public static async findPatientByRegNumber(regNumber: string) {
-    return prisma.patient.findUnique({
-      where: { hospital_registration_number: regNumber },
-      include: {
-        visit_profiles: {
-          orderBy: { created_at: 'desc' },
-          take: 5,
-        },
-      },
-    });
+    const isDbUp = await checkDatabaseHealth();
+    if (isDbUp) {
+      try {
+        const patient = await prisma.patient.findUnique({
+          where: { hospital_registration_number: regNumber },
+          include: {
+            visit_profiles: {
+              orderBy: { created_at: 'desc' },
+              take: 5,
+            },
+          },
+        });
+        if (patient) return patient;
+      } catch {}
+    }
+
+    return devFallbackPatientStore.findPatientByRegistrationNumber(regNumber);
   }
 
   public static async findProfileByVisit(patientId: string, visitId: string) {
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId },
-      include: {
-        visit_profiles: {
-          where: { visit_id: visitId },
+    const isDbUp = await checkDatabaseHealth();
+    if (isDbUp) {
+      try {
+        const patient = await prisma.patient.findUnique({
+          where: { id: patientId },
           include: {
-            consents: true,
+            visit_profiles: {
+              where: { visit_id: visitId },
+              include: {
+                consents: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
+        if (patient) return patient;
+      } catch {}
+    }
 
-    return patient;
+    return devFallbackPatientStore.findProfileByVisit(patientId, visitId);
   }
 
   public static async updatePatientCore(
@@ -52,17 +75,28 @@ export class PatientsRepository {
       preferredLanguage?: string;
     }
   ) {
-    return prisma.patient.update({
-      where: { id },
-      data: {
-        full_name: data.fullName,
-        date_of_birth: data.dateOfBirth,
-        age: data.age,
-        gender: data.gender,
-        contact_number: data.contactNumber,
-        preferred_language: data.preferredLanguage,
-      },
-    });
+    const isDbUp = await checkDatabaseHealth();
+    if (isDbUp) {
+      try {
+        const updated = await prisma.patient.update({
+          where: { id },
+          data: {
+            full_name: data.fullName,
+            date_of_birth: data.dateOfBirth,
+            age: data.age,
+            gender: data.gender,
+            contact_number: data.contactNumber,
+            preferred_language: data.preferredLanguage,
+          },
+        });
+        try {
+          devFallbackPatientStore.updatePatientCore(id, data);
+        } catch {}
+        return updated;
+      } catch {}
+    }
+
+    return devFallbackPatientStore.updatePatientCore(id, data);
   }
 
   public static async updateVisitProfile(
@@ -75,25 +109,43 @@ export class PatientsRepository {
       emergencyContact?: string | null;
     }
   ) {
-    return prisma.patientVisitProfile.update({
-      where: { visit_id: visitId },
-      data: {
-        is_companion_assisted: data.isCompanionAssisted,
-        companion_name: data.companionName,
-        companion_relationship: data.companionRelationship,
-        preferred_language: data.preferredLanguage,
-        emergency_contact: data.emergencyContact,
-      },
-    });
+    const isDbUp = await checkDatabaseHealth();
+    if (isDbUp) {
+      try {
+        const updated = await prisma.patientVisitProfile.update({
+          where: { visit_id: visitId },
+          data: {
+            is_companion_assisted: data.isCompanionAssisted,
+            companion_name: data.companionName,
+            companion_relationship: data.companionRelationship,
+            preferred_language: data.preferredLanguage,
+            emergency_contact: data.emergencyContact,
+          },
+        });
+        try {
+          devFallbackPatientStore.updateVisitProfile(visitId, data);
+        } catch {}
+        return updated;
+      } catch {}
+    }
+
+    return devFallbackPatientStore.updateVisitProfile(visitId, data);
   }
 
   public static async getConsentsByVisit(patientId: string, visitId: string) {
-    return prisma.consent.findMany({
-      where: {
-        patient_id: patientId,
-        visit_id: visitId,
-      },
-    });
+    const isDbUp = await checkDatabaseHealth();
+    if (isDbUp) {
+      try {
+        return await prisma.consent.findMany({
+          where: {
+            patient_id: patientId,
+            visit_id: visitId,
+          },
+        });
+      } catch {}
+    }
+
+    return devFallbackPatientStore.getConsentsForVisit(patientId, visitId);
   }
 
   public static async updateConsent(
@@ -106,30 +158,41 @@ export class PatientsRepository {
       version: string;
     }
   ) {
-    return prisma.consent.upsert({
-      where: {
-        patient_id_visit_id_consent_type: {
-          patient_id: patientId,
-          visit_id: visitId,
-          consent_type: consentType,
-        },
-      },
-      update: {
-        granted: data.granted,
-        granted_via: data.grantedVia,
-        version: data.version,
-        revoked_at: data.granted ? null : new Date(),
-        updated_at: new Date(),
-      },
-      create: {
-        patient_id: patientId,
-        visit_id: visitId,
-        consent_type: consentType,
-        granted: data.granted,
-        granted_via: data.grantedVia,
-        version: data.version,
-        granted_at: new Date(),
-      },
-    });
+    const isDbUp = await checkDatabaseHealth();
+    if (isDbUp) {
+      try {
+        const updated = await prisma.consent.upsert({
+          where: {
+            patient_id_visit_id_consent_type: {
+              patient_id: patientId,
+              visit_id: visitId,
+              consent_type: consentType,
+            },
+          },
+          update: {
+            granted: data.granted,
+            granted_via: data.grantedVia,
+            version: data.version,
+            revoked_at: data.granted ? null : new Date(),
+            updated_at: new Date(),
+          },
+          create: {
+            patient_id: patientId,
+            visit_id: visitId,
+            consent_type: consentType,
+            granted: data.granted,
+            granted_via: data.grantedVia,
+            version: data.version,
+            granted_at: new Date(),
+          },
+        });
+        try {
+          devFallbackPatientStore.updateConsent(patientId, visitId, consentType, data);
+        } catch {}
+        return updated;
+      } catch {}
+    }
+
+    return devFallbackPatientStore.updateConsent(patientId, visitId, consentType, data);
   }
 }

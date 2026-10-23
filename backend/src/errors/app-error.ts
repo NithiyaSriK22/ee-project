@@ -75,3 +75,10 @@ export class InternalServerError extends AppError {
     super(message, 500, ErrorCode.INTERNAL_ERROR);
   }
 }
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message: string = 'Service temporarily unavailable. Please proceed to the OPD intake desk.') {
+    super(message, 503, ErrorCode.INTERNAL_ERROR);
+  }
+}
+

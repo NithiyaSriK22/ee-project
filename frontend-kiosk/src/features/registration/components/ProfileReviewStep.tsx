@@ -1,5 +1,6 @@
 import React from 'react';
 import { useKioskSession } from '../hooks/useKioskSession';
+import { useLanguage } from '../../language/useLanguage';
 import {
   CheckCircle2,
   User,
@@ -11,22 +12,28 @@ import {
   ArrowRight,
   Clock,
   Sparkles,
+  FileText,
 } from 'lucide-react';
 
 interface ProfileReviewStepProps {
   onProceedToInterview?: () => void;
+  onProceedToDocuments?: () => void;
   onEndSession: () => void;
 }
 
 export const ProfileReviewStep: React.FC<ProfileReviewStepProps> = ({
   onProceedToInterview,
+  onProceedToDocuments,
   onEndSession,
 }) => {
   const { patient, visitProfile, session, consents, completion } = useKioskSession();
+  const { locale, currentLanguage } = useLanguage();
 
   if (!patient || !session) {
     return null;
   }
+
+  const ageUnit = currentLanguage === 'ta' ? 'ஆண்டுகள்' : 'years';
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in pb-8">
@@ -36,13 +43,13 @@ export const ProfileReviewStep: React.FC<ProfileReviewStepProps> = ({
         </div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold mb-2 border border-emerald-200">
           <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Registration Completed ({completion?.completionPercentage || 100}% Ready)</span>
+          <span>{locale.readyBadge} ({completion?.completionPercentage || 100}%)</span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
-          Review Your Registration
+          {locale.readyHeading}
         </h2>
         <p className="text-sm text-slate-600 mt-1">
-          Your profile has been created for today’s OPD visit. Confirm your details below.
+          {locale.readySubtitle}
         </p>
       </div>
 
@@ -51,14 +58,14 @@ export const ProfileReviewStep: React.FC<ProfileReviewStepProps> = ({
         <div className="p-5 bg-gradient-to-r from-teal-700 to-teal-900 text-white rounded-2xl shadow-md flex items-center justify-between">
           <div>
             <span className="text-[11px] font-semibold text-teal-200 uppercase tracking-wider block">
-              Hospital Registration Number
+              {locale.readyRegNumberLabel}
             </span>
             <span className="text-2xl sm:text-3xl font-mono font-extrabold tracking-wider">
               {patient.hospitalRegistrationNumber}
             </span>
           </div>
           <div className="text-right">
-            <span className="text-[10px] text-teal-200 block">Visit ID</span>
+            <span className="text-[10px] text-teal-200 block">{locale.readyVisitIdLabel}</span>
             <span className="text-xs font-mono font-semibold text-white/90">{session.visitId}</span>
           </div>
         </div>
@@ -68,41 +75,41 @@ export const ProfileReviewStep: React.FC<ProfileReviewStepProps> = ({
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
               <User className="w-3.5 h-3.5 text-teal-700" />
-              <span>Patient Name & Demographics</span>
+              <span>{locale.readyPatientNameLabel}</span>
             </div>
             <div className="text-base font-bold text-slate-900">{patient.fullName}</div>
             <div className="text-xs text-slate-600 mt-0.5">
-              {patient.age ? `${patient.age} years` : ''} • {patient.gender}
+              {patient.age ? `${patient.age} ${ageUnit}` : ''} • {patient.gender}
             </div>
           </div>
 
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
               <Phone className="w-3.5 h-3.5 text-teal-700" />
-              <span>Contact Number</span>
+              <span>{locale.readyContactLabel}</span>
             </div>
             <div className="text-base font-bold text-slate-900">{patient.contactNumber}</div>
-            <div className="text-xs text-slate-500 mt-0.5">Registered for OPD triage notifications</div>
+            <div className="text-xs text-slate-500 mt-0.5">{locale.readyContactDesc}</div>
           </div>
 
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
               <Globe className="w-3.5 h-3.5 text-teal-700" />
-              <span>Selected Language</span>
+              <span>{locale.readyLanguageLabel}</span>
             </div>
             <div className="text-base font-bold text-slate-900 uppercase">
               {visitProfile?.preferredLanguage || patient.preferredLanguage}
             </div>
-            <div className="text-xs text-slate-500 mt-0.5">Interview & prompts adapted</div>
+            <div className="text-xs text-slate-500 mt-0.5">{locale.readyLanguageDesc}</div>
           </div>
 
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
               <Users className="w-3.5 h-3.5 text-teal-700" />
-              <span>Assistance Mode</span>
+              <span>{locale.readyAssistanceLabel}</span>
             </div>
             <div className="text-base font-bold text-slate-900">
-              {visitProfile?.isCompanionAssisted ? 'Companion Assisted' : 'Self Registered'}
+              {visitProfile?.isCompanionAssisted ? locale.readyCompanionAssisted : locale.readySelfRegistered}
             </div>
             {visitProfile?.isCompanionAssisted && (
               <div className="text-xs text-slate-600 mt-0.5">
@@ -117,10 +124,10 @@ export const ProfileReviewStep: React.FC<ProfileReviewStepProps> = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
               <ShieldCheck className="w-4 h-4 text-teal-700" />
-              <span>Active Consents for this Visit ({consents.filter((c) => c.granted).length})</span>
+              <span>{locale.readyConsentsLabel} ({consents.filter((c) => c.granted).length})</span>
             </div>
             <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              Verified & Auditable
+              {locale.readyVerifiedBadge}
             </span>
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
@@ -138,7 +145,7 @@ export const ProfileReviewStep: React.FC<ProfileReviewStepProps> = ({
         {/* Session Expiry Notice */}
         <div className="flex items-center gap-2 text-xs text-slate-500 justify-center">
           <Clock className="w-3.5 h-3.5 text-teal-600" />
-          <span>Visit-scoped session valid for 1 hour. All data is isolated to this visit.</span>
+          <span>{locale.readyExpiryNotice}</span>
         </div>
       </div>
 
@@ -149,15 +156,26 @@ export const ProfileReviewStep: React.FC<ProfileReviewStepProps> = ({
           className="py-4 px-6 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-bold rounded-2xl text-base transition-colors flex items-center justify-center gap-2 cursor-pointer border border-slate-200"
         >
           <LogOut className="w-4 h-4" />
-          <span>End Session / Finish Here</span>
+          <span>{locale.readyEndSessionButton}</span>
         </button>
+
+        {onProceedToDocuments && (
+          <button
+            type="button"
+            onClick={onProceedToDocuments}
+            className="py-4 px-6 bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold rounded-2xl text-base transition-colors flex items-center justify-center gap-2 border border-teal-200 cursor-pointer"
+          >
+            <FileText className="w-5 h-5 text-teal-700" />
+            <span>{currentLanguage === 'ta' ? 'ஆவணங்கள் ஸ்கேன்' : 'Scan Documents'}</span>
+          </button>
+        )}
 
         <button
           type="button"
           onClick={onProceedToInterview}
           className="flex-1 py-4 px-6 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-2xl text-base transition-colors flex items-center justify-center gap-2 shadow-lg shadow-teal-800/20 cursor-pointer"
         >
-          <span>Begin Guided Interview (Module 3)</span>
+          <span>{locale.readyStartInterviewButton}</span>
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>

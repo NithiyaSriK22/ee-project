@@ -43,6 +43,7 @@ export type GenerationMode = (typeof GenerationModes)[keyof typeof GenerationMod
 export const SummaryStatuses = {
   DRAFT_GENERATED: 'DRAFT_GENERATED',
   PENDING_DOCTOR_REVIEW: 'PENDING_DOCTOR_REVIEW',
+  INSUFFICIENT_EVIDENCE: 'INSUFFICIENT_EVIDENCE',
   STALE: 'STALE',
   FAILED: 'FAILED',
 } as const;
@@ -156,6 +157,8 @@ export interface ClinicalSummaryDto {
   version: number;
   status: SummaryStatus;
   generationMode: GenerationMode;
+  providerId?: string | null;
+  isMock?: boolean;
   modelId?: string | null;
   modelVersion?: string | null;
   promptTemplateVersion?: string | null;

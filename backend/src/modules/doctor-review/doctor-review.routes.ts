@@ -18,7 +18,26 @@ import {
 
 const router = Router();
 
-// All Doctor Review routes require staff authentication
+// ============================================================================
+// SIGNED DOCUMENT & SNIPPET IMAGE STREAMING (P1.3)
+// Accessible via short-lived query token (?token=...) or Bearer JWT
+// ============================================================================
+router.get(
+  '/documents/:documentId/image',
+  DoctorReviewController.streamDocumentImage
+);
+
+router.get(
+  '/documents/:documentId/file',
+  DoctorReviewController.streamDocumentImage
+);
+
+router.get(
+  '/documents/:documentId/view',
+  DoctorReviewController.streamDocumentImage
+);
+
+// All other Doctor Review routes require staff authentication
 router.use(authenticateStaff);
 
 // ============================================================================

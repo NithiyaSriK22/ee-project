@@ -8,6 +8,7 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  errorMsg?: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {

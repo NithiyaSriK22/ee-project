@@ -93,5 +93,55 @@ class TokenUtil {
         }
         return decoded;
     }
+    /**
+     * Generates a tamper-proof HMAC-SHA256 signed query token for doctor document/snippet streaming.
+     * Format: base64url(documentId:doctorId:expiresAtTimestamp:hmacSignature)
+     */
+    static generateSignedDocumentToken(documentId, doctorId, expiresInMs = 15 * 60 * 1000) {
+        const expiresTimestamp = Date.now() + expiresInMs;
+        const expiresAt = new Date(expiresTimestamp);
+        const payload = `${documentId}:${doctorId}:${expiresTimestamp}`;
+        const hmac = crypto_1.default.createHmac('sha256', env_config_js_1.env.JWT_SECRET).update(payload).digest('hex');
+        const token = Buffer.from(`${payload}:${hmac}`).toString('base64url');
+        return { token, expiresAt };
+    }
+    /**
+     * Cryptographically verifies a signed document streaming query token.
+     * Returns { documentId, doctorId } if valid, unexpired, and signature matches.
+     * Returns null if invalid, expired, or tampered.
+     */
+    static verifySignedDocumentToken(token) {
+        try {
+            if (!token || typeof token !== 'string')
+                return null;
+            const raw = Buffer.from(token, 'base64url').toString('utf8');
+            const parts = raw.split(':');
+            if (parts.length !== 4)
+                return null;
+            const documentId = parts[0];
+            const doctorId = parts[1];
+            const expiresStr = parts[2];
+            const signature = parts[3];
+            if (!documentId || !doctorId || !expiresStr || !signature) {
+                return null;
+            }
+            const expiresAt = parseInt(expiresStr, 10);
+            if (isNaN(expiresAt) || Date.now() > expiresAt) {
+                return null;
+            }
+            const payload = `${documentId}:${doctorId}:${expiresStr}`;
+            const expectedHmac = crypto_1.default.createHmac('sha256', env_config_js_1.env.JWT_SECRET).update(payload).digest('hex');
+            const sigBuffer = Buffer.from(signature);
+            const expectedBuffer = Buffer.from(expectedHmac);
+            if (sigBuffer.length !== expectedBuffer.length ||
+                !crypto_1.default.timingSafeEqual(sigBuffer, expectedBuffer)) {
+                return null;
+            }
+            return { documentId, doctorId };
+        }
+        catch {
+            return null;
+        }
+    }
 }
 exports.TokenUtil = TokenUtil;

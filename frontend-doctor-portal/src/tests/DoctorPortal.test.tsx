@@ -7,7 +7,7 @@ describe('Doctor Portal Application & Authentication', () => {
     render(<App />);
 
     // Brand, title and security tags
-    expect(screen.getAllByText(/MediKiosk/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/THUNAI/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Staff Portal/i)).toBeInTheDocument();
     expect(screen.getByText(/Physician \/ Staff Sign In/i)).toBeInTheDocument();
 

@@ -14,6 +14,7 @@ export class MockSummarizationProvider implements SummarizationProvider {
   public readonly providerId = 'MOCK_PROVIDER';
   public readonly modelId = 'medikiosk-constrained-summary-v1';
   public readonly modelVersion = '2026.04';
+  public readonly isMock = true;
 
   private behaviorMode: MockBehaviorMode = 'NORMAL';
 

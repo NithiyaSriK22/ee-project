@@ -157,7 +157,7 @@ class PatientsService {
             gender: patient.gender,
             contactNumber: patient.contact_number,
             preferredLanguage: patient.preferred_language,
-            recentVisits: patient.visit_profiles.map((v) => ({
+            recentVisits: (patient.visit_profiles || []).map((v) => ({
                 visitId: v.visit_id,
                 isCompanionAssisted: v.is_companion_assisted,
                 companionName: v.companion_name,

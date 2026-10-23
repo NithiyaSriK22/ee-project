@@ -6,7 +6,7 @@ const logger_js_1 = require("./config/logger.js");
 const prisma_js_1 = require("./database/prisma.js");
 const app = (0, app_js_1.createApp)();
 const server = app.listen(env_config_js_1.env.PORT, () => {
-    logger_js_1.logger.info(`🏥 MediKiosk Backend API running successfully`, {
+    logger_js_1.logger.info(`🏥 THUNAI Backend API running successfully`, {
         port: env_config_js_1.env.PORT,
         environment: env_config_js_1.env.NODE_ENV,
         apiPrefix: '/api/v1',

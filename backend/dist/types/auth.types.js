@@ -8,6 +8,8 @@ exports.UserRoles = {
     DOCTOR: 'DOCTOR',
     ADMIN: 'ADMIN',
     SUPER_ADMIN: 'SUPER_ADMIN',
+    ANALYST: 'ANALYST',
+    AUDITOR: 'AUDITOR',
 };
 exports.StaffUserStatus = {
     ACTIVE: 'ACTIVE',

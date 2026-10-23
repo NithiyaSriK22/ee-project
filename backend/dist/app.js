@@ -10,23 +10,30 @@ const request_id_middleware_js_1 = require("./middleware/request-id.middleware.j
 const request_logger_middleware_js_1 = require("./middleware/request-logger.middleware.js");
 const error_middleware_js_1 = require("./middleware/error.middleware.js");
 const index_js_1 = require("./routes/index.js");
+const deployment_controller_js_1 = require("./modules/deployment/deployment.controller.js");
+const index_js_2 = require("./modules/visit-lifecycle/index.js");
 const createApp = () => {
+    // Initialize Module 2A Event Orchestrator
+    index_js_2.VisitOrchestratorService.initialize();
     const app = (0, express_1.default)();
     // 1. Trust proxy in production for hospital proxies/load balancers
     app.set('trust proxy', 1);
     // 2. Request context & Correlation ID
     app.use(request_id_middleware_js_1.requestIdMiddleware);
-    // 3. Security headers & CORS
+    // 3. Security headers, Permissions-Policy & CORS
     app.use(security_middleware_js_1.helmetMiddleware);
+    app.use(security_middleware_js_1.permissionsPolicyMiddleware);
     app.use(security_middleware_js_1.corsMiddleware);
     // 4. Rate Limiting
     app.use(security_middleware_js_1.rateLimiterMiddleware);
-    // 5. Body Parsing with safe limit to prevent payload flooding
-    app.use(express_1.default.json({ limit: '1mb' }));
-    app.use(express_1.default.urlencoded({ extended: true, limit: '1mb' }));
+    // 5. Body Parsing with safe limit to accommodate base64 uploads up to 15MB
+    app.use(express_1.default.json({ limit: '20mb' }));
+    app.use(express_1.default.urlencoded({ extended: true, limit: '20mb' }));
     // 6. Structured Request Logger (Zero PHI)
     app.use(request_logger_middleware_js_1.requestLoggerMiddleware);
-    // 7. Mount Versioned API Routes (/api/v1)
+    // 7. Resilient unauthenticated status board for hospital status panels & downtime checks
+    app.get('/status', deployment_controller_js_1.DeploymentController.getStatusBoard);
+    // 8. Mount Versioned API Routes (/api/v1)
     app.use('/api/v1', index_js_1.apiV1Router);
     // 8. 404 Not Found Handler
     app.use(error_middleware_js_1.notFoundHandler);

@@ -1,4 +1,6 @@
-// Module 8 Architecture Placeholder: Notifications, Multilingual & Accessibility
-import { Router } from 'express';
-const router = Router();
-export const notificationRoutes = router;
+export * from './notification.types.js';
+export * from './notification.service.js';
+export * from './notification-event.service.js';
+export * from './notifications.controller.js';
+export * from './notifications.routes.js';
+export * from './dev-fallback-notifications-store.js';

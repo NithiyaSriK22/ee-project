@@ -33,8 +33,8 @@ export class ReviewService {
     const queueEntry = await DoctorReviewRepository.getQueueEntry(visitId);
     const isDifferentDept = (d1?: string | null, d2?: string | null): boolean => {
       if (!d1 || !d2) return false;
-      const c1 = d1.toLowerCase().replace(/^(department of\s*|opd\s*)/i, '').trim();
-      const c2 = d2.toLowerCase().replace(/^(department of\s*|opd\s*)/i, '').trim();
+      const c1 = d1.toLowerCase().replace(/_/g, ' ').replace(/^(department of\s*|opd\s*)/i, '').trim();
+      const c2 = d2.toLowerCase().replace(/_/g, ' ').replace(/^(department of\s*|opd\s*)/i, '').trim();
       return c1 !== c2 && !c1.includes(c2) && !c2.includes(c1);
     };
 

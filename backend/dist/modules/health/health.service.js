@@ -9,7 +9,7 @@ class HealthService {
         const memory = process.memoryUsage();
         return {
             status: isDbConnected ? 'healthy' : 'degraded',
-            service: 'medikiosk-backend',
+            service: 'thunai-backend',
             version: '1.0.0',
             environment: env_config_js_1.env.NODE_ENV,
             uptimeSeconds: Math.floor(process.uptime()),

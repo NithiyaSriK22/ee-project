@@ -12,6 +12,7 @@ import {
   QueueStatuses,
   MustResolveItemTypes,
 } from '../src/modules/doctor-review/doctor-review.types.js';
+import { prisma } from '../src/database/prisma.js';
 
 describe('MODULE 7 — DOCTOR REVIEW & SUMMARY DASHBOARD', () => {
   const app = createApp();
@@ -55,8 +56,15 @@ describe('MODULE 7 — DOCTOR REVIEW & SUMMARY DASHBOARD', () => {
     patientId: 'patient-test-01',
   }).token;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     devFallbackDoctorReviewStore.clearAll();
+    try {
+      await prisma.confirmedStatement.deleteMany({});
+      await prisma.confirmedRecord.deleteMany({});
+      await prisma.doctorReview.deleteMany({});
+      await prisma.reviewClaim.deleteMany({});
+      await prisma.visitQueueEntry.deleteMany({});
+    } catch {}
   });
 
   // ============================================================================

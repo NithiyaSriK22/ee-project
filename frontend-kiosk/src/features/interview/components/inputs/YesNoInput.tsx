@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
+import { useLanguage } from '../../../language/useLanguage';
 
 interface YesNoInputProps {
   value: any;
@@ -12,6 +13,7 @@ export const YesNoInput: React.FC<YesNoInputProps> = ({
   onChange,
   withDetail = false,
 }) => {
+  const { currentLanguage } = useLanguage();
   const selectedVal = typeof value === 'object' ? value?.value : value;
   const initialDetail = typeof value === 'object' ? value?.detail || '' : '';
   const [detail, setDetail] = useState(initialDetail);
@@ -39,7 +41,7 @@ export const YesNoInput: React.FC<YesNoInputProps> = ({
         <button
           type="button"
           onClick={() => handleSelect('YES')}
-          className={`py-8 px-6 rounded-3xl border-2 flex flex-col items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg ${
+          className={`py-8 px-6 rounded-3xl border-2 flex flex-col items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg cursor-pointer ${
             selectedVal === 'YES'
               ? 'bg-teal-500/20 border-teal-400 text-white ring-4 ring-teal-500/30'
               : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
@@ -52,14 +54,16 @@ export const YesNoInput: React.FC<YesNoInputProps> = ({
           >
             <Check className="w-9 h-9 stroke-[3]" />
           </div>
-          <span className="text-2xl font-bold tracking-wide">YES</span>
+          <span className="text-2xl font-bold tracking-wide">
+            {currentLanguage === 'ta' ? 'ஆம் (YES)' : currentLanguage === 'hi' ? 'हाँ (YES)' : 'YES'}
+          </span>
         </button>
 
         {/* NO button */}
         <button
           type="button"
           onClick={() => handleSelect('NO')}
-          className={`py-8 px-6 rounded-3xl border-2 flex flex-col items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg ${
+          className={`py-8 px-6 rounded-3xl border-2 flex flex-col items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg cursor-pointer ${
             selectedVal === 'NO'
               ? 'bg-rose-500/20 border-rose-400 text-white ring-4 ring-rose-500/30'
               : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
@@ -72,7 +76,9 @@ export const YesNoInput: React.FC<YesNoInputProps> = ({
           >
             <X className="w-9 h-9 stroke-[3]" />
           </div>
-          <span className="text-2xl font-bold tracking-wide">NO</span>
+          <span className="text-2xl font-bold tracking-wide">
+            {currentLanguage === 'ta' ? 'இல்லை (NO)' : currentLanguage === 'hi' ? 'नहीं (NO)' : 'NO'}
+          </span>
         </button>
       </div>
 
@@ -80,14 +86,20 @@ export const YesNoInput: React.FC<YesNoInputProps> = ({
       {withDetail && selectedVal === 'YES' && (
         <div className="w-full max-w-xl animate-fadeIn">
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Please provide brief details (optional):
+            {currentLanguage === 'ta'
+              ? 'கூடுதல் விவரங்களை உள்ளிடவும் (விருப்பப்பட்டால்):'
+              : 'Please provide brief details (optional):'}
           </label>
           <input
             type="text"
             value={detail}
             onChange={handleDetailChange}
-            placeholder="e.g., Since yesterday evening / mild intensity"
-            className="w-full px-5 py-4 bg-slate-900 border border-slate-700 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 text-base"
+            placeholder={
+              currentLanguage === 'ta'
+                ? 'எ.கா: மாத்திரை பெயர், வலி ஏற்பட்ட நேரம்'
+                : 'e.g. tablet name, when it started'
+            }
+            className="w-full p-4 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 text-base"
           />
         </div>
       )}

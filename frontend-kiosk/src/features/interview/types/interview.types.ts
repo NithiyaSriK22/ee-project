@@ -73,11 +73,13 @@ export type AnsweredViaType = (typeof AnsweredVia)[keyof typeof AnsweredVia];
 export interface QuestionOption {
   label: string;
   value: string;
+  code?: string;
   subPrompt?: string;
 }
 
 export interface InterviewQuestionItem {
   id: string;
+  questionCode?: string;
   section: InterviewSection;
   promptText: string;
   promptAudioHint?: string;

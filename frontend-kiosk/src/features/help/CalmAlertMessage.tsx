@@ -1,5 +1,6 @@
 import React from 'react';
 import { UserCheck, ShieldAlert } from 'lucide-react';
+import { useLanguage } from '../language/useLanguage';
 
 interface CalmAlertMessageProps {
   messageType?: 'IMMEDIATE' | 'STAFF_CHECK' | null;
@@ -12,6 +13,7 @@ export const CalmAlertMessage: React.FC<CalmAlertMessageProps> = ({
   onContinue,
   onPause,
 }) => {
+  const { l } = useLanguage();
   if (!messageType) return null;
 
   const isImmediate = messageType === 'IMMEDIATE';
@@ -24,7 +26,7 @@ export const CalmAlertMessage: React.FC<CalmAlertMessageProps> = ({
           : 'bg-sky-50 border-sky-300 text-sky-950'
       }`}>
         <div className="flex items-center gap-4">
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
             isImmediate ? 'bg-amber-200 text-amber-800' : 'bg-sky-200 text-sky-800'
           }`}>
             {isImmediate ? <ShieldAlert className="w-8 h-8" /> : <UserCheck className="w-8 h-8" />}
@@ -32,34 +34,34 @@ export const CalmAlertMessage: React.FC<CalmAlertMessageProps> = ({
           <div>
             <h4 className="text-xl font-bold">
               {isImmediate
-                ? 'A hospital staff member is coming to assist you.'
-                : 'A staff member will verify a few intake details with you.'}
+                ? l('A hospital staff member is coming to assist you.', 'மருத்துவமனை பணியாளர் ஒருவர் உங்களுக்கு உதவ வருகிறார்.')
+                : l('A staff member will verify a few intake details with you.', 'மருத்துவமனை பணியாளர் சில விவரங்களை உங்களிடம் உறுதிசெய்வார்.')}
             </h4>
             <p className="text-sm font-medium opacity-90 mt-1">
               {isImmediate
-                ? 'Thank you for answering. Please remain seated comfortably at this kiosk. Staff will attend to you shortly.'
-                : 'Our counter staff will review your information shortly to ensure complete records.'}
+                ? l('Thank you for answering. Please remain seated comfortably at this kiosk. Staff will attend to you shortly.', 'பதிலளித்ததற்கு நன்றி. தயவுசெய்து கியோஸ்க்கில் அமர்ந்திருக்கவும். பணியாளர் விரைவில் வருவார்.')
+                : l('Our counter staff will review your information shortly to ensure complete records.', 'எங்கள் கவுண்டர் பணியாளர் உங்கள் விவரங்களை விரைவில் மதிப்பாய்வு செய்வார்.')}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0 w-full md:w-auto">
+        <div className="flex items-center gap-3 shrink-0 w-full md:w-auto">
           {onPause && (
             <button
               onClick={onPause}
-              className="flex-1 md:flex-initial px-4 py-2.5 rounded-xl border border-slate-300 font-semibold text-sm hover:bg-white/80 transition-all"
+              className="flex-1 md:flex-initial px-4 py-2.5 rounded-xl border border-slate-300 font-semibold text-sm hover:bg-white/80 transition-all cursor-pointer"
             >
-              Pause / இடைநிறுத்து
+              {l('Pause', 'இடைநிறுத்து')}
             </button>
           )}
           {onContinue && (
             <button
               onClick={onContinue}
-              className={`flex-1 md:flex-initial px-5 py-2.5 rounded-xl font-bold text-sm text-white shadow-sm transition-all ${
+              className={`flex-1 md:flex-initial px-5 py-2.5 rounded-xl font-bold text-sm text-white shadow-sm transition-all cursor-pointer ${
                 isImmediate ? 'bg-amber-700 hover:bg-amber-800' : 'bg-sky-700 hover:bg-sky-800'
               }`}
             >
-              Continue / தொடரவும்
+              {l('Continue', 'தொடரவும்')}
             </button>
           )}
         </div>

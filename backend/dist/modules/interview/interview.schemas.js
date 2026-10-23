@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.submitInterviewAnswerSchema = exports.startKioskInterviewSchema = exports.updateInterviewQuestionSchema = exports.createInterviewQuestionSchema = exports.branchingRuleSchema = exports.updateInterviewTemplateSchema = exports.createInterviewTemplateSchema = void 0;
+exports.sensitiveSectionConsentSchema = exports.flagPatientUnwellSchema = exports.deferToDoctorSchema = exports.updateHeadsetSchema = exports.configureSurrogateModeSchema = exports.configureGuardianModeSchema = exports.submitInterviewAnswerSchema = exports.startKioskInterviewSchema = exports.updateInterviewQuestionSchema = exports.createInterviewQuestionSchema = exports.branchingRuleSchema = exports.updateInterviewTemplateSchema = exports.createInterviewTemplateSchema = void 0;
 const zod_1 = require("zod");
 const interview_types_js_1 = require("../../types/interview.types.js");
 exports.createInterviewTemplateSchema = zod_1.z.object({
@@ -69,12 +69,22 @@ exports.createInterviewQuestionSchema = zod_1.z.object({
     isRequired: zod_1.z.boolean().default(true),
     order: zod_1.z.number().int().default(0),
     branchingLogic: zod_1.z.array(exports.branchingRuleSchema).optional(),
+    sensitivityLevel: zod_1.z.enum(['NORMAL', 'SENSITIVE', 'HIGHLY_SENSITIVE']).default('NORMAL'),
+    visibilityScope: zod_1.z.enum(['STAFF_VISIBLE', 'CLINICAL_STAFF', 'DOCTOR_ONLY']).default('STAFF_VISIBLE'),
+    ageMin: zod_1.z.number().int().min(0).max(120).optional(),
+    ageMax: zod_1.z.number().int().min(0).max(120).optional(),
+    sexApplicability: zod_1.z.enum(['ALL', 'MALE', 'FEMALE', 'INTERSEX', 'OTHER']).default('ALL'),
+    pregnancyGated: zod_1.z.boolean().default(false),
+    audioAllowedInPublic: zod_1.z.boolean().default(true),
+    aiSummarizationAllowed: zod_1.z.boolean().default(true),
+    carryForwardAllowed: zod_1.z.boolean().default(true),
 });
 exports.updateInterviewQuestionSchema = exports.createInterviewQuestionSchema.partial().extend({
     isArchived: zod_1.z.boolean().optional(),
 });
 exports.startKioskInterviewSchema = zod_1.z.object({
     templateId: zod_1.z.string().uuid().optional(),
+    headsetConnected: zod_1.z.boolean().default(false),
 });
 exports.submitInterviewAnswerSchema = zod_1.z.object({
     questionId: zod_1.z.string().uuid('Question ID must be a valid UUID'),
@@ -84,9 +94,11 @@ exports.submitInterviewAnswerSchema = zod_1.z.object({
         zod_1.z.boolean(),
         zod_1.z.array(zod_1.z.string()),
         zod_1.z.object({
-            value: zod_1.z.union([zod_1.z.string(), zod_1.z.number(), zod_1.z.boolean(), zod_1.z.array(zod_1.z.string())]),
+            value: zod_1.z.union([zod_1.z.string(), zod_1.z.number(), zod_1.z.boolean(), zod_1.z.array(zod_1.z.string())]).optional(),
             detail: zod_1.z.string().optional(),
             unit: zod_1.z.string().optional(),
+            status: zod_1.z.string().optional(),
+            deferralReason: zod_1.z.string().optional(),
         }),
     ]),
     answeredVia: zod_1.z
@@ -95,8 +107,54 @@ exports.submitInterviewAnswerSchema = zod_1.z.object({
         interview_types_js_1.AnsweredVia.TOUCH,
         interview_types_js_1.AnsweredVia.STAFF_ASSISTED,
         interview_types_js_1.AnsweredVia.COMPANION_ASSISTED,
+        interview_types_js_1.AnsweredVia.GUARDIAN,
+        interview_types_js_1.AnsweredVia.SURROGATE,
+        interview_types_js_1.AnsweredVia.PATIENT,
     ])
         .default(interview_types_js_1.AnsweredVia.TOUCH),
     languageUsed: zod_1.z.string().trim().max(10).default('en'),
     isSkipped: zod_1.z.boolean().default(false),
+    isDeferredToDoctor: zod_1.z.boolean().default(false),
+    provenanceLabel: zod_1.z.string().trim().max(255).optional(),
+    deferralReason: zod_1.z.string().trim().max(500).optional(),
+});
+exports.configureGuardianModeSchema = zod_1.z.object({
+    guardianName: zod_1.z.string().trim().min(2, 'Guardian name must be at least 2 characters').max(255),
+    guardianRelationship: zod_1.z.string().trim().min(2, 'Relationship is required').max(100),
+    guardianPhone: zod_1.z.string().trim().max(20).optional(),
+    guardianConsentVerified: zod_1.z.boolean().refine((v) => v === true, {
+        message: 'Guardian consent verification is required to proceed with minor intake',
+    }),
+    minorAssentObtained: zod_1.z.boolean().optional(),
+});
+exports.configureSurrogateModeSchema = zod_1.z.object({
+    surrogateName: zod_1.z.string().trim().min(2, 'Surrogate name must be at least 2 characters').max(255),
+    surrogateRelationship: zod_1.z.string().trim().min(2, 'Relationship is required').max(100),
+    surrogatePhone: zod_1.z.string().trim().max(20).optional(),
+    reason: zod_1.z.enum([
+        'PATIENT_UNWELL',
+        'COGNITIVE_IMPAIRMENT',
+        'PHYSICAL_DISABILITY',
+        'LANGUAGE_BARRIER',
+        'REFUSED_DEVICE',
+        'OTHER',
+    ]),
+    acuteDistressNoted: zod_1.z.boolean().default(false),
+});
+exports.updateHeadsetSchema = zod_1.z.object({
+    connected: zod_1.z.boolean(),
+});
+exports.deferToDoctorSchema = zod_1.z.object({
+    questionId: zod_1.z.string().uuid('Question ID must be a valid UUID'),
+    reason: zod_1.z.string().trim().max(500).optional(),
+});
+exports.flagPatientUnwellSchema = zod_1.z.object({
+    reason: zod_1.z.string().trim().max(500).optional(),
+    flaggedByStaff: zod_1.z.boolean().default(true),
+});
+exports.sensitiveSectionConsentSchema = zod_1.z.object({
+    section: zod_1.z.string().trim().min(1, 'Section name is required'),
+    action: zod_1.z.enum(['CONSENT_GIVEN', 'SKIP_SECTION', 'DEFER_ALL_TO_DOCTOR']),
+    companionPresent: zod_1.z.boolean().default(false),
+    requestedPrivateMode: zod_1.z.boolean().default(false),
 });

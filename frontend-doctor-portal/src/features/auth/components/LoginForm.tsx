@@ -64,7 +64,7 @@ export const LoginForm: React.FC = () => {
               placeholder="dr.nithiya@hospital.org"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all shadow-xs"
+              className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-700 focus:border-teal-700 transition-all shadow-xs"
             />
           </div>
         </div>
@@ -78,7 +78,7 @@ export const LoginForm: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsForgotModalOpen(true)}
-              className="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline transition-colors"
+              className="text-xs font-semibold text-teal-700 hover:text-teal-800 hover:underline transition-colors"
             >
               Forgot password?
             </button>
@@ -95,7 +95,7 @@ export const LoginForm: React.FC = () => {
               placeholder="••••••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-red-600 focus:border-red-600 transition-all shadow-xs"
+              className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-700 focus:border-teal-700 transition-all shadow-xs"
             />
             <button
               type="button"
@@ -117,7 +117,7 @@ export const LoginForm: React.FC = () => {
               onClick={() => handleQuickFill('nithiya0sy@gmail.com')}
               className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-all ${
                 email === 'nithiya0sy@gmail.com'
-                  ? 'bg-red-50 text-red-700 border-red-300 font-bold'
+                  ? 'bg-teal-50 text-teal-800 border-teal-300 font-bold'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
@@ -128,7 +128,7 @@ export const LoginForm: React.FC = () => {
               onClick={() => handleQuickFill('dr.ananya@hospital.org')}
               className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-all ${
                 email === 'dr.ananya@hospital.org'
-                  ? 'bg-red-50 text-red-700 border-red-300 font-bold'
+                  ? 'bg-teal-50 text-teal-800 border-teal-300 font-bold'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
@@ -136,10 +136,10 @@ export const LoginForm: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => handleQuickFill('admin@medikiosk.hospital')}
+              onClick={() => handleQuickFill('admin@thunai.hospital')}
               className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-all ${
-                email === 'admin@medikiosk.hospital'
-                  ? 'bg-red-50 text-red-700 border-red-300 font-bold'
+                email === 'admin@thunai.hospital'
+                  ? 'bg-teal-50 text-teal-800 border-teal-300 font-bold'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
@@ -151,7 +151,7 @@ export const LoginForm: React.FC = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full mt-3 py-3.5 px-4 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-red-600/30 disabled:opacity-60 cursor-pointer border border-red-700"
+          className="w-full mt-3 py-3.5 px-4 bg-teal-700 hover:bg-teal-800 active:bg-teal-900 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-teal-900/20 disabled:opacity-60 cursor-pointer border border-teal-800"
         >
           {isLoading ? (
             <>

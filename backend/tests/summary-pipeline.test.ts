@@ -20,11 +20,17 @@ import { globalErrorHandler } from '../src/middleware/error.middleware.js';
 import { AppRequest } from '../src/types/api.types.js';
 import { SummarySections, SummaryPromptStatus } from '../src/modules/summary/summary.types.js';
 import { PromptManager } from '../src/modules/summary/generation/prompt-manager.js';
+import { prisma } from '../src/database/prisma.js';
 
 describe('MODULE 5 — AI Clinical Summarization Engine', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     devFallbackSummaryStore.clear();
     mockSummarizationProvider.setBehaviorMode('NORMAL');
+    try {
+      await prisma.summaryPromptTemplate.deleteMany({
+        where: { version: 'v2.0.0-untested' },
+      });
+    } catch {}
   });
 
   describe('1. Deterministic Summary Input Assembly & Handling Uncertain Items', () => {

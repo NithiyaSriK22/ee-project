@@ -17,7 +17,7 @@ export const documentsApi = {
     documentType: DocumentType;
   }): Promise<DocumentUploadResponse> {
     const res = await apiClient.post<ApiResponse<DocumentUploadResponse>>(
-      '/api/v1/kiosk/documents/upload',
+      '/kiosk/documents/upload',
       payload
     );
     return res.data.data as DocumentUploadResponse;
@@ -28,7 +28,7 @@ export const documentsApi = {
    */
   async listVisitDocuments(): Promise<UploadedDocumentItem[]> {
     const res = await apiClient.get<ApiResponse<UploadedDocumentItem[]>>(
-      '/api/v1/kiosk/documents'
+      '/kiosk/documents'
     );
     return res.data.data as UploadedDocumentItem[];
   },
@@ -38,7 +38,7 @@ export const documentsApi = {
    */
   async getDocumentStatus(id: string): Promise<UploadedDocumentItem> {
     const res = await apiClient.get<ApiResponse<UploadedDocumentItem>>(
-      `/api/v1/kiosk/documents/${id}/status`
+      `/kiosk/documents/${id}/status`
     );
     return res.data.data as UploadedDocumentItem;
   },
@@ -48,7 +48,7 @@ export const documentsApi = {
    */
   async getValidatedFields(id: string): Promise<UploadedDocumentItem> {
     const res = await apiClient.get<ApiResponse<UploadedDocumentItem>>(
-      `/api/v1/kiosk/documents/${id}/validated-fields`
+      `/kiosk/documents/${id}/validated-fields`
     );
     return res.data.data as UploadedDocumentItem;
   },
@@ -58,7 +58,7 @@ export const documentsApi = {
    */
   async revalidateDocument(id: string): Promise<any> {
     const res = await apiClient.post<ApiResponse<any>>(
-      `/api/v1/kiosk/documents/${id}/revalidate`
+      `/kiosk/documents/${id}/revalidate`
     );
     return res.data.data;
   },

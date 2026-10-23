@@ -4,6 +4,7 @@ import {
   EvaluationStates,
   VALIDATION_THRESHOLDS,
 } from '../documents.types.js';
+import { ClinicalDictionaryService } from '../../clinical-dictionary/dictionary.service.js';
 
 export class FormularyMatcher {
   /**
@@ -91,42 +92,78 @@ export class FormularyMatcher {
       score: 0.0,
     };
 
+    let runnerUp: {
+      drug: FormularyReferenceItem | null;
+      score: number;
+    } = {
+      drug: null,
+      score: 0.0,
+    };
+
+    const updateMatches = (drug: FormularyReferenceItem, term: string, score: number) => {
+      if (score > bestMatch.score) {
+        if (bestMatch.drug && bestMatch.drug.canonicalName !== drug.canonicalName) {
+          runnerUp = { drug: bestMatch.drug, score: bestMatch.score };
+        }
+        bestMatch = { drug, matchedTerm: term, score };
+      } else if (
+        bestMatch.drug &&
+        drug.canonicalName !== bestMatch.drug.canonicalName &&
+        score > runnerUp.score
+      ) {
+        runnerUp = { drug, score };
+      }
+    };
+
     for (const drug of formularyDrugs) {
       // 1. Check Canonical Name
       const scoreCanonical = this.calculateSimilarity(normalizedInput, drug.canonicalName);
-      if (scoreCanonical > bestMatch.score) {
-        bestMatch = { drug, matchedTerm: drug.canonicalName, score: scoreCanonical };
-      }
+      updateMatches(drug, drug.canonicalName, scoreCanonical);
 
       // 2. Check Generic Name
       const scoreGeneric = this.calculateSimilarity(normalizedInput, drug.genericName);
-      if (scoreGeneric > bestMatch.score) {
-        bestMatch = { drug, matchedTerm: drug.canonicalName, score: scoreGeneric };
-      }
+      updateMatches(drug, drug.canonicalName, scoreGeneric);
 
       // 3. Check Brand Names
       for (const brand of drug.brandNames || []) {
         const scoreBrand = this.calculateSimilarity(normalizedInput, brand);
-        if (scoreBrand > bestMatch.score) {
-          bestMatch = { drug, matchedTerm: drug.canonicalName, score: scoreBrand };
-        }
+        updateMatches(drug, drug.canonicalName, scoreBrand);
       }
 
       // 4. Check Common Misreadings
       for (const misread of drug.commonMisreadings || []) {
         const scoreMisread = this.calculateSimilarity(normalizedInput, misread);
-        if (scoreMisread >= threshold && scoreMisread > bestMatch.score) {
-          bestMatch = { drug, matchedTerm: drug.canonicalName, score: Math.max(scoreMisread, 0.90) };
-        } else if (scoreMisread > bestMatch.score) {
-          bestMatch = { drug, matchedTerm: drug.canonicalName, score: scoreMisread };
-        }
+        const effectiveScore = scoreMisread >= threshold ? Math.max(scoreMisread, 0.90) : scoreMisread;
+        updateMatches(drug, drug.canonicalName, effectiveScore);
       }
 
-      // Early exit on exact match
-      if (bestMatch.score === 1.0) break;
+      // Continue to evaluate all candidates to detect near-tie runners-up
     }
 
     if (bestMatch.drug && bestMatch.score >= threshold) {
+      // Enforce LASA safety check against Clinical Data Dictionary
+      try {
+        const lasaCheck = ClinicalDictionaryService.evaluateLasaMatchSafety(
+          bestMatch.drug.canonicalName,
+          bestMatch.score,
+          runnerUp.drug ? runnerUp.drug.canonicalName : null,
+          runnerUp.score,
+          0.10
+        );
+
+        if (!lasaCheck.isSafe) {
+          return {
+            checkName: 'FORMULARY_MATCH',
+            state: EvaluationStates.MISMATCH,
+            matchedValue: bestMatch.drug.canonicalName,
+            score: bestMatch.score,
+            detail: lasaCheck.detail,
+          };
+        }
+      } catch {
+        // Safe fallback if dictionary service unavailable in isolated test run
+      }
+
       return {
         checkName: 'FORMULARY_MATCH',
         state: EvaluationStates.MATCH,

@@ -116,7 +116,10 @@ export const KioskSessionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const comp = await registrationApi.getCompletion();
       setCompletion(comp);
     } catch (err: any) {
-      const msg = err?.message || 'Failed to initialize patient kiosk session.';
+      let msg = err?.message || 'Failed to initialize patient kiosk session.';
+      if (typeof msg === 'string' && msg.toLowerCase().includes('timeout')) {
+        msg = 'Connection to the hospital server timed out. Please ensure the backend service (port 5001) is running.';
+      }
       setError(msg);
       throw new Error(msg);
     } finally {

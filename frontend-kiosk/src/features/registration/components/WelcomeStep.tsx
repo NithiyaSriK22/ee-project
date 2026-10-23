@@ -1,5 +1,6 @@
 import React from 'react';
 import { UserPlus, UserCheck, Stethoscope, Sparkles, Volume2 } from 'lucide-react';
+import { useLanguage } from '../../language/useLanguage';
 
 interface WelcomeStepProps {
   onSelectFlow: (flow: 'new' | 'returning') => void;
@@ -7,6 +8,8 @@ interface WelcomeStepProps {
 }
 
 export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSelectFlow, onSpeakPrompt }) => {
+  const { locale } = useLanguage();
+
   return (
     <div className="space-y-8 animate-in fade-in">
       <div className="text-center max-w-2xl mx-auto">
@@ -15,27 +18,23 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSelectFlow, onSpeakP
         </div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-semibold mb-2 border border-teal-200">
           <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-          <span>Automated OPD Case-Taking & Triage</span>
+          <span>{locale.welcomeBadge}</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-          Welcome to Hospital Outpatient Kiosk
+          {locale.welcomeHeading}
         </h1>
         <p className="text-base text-slate-600 mt-2">
-          மருத்துவமனை வெளிநோயாளி பிரிவு — உங்கள் விவரங்களை பதிவு செய்து மருத்துவரை அணுகவும்.
+          {locale.welcomeSubtitle}
         </p>
 
         {onSpeakPrompt && (
           <button
             type="button"
-            onClick={() =>
-              onSpeakPrompt(
-                'Welcome to MediKiosk. Touch the screen to register as a new patient or enter your hospital registration number.'
-              )
-            }
-            className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3.5 py-1.5 rounded-lg border border-teal-200 transition-colors"
+            onClick={() => onSpeakPrompt(locale.welcomeSubtitle)}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3.5 py-1.5 rounded-lg border border-teal-200 transition-colors cursor-pointer"
           >
             <Volume2 className="w-4 h-4" />
-            <span>Listen Voice Instructions</span>
+            <span>{locale.welcomeAudioButton}</span>
           </button>
         )}
       </div>
@@ -52,19 +51,21 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSelectFlow, onSpeakP
               <UserPlus className="w-7 h-7" />
             </div>
             <h3 className="text-2xl font-bold text-slate-900 group-hover:text-teal-900">
-              New Patient
+              {locale.welcomeNewPatientTitle}
             </h3>
             <div className="text-sm font-semibold text-teal-700 mt-0.5">
-              புதிய நோயாளி பதிவு
+              {locale.welcomeNewPatientSub}
             </div>
             <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-              First time visiting this hospital. Enter basic demographic information to receive your hospital registration number.
+              {locale.welcomeNewPatientDesc}
             </p>
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-teal-700">
-            <span>Start New Registration →</span>
-            <span className="px-2 py-0.5 rounded bg-teal-50 border border-teal-200">No password needed</span>
+            <span>{locale.welcomeNewPatientAction}</span>
+            <span className="px-2 py-0.5 rounded bg-teal-50 border border-teal-200">
+              {locale.welcomeNewPatientBadge}
+            </span>
           </div>
         </button>
 
@@ -79,19 +80,21 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSelectFlow, onSpeakP
               <UserCheck className="w-7 h-7" />
             </div>
             <h3 className="text-2xl font-bold text-slate-900 group-hover:text-indigo-900">
-              Returning Patient
+              {locale.welcomeReturningTitle}
             </h3>
             <div className="text-sm font-semibold text-indigo-700 mt-0.5">
-              ஏற்கனவே பதிவு செய்தவர்
+              {locale.welcomeReturningSub}
             </div>
             <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-              Already have a hospital registration card or patient registration number (e.g. MK-2026-XXXXXX).
+              {locale.welcomeReturningDesc}
             </p>
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-indigo-700">
-            <span>Enter Hospital ID →</span>
-            <span className="px-2 py-0.5 rounded bg-indigo-50 border border-indigo-200">Fast lookup</span>
+            <span>{locale.welcomeReturningAction}</span>
+            <span className="px-2 py-0.5 rounded bg-indigo-50 border border-indigo-200">
+              {locale.welcomeReturningBadge}
+            </span>
           </div>
         </button>
       </div>

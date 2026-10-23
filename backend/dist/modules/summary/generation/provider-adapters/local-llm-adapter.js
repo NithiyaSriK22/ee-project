@@ -1,10 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LocalLlmAdapter = void 0;
+exports.createDefaultLocalLlmAdapter = createDefaultLocalLlmAdapter;
 class LocalLlmAdapter {
     providerId = 'LOCAL_LLM';
     modelId;
     modelVersion = '2026.01';
+    isMock = false;
     baseUrl;
     apiKey;
     timeoutMs;
@@ -37,10 +39,20 @@ class LocalLlmAdapter {
                 signal: controller.signal,
             });
             if (!response.ok) {
-                throw new Error(`Local LLM server returned HTTP ${response.status}: ${await response.text()}`);
+                const errorText = await response.text().catch(() => '');
+                throw new Error(`Local LLM server returned HTTP ${response.status}: ${errorText}`);
             }
-            const data = (await response.json());
-            const content = data.choices?.[0]?.message?.content || '{}';
+            let data;
+            try {
+                data = await response.json();
+            }
+            catch (jsonErr) {
+                throw new Error(`LLM provider returned non-JSON response payload: ${jsonErr.message}`);
+            }
+            const content = data.choices?.[0]?.message?.content;
+            if (!content || typeof content !== 'string' || !content.trim()) {
+                throw new Error('LLM provider returned empty response payload');
+            }
             return {
                 rawOutput: content,
                 modelId: this.modelId,
@@ -53,9 +65,26 @@ class LocalLlmAdapter {
                 latencyMs: Date.now() - startTime,
             };
         }
+        catch (err) {
+            if (err.name === 'AbortError' || err.code === 'ABORT_ERR') {
+                throw new Error(`LLM provider request timed out after ${this.timeoutMs}ms`);
+            }
+            if (err.code === 'ECONNREFUSED' || err.message?.includes('fetch failed')) {
+                throw new Error(`LLM provider service unavailable at ${this.baseUrl}: ${err.message}`);
+            }
+            throw err;
+        }
         finally {
             clearTimeout(timeoutId);
         }
     }
 }
 exports.LocalLlmAdapter = LocalLlmAdapter;
+function createDefaultLocalLlmAdapter() {
+    return new LocalLlmAdapter({
+        baseUrl: process.env.LOCAL_LLM_URL || 'http://localhost:11434/v1',
+        model: process.env.LOCAL_LLM_MODEL || 'llama3-8b-instruct',
+        apiKey: process.env.LOCAL_LLM_API_KEY,
+        timeoutMs: parseInt(process.env.LOCAL_LLM_TIMEOUT_MS || '30000', 10),
+    });
+}

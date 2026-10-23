@@ -5,6 +5,7 @@ class MockSummarizationProvider {
     providerId = 'MOCK_PROVIDER';
     modelId = 'medikiosk-constrained-summary-v1';
     modelVersion = '2026.04';
+    isMock = true;
     behaviorMode = 'NORMAL';
     setBehaviorMode(mode) {
         this.behaviorMode = mode;

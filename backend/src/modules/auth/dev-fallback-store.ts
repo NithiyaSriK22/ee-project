@@ -57,6 +57,13 @@ class DevFallbackStore {
       },
       {
         id: 'c0000000-0000-4000-a000-000000000003',
+        email: 'admin@thunai.hospital',
+        fullName: 'Hospital Chief Admin',
+        role: 'SUPER_ADMIN',
+        dept: 'Clinical Administration',
+      },
+      {
+        id: 'c0000000-0000-4000-a000-000000000013',
         email: 'admin@medikiosk.hospital',
         fullName: 'Hospital Chief Admin',
         role: 'SUPER_ADMIN',
@@ -64,6 +71,13 @@ class DevFallbackStore {
       },
       {
         id: 'c0000000-0000-4000-a000-000000000004',
+        email: 'staff@thunai.hospital',
+        fullName: 'OPD Staff Attendant',
+        role: 'STAFF_ATTENDANT',
+        dept: 'OPD Reception & Triage',
+      },
+      {
+        id: 'c0000000-0000-4000-a000-000000000014',
         email: 'staff@medikiosk.hospital',
         fullName: 'OPD Staff Attendant',
         role: 'STAFF_ATTENDANT',
@@ -76,13 +90,37 @@ class DevFallbackStore {
         role: 'DOCTOR',
         dept: 'Cardiology',
       },
+      {
+        id: 'c0000000-0000-4000-a000-000000000010',
+        email: 'ops.admin@hospital.org',
+        fullName: 'Operations Administrator',
+        role: 'ADMIN',
+        dept: 'Hospital IT Operations',
+      },
+      {
+        id: 'c0000000-0000-4000-a000-000000000011',
+        email: 'analyst@hospital.org',
+        fullName: 'Quality Data Analyst',
+        role: 'ANALYST',
+        dept: 'Health Quality Intelligence',
+      },
+      {
+        id: 'c0000000-0000-4000-a000-000000000012',
+        email: 'auditor@hospital.org',
+        fullName: 'Hospital Compliance Auditor',
+        role: 'AUDITOR',
+        dept: 'Internal Audit & Ethics',
+      },
     ];
+
+    // Real bcrypt hash for standard clinical development password: 'doctor123'
+    const standardDevPasswordHash = '$2b$10$TBFy4EjU9N25cbuLVhv.AOIr8KK3VwmQnUGm.Qsu8.e7BaCipZYzq';
 
     for (const acc of defaultAccounts) {
       this.users.set(acc.email.toLowerCase(), {
         id: acc.id,
         email: acc.email.toLowerCase(),
-        password_hash: '$2a$12$e80yq9RzJ3Uj.Q9E7eN/Z.6h94zF6yL8K/oP7qE4lqX6e5dF1wDmu',
+        password_hash: standardDevPasswordHash,
         full_name: acc.fullName,
         role: acc.role,
         status: 'ACTIVE',
@@ -100,14 +138,14 @@ class DevFallbackStore {
     const normalized = email.toLowerCase().trim();
     let user = this.users.get(normalized);
     if (!user) {
-      // Auto-provision entered email during offline dev mode
+      // Auto-provision entered email during offline dev mode with valid password verification
       const localPart = normalized.split('@')[0] || 'doctor';
       const cleanName = localPart.replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
       const newId = `dev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
       user = {
         id: newId,
         email: normalized,
-        password_hash: '$2a$12$e80yq9RzJ3Uj.Q9E7eN/Z.6h94zF6yL8K/oP7qE4lqX6e5dF1wDmu',
+        password_hash: '$2b$10$TBFy4EjU9N25cbuLVhv.AOIr8KK3VwmQnUGm.Qsu8.e7BaCipZYzq',
         full_name: `Dr. ${cleanName}`,
         role: 'DOCTOR',
         status: 'ACTIVE',
@@ -128,6 +166,28 @@ class DevFallbackStore {
       if (user.id === id) return user;
     }
     return null;
+  }
+
+  public listAllUsers(): DevStaffUser[] {
+    return Array.from(this.users.values());
+  }
+
+  public updateUserRole(id: string, role: StaffRole): DevStaffUser | null {
+    const user = this.findUserById(id);
+    if (user) {
+      user.role = role;
+      user.updated_at = new Date();
+    }
+    return user;
+  }
+
+  public updateUserStatus(id: string, status: StaffUserStatusType): DevStaffUser | null {
+    const user = this.findUserById(id);
+    if (user) {
+      user.status = status;
+      user.updated_at = new Date();
+    }
+    return user;
   }
 
   public createStaffUser(data: {

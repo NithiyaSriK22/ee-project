@@ -14,5 +14,6 @@ export interface SummarizationProvider {
   readonly providerId: string;
   readonly modelId: string;
   readonly modelVersion: string;
+  readonly isMock?: boolean;
   generate(userPayload: string, systemPrompt: string): Promise<SummarizationProviderResponse>;
 }

@@ -101,12 +101,13 @@ export const DocumentScanPage: React.FC = () => {
       setUploadStage('COMPLETE');
       setLastUploadedResult(result);
 
+      await loadDocuments();
+
       if (result.ocrResult.success === false) {
         setUploadError(result.ocrResult.errorMessage || 'OCR extraction failed on document image.');
         setActiveStage('ERROR');
       } else {
         setActiveStage('SUCCESS');
-        await loadDocuments();
       }
     } catch (err: any) {
       setUploadError(err.message || 'Failed to upload document. Please check connection and try again.');
@@ -290,7 +291,7 @@ export const DocumentScanPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="w-full border-t border-slate-900 py-3 text-center text-xs text-slate-500 mt-8">
-        MediKiosk • Module 4 Deterministic Document Digitization & Validation Gate
+        THUNAI • Deterministic Document Digitization & Validation Gate
       </footer>
     </div>
   );

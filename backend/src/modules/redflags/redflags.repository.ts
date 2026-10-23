@@ -1,6 +1,7 @@
 import { prisma } from '../../database/prisma.js';
 import { logger } from '../../config/logger.js';
 import { devFallbackRedflagsStore } from './dev-fallback-redflags-store.js';
+import { isUuid } from '../../utils/uuid.util.js';
 import {
   RedFlagRuleDTO,
   RedFlagAlertDTO,
@@ -46,7 +47,7 @@ export class RedFlagsRepository {
     }
 
     const available = await checkDatabaseAvailability();
-    if (available) {
+    if (available && isUuid(deviceId)) {
       try {
         const device = await prisma.kioskDevice.findUnique({
           where: { id: deviceId },
@@ -81,8 +82,11 @@ export class RedFlagsRepository {
   }
 
   public static async getRuleById(id: string): Promise<RedFlagRuleDTO | null> {
+    const inMem = devFallbackRedflagsStore.getRuleById(id);
+    if (inMem) return inMem;
+
     const available = await checkDatabaseAvailability();
-    if (available) {
+    if (available && isUuid(id)) {
       try {
         const rule = await prisma.redFlagRule.findUnique({
           where: { id },
@@ -153,10 +157,15 @@ export class RedFlagsRepository {
             is_illustrative: data.isIllustrative ?? false,
             status: 'DRAFT',
             version: 1,
-            created_by: data.createdBy,
+            created_by: data.createdBy && isUuid(data.createdBy) ? data.createdBy : undefined,
           },
         });
-        return this.mapDbRuleToDto(created);
+        const dto = this.mapDbRuleToDto(created);
+        if (data.createdBy && !dto.createdBy) {
+          dto.createdBy = data.createdBy;
+        }
+        devFallbackRedflagsStore.saveRule(dto);
+        return dto;
       } catch (err) {
         logger.warn('Failed to create rule in DB, using fallback', { error: String(err) });
       }
@@ -187,7 +196,7 @@ export class RedFlagsRepository {
     data: Partial<RedFlagRuleDTO>
   ): Promise<RedFlagRuleDTO | null> {
     const available = await checkDatabaseAvailability();
-    if (available) {
+    if (available && isUuid(id)) {
       try {
         const updated = await prisma.redFlagRule.update({
           where: { id },
@@ -201,12 +210,21 @@ export class RedFlagsRepository {
             recommended_staff_action: data.recommendedStaffAction,
             status: data.status,
             version: data.version,
-            clinically_reviewed_by: data.clinicallyReviewedBy,
+            clinically_reviewed_by: data.clinicallyReviewedBy && isUuid(data.clinicallyReviewedBy) ? data.clinicallyReviewedBy : undefined,
             clinically_reviewed_at: data.clinicallyReviewedAt ? new Date(data.clinicallyReviewedAt) : undefined,
             effective_from: data.effectiveFrom ? new Date(data.effectiveFrom) : undefined,
           },
         });
-        return this.mapDbRuleToDto(updated);
+        const dto = this.mapDbRuleToDto(updated);
+        const prev = devFallbackRedflagsStore.getRuleById(id);
+        if (prev?.createdBy && !dto.createdBy) {
+          dto.createdBy = prev.createdBy;
+        }
+        if (data.clinicallyReviewedBy && !dto.clinicallyReviewedBy) {
+          dto.clinicallyReviewedBy = data.clinicallyReviewedBy;
+        }
+        devFallbackRedflagsStore.saveRule(dto);
+        return dto;
       } catch (err) {
         logger.warn('Failed to update rule in DB, using fallback', { error: String(err) });
       }
@@ -241,7 +259,9 @@ export class RedFlagsRepository {
           orderBy: { raised_at: 'desc' },
         });
 
-        return alerts.map(this.mapDbAlertToDto);
+        if (alerts.length > 0) {
+          return alerts.map(this.mapDbAlertToDto);
+        }
       } catch (err) {
         logger.warn('Failed to list alerts from DB, using fallback', { error: String(err) });
       }
@@ -250,8 +270,11 @@ export class RedFlagsRepository {
   }
 
   public static async getAlertById(id: string): Promise<RedFlagAlertDTO | null> {
+    const inMem = devFallbackRedflagsStore.getAlertById(id);
+    if (inMem) return inMem;
+
     const available = await checkDatabaseAvailability();
-    if (available) {
+    if (available && isUuid(id)) {
       try {
         const alert = await prisma.redFlagAlert.findUnique({
           where: { id },
@@ -261,7 +284,7 @@ export class RedFlagsRepository {
             rule: true,
           },
         });
-        return alert ? this.mapDbAlertToDto(alert) : null;
+        if (alert) return this.mapDbAlertToDto(alert);
       } catch (err) {
         logger.warn('Failed to get alert by id from DB, using fallback', { error: String(err) });
       }
@@ -273,22 +296,31 @@ export class RedFlagsRepository {
     visitId: string,
     ruleId: string
   ): Promise<RedFlagAlertDTO | null> {
+    const inMem = devFallbackRedflagsStore.findOpenAlertForVisitAndRule(visitId, ruleId);
+    if (inMem) return inMem;
+
     const available = await checkDatabaseAvailability();
     if (available) {
       try {
+        const where: any = {
+          visit_id: visitId,
+          status: { in: ['RAISED', 'ACKNOWLEDGED', 'IN_ASSESSMENT', 'ESCALATED'] },
+        };
+        if (isUuid(ruleId)) {
+          where.rule_id = ruleId;
+        } else {
+          where.rule_code = ruleId;
+        }
+
         const alert = await prisma.redFlagAlert.findFirst({
-          where: {
-            visit_id: visitId,
-            rule_id: ruleId,
-            status: { in: ['RAISED', 'ACKNOWLEDGED', 'IN_ASSESSMENT', 'ESCALATED'] },
-          },
+          where,
           include: {
             evidences: true,
             events: { orderBy: { timestamp: 'asc' } },
             rule: true,
           },
         });
-        return alert ? this.mapDbAlertToDto(alert) : null;
+        if (alert) return this.mapDbAlertToDto(alert);
       } catch (err) {
         logger.warn('Failed to find open alert from DB, using fallback', { error: String(err) });
       }
@@ -297,6 +329,9 @@ export class RedFlagsRepository {
   }
 
   public static async findOpenAlertForVisit(visitId: string): Promise<RedFlagAlertDTO | null> {
+    const inMem = devFallbackRedflagsStore.findOpenAlertForVisit(visitId);
+    if (inMem) return inMem;
+
     const available = await checkDatabaseAvailability();
     if (available) {
       try {
@@ -311,7 +346,7 @@ export class RedFlagsRepository {
             rule: true,
           },
         });
-        return alert ? this.mapDbAlertToDto(alert) : null;
+        if (alert) return this.mapDbAlertToDto(alert);
       } catch (err) {
         logger.warn('Failed to find open alert for visit from DB, using fallback', { error: String(err) });
       }
@@ -344,9 +379,9 @@ export class RedFlagsRepository {
           const alert = await tx.redFlagAlert.create({
             data: {
               visit_id: params.visitId,
-              kiosk_device_id: params.kioskDeviceId,
+              kiosk_device_id: params.kioskDeviceId && isUuid(params.kioskDeviceId) ? params.kioskDeviceId : undefined,
               kiosk_location: params.kioskLocation,
-              rule_id: params.ruleId,
+              rule_id: params.ruleId && isUuid(params.ruleId) ? params.ruleId : undefined,
               rule_code: params.ruleCode,
               rule_version: params.ruleVersion,
               severity_tier: params.severityTier,
@@ -376,7 +411,18 @@ export class RedFlagsRepository {
           return alert;
         });
 
-        return this.mapDbAlertToDto(created);
+        const dto = this.mapDbAlertToDto(created);
+        if (params.ruleId && !dto.ruleId) {
+          dto.ruleId = params.ruleId;
+        }
+        if (params.ruleDescription && !dto.ruleDescription) {
+          dto.ruleDescription = params.ruleDescription;
+        }
+        if (params.recommendedStaffAction && !dto.recommendedStaffAction) {
+          dto.recommendedStaffAction = params.recommendedStaffAction;
+        }
+        devFallbackRedflagsStore.saveAlert(dto);
+        return dto;
       } catch (err) {
         logger.warn('Failed to create alert in DB transaction, using fallback', { error: String(err) });
       }
@@ -394,8 +440,13 @@ export class RedFlagsRepository {
       factValueSnippet?: string | null;
     }>
   ): Promise<RedFlagAlertDTO | null> {
+    const inMem = devFallbackRedflagsStore.getAlertById(alertId);
+    if (inMem) {
+      return devFallbackRedflagsStore.addEvidenceToAlert(alertId, evidences);
+    }
+
     const available = await checkDatabaseAvailability();
-    if (available) {
+    if (available && isUuid(alertId)) {
       try {
         await prisma.$transaction(async (tx) => {
           for (const ev of evidences) {
@@ -418,7 +469,9 @@ export class RedFlagsRepository {
           });
         });
 
-        return this.getAlertById(alertId);
+        const updated = await this.getAlertById(alertId);
+        if (updated) devFallbackRedflagsStore.saveAlert(updated);
+        return updated;
       } catch (err) {
         logger.warn('Failed to add evidence in DB, using fallback', { error: String(err) });
       }
@@ -439,26 +492,33 @@ export class RedFlagsRepository {
       escalationLevel?: number;
     }
   ): Promise<RedFlagAlertDTO | null> {
+    const inMem = devFallbackRedflagsStore.getAlertById(alertId);
+    if (inMem && !isUuid(alertId)) {
+      return devFallbackRedflagsStore.updateAlertStatus(alertId, status, actorId, actorRole, details);
+    }
+
     const available = await checkDatabaseAvailability();
-    if (available) {
+    if (available && isUuid(alertId)) {
       try {
         const alert = await prisma.redFlagAlert.findUnique({ where: { id: alertId } });
-        if (!alert) return null;
+        if (!alert) {
+          return devFallbackRedflagsStore.updateAlertStatus(alertId, status, actorId, actorRole, details);
+        }
 
         const updateData: any = {
           status,
         };
 
         if (status === 'ACKNOWLEDGED') {
-          updateData.acknowledged_by = actorId;
+          updateData.acknowledged_by = actorId && isUuid(actorId) ? actorId : null;
           updateData.acknowledged_at = new Date();
         } else if (status === 'RESOLVED') {
-          updateData.resolved_by = actorId;
+          updateData.resolved_by = actorId && isUuid(actorId) ? actorId : null;
           updateData.resolved_at = new Date();
           if (details?.resolutionType) updateData.resolution_type = details.resolutionType;
           if (details?.resolutionNote) updateData.resolution_note = details.resolutionNote;
         } else if (status === 'DISMISSED') {
-          updateData.resolved_by = actorId;
+          updateData.resolved_by = actorId && isUuid(actorId) ? actorId : null;
           updateData.resolved_at = new Date();
           if (details?.dismissalReason) updateData.dismissal_reason = details.dismissalReason;
           if (details?.resolutionNote) updateData.resolution_note = details.resolutionNote;
@@ -484,7 +544,7 @@ export class RedFlagsRepository {
               event_type: status === 'ACKNOWLEDGED' ? 'ALERT_ACKNOWLEDGED' : status === 'ESCALATED' ? 'ALERT_ESCALATED' : status === 'RESOLVED' ? 'ALERT_RESOLVED' : 'ALERT_DISMISSED',
               from_status: alert.status,
               to_status: status,
-              actor_id: actorId,
+              actor_id: actorId && isUuid(actorId) ? actorId : undefined,
               actor_role: actorRole,
               details: details ? (details as any) : undefined,
             },
@@ -493,7 +553,9 @@ export class RedFlagsRepository {
           return res;
         });
 
-        return this.mapDbAlertToDto(updated);
+        const resDto = this.mapDbAlertToDto(updated);
+        devFallbackRedflagsStore.saveAlert(resDto);
+        return resDto;
       } catch (err) {
         logger.warn('Failed to update alert status in DB, using fallback', { error: String(err) });
       }
@@ -501,6 +563,7 @@ export class RedFlagsRepository {
 
     return devFallbackRedflagsStore.updateAlertStatus(alertId, status, actorId, actorRole, details);
   }
+
 
   // ============================================================================
   // MAPPERS

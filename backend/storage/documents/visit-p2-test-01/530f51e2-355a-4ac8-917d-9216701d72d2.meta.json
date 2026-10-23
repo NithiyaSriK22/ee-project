@@ -1,0 +1,19 @@
+{
+  "id": "530f51e2-355a-4ac8-917d-9216701d72d2",
+  "visit_id": "visit-p2-test-01",
+  "patient_id": "pat_visit-p2-test-01",
+  "document_type": "PRESCRIPTION",
+  "file_name": "illegible_handwritten_rx.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 124,
+  "storage_reference": "storage/documents/visit-p2-test-01/62209877-e31c-4e2d-8aa1-cda878f8142e_1792777865537_illegible_handwritten_rx.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Handwritten prescription could not be automatically digitized. Low OCR legibility score.",
+  "uploaded_at": "2026-10-23T17:51:05.558Z",
+  "created_at": "2026-10-23T17:51:05.558Z",
+  "updated_at": "2026-10-23T17:51:05.602Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

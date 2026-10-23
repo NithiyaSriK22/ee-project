@@ -1,6 +1,7 @@
 import React from 'react';
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from '../types/registration.types';
 import { Check, Volume2, Globe } from 'lucide-react';
+import { useLanguage } from '../../language/useLanguage';
 
 interface LanguageSelectionStepProps {
   selectedLanguage: SupportedLanguage;
@@ -13,30 +14,35 @@ export const LanguageSelectionStep: React.FC<LanguageSelectionStepProps> = ({
   onSelectLanguage,
   onSpeakPrompt,
 }) => {
+  const { locale, setLanguage } = useLanguage();
+
+  const handleLanguagePick = (code: SupportedLanguage) => {
+    setLanguage(code);
+    onSelectLanguage(code);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in">
       <div className="text-center">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 text-teal-800 text-xs font-semibold mb-2 border border-teal-200">
           <Globe className="w-4 h-4" />
-          <span>Language Preference / மொழியைத் தேர்ந்தெடுக்கவும்</span>
+          <span>{locale.languageBadge}</span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
-          Choose Your Preferred Language
+          {locale.languageHeading}
         </h2>
         <p className="text-sm text-slate-600 mt-1">
-          The kiosk interface, audio voice guidance, and question prompts will adapt to this language.
+          {locale.languageSubtitle}
         </p>
 
         {onSpeakPrompt && (
           <button
             type="button"
-            onClick={() =>
-              onSpeakPrompt('Please choose your preferred language for the hospital visit.')
-            }
-            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded-lg border border-teal-200 transition-colors"
+            onClick={() => onSpeakPrompt(locale.languageSubtitle)}
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded-lg border border-teal-200 transition-colors cursor-pointer"
           >
             <Volume2 className="w-3.5 h-3.5" />
-            <span>Listen Audio / ஆடியோ கேட்கவும்</span>
+            <span>{locale.languageAudioButton}</span>
           </button>
         )}
       </div>
@@ -48,7 +54,7 @@ export const LanguageSelectionStep: React.FC<LanguageSelectionStepProps> = ({
             <button
               key={lang.code}
               type="button"
-              onClick={() => onSelectLanguage(lang.code)}
+              onClick={() => handleLanguagePick(lang.code)}
               className={`relative p-5 rounded-2xl border-2 text-left transition-all flex flex-col justify-between cursor-pointer ${
                 isSelected
                   ? 'border-teal-600 bg-teal-50/70 shadow-md ring-2 ring-teal-500/30'

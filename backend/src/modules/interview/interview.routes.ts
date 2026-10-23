@@ -10,6 +10,12 @@ import {
   updateInterviewQuestionSchema,
   startKioskInterviewSchema,
   submitInterviewAnswerSchema,
+  configureGuardianModeSchema,
+  configureSurrogateModeSchema,
+  updateHeadsetSchema,
+  deferToDoctorSchema,
+  flagPatientUnwellSchema,
+  sensitiveSectionConsentSchema,
 } from './interview.schemas.js';
 
 // Router for Patient Kiosk Interview Operations
@@ -34,6 +40,48 @@ kioskInterviewRouter.post(
   InterviewKioskController.submitAnswer
 );
 
+// Module 3B: Special Populations & Interview Privacy Routes
+kioskInterviewRouter.post(
+  '/mode/guardian',
+  validateRequest({ body: configureGuardianModeSchema }),
+  InterviewKioskController.configureGuardian
+);
+
+kioskInterviewRouter.post(
+  '/mode/surrogate',
+  validateRequest({ body: configureSurrogateModeSchema }),
+  InterviewKioskController.configureSurrogate
+);
+
+kioskInterviewRouter.post(
+  '/privacy/headset',
+  validateRequest({ body: updateHeadsetSchema }),
+  InterviewKioskController.updateHeadset
+);
+
+kioskInterviewRouter.post(
+  '/defer-to-doctor',
+  validateRequest({ body: deferToDoctorSchema }),
+  InterviewKioskController.deferToDoctor
+);
+
+kioskInterviewRouter.post(
+  '/patient-unwell',
+  validateRequest({ body: flagPatientUnwellSchema }),
+  InterviewKioskController.flagPatientUnwell
+);
+
+kioskInterviewRouter.post(
+  '/sensitive-consent',
+  validateRequest({ body: sensitiveSectionConsentSchema }),
+  InterviewKioskController.sensitiveSectionConsent
+);
+
+kioskInterviewRouter.post(
+  '/disclosure-alert',
+  InterviewKioskController.triggerSensitiveDisclosure
+);
+
 kioskInterviewRouter.post(
   '/complete',
   InterviewKioskController.complete
@@ -43,6 +91,7 @@ kioskInterviewRouter.get(
   '/progress',
   InterviewKioskController.getProgress
 );
+
 
 // Router for Admin Template & Question Bank Management
 const adminTemplateRouter = Router();

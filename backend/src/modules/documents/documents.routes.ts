@@ -10,14 +10,18 @@ import {
   importFormularyDrugsSchema,
 } from './documents.schemas.js';
 
+import { optionalUploadMiddleware } from '../../middleware/upload.middleware.js';
+
 // Kiosk Document Capture & Validation Router
 const kioskDocumentsRouter = Router();
 
 kioskDocumentsRouter.use(authenticateKioskSession);
 
-kioskDocumentsRouter.post('/upload', DocumentsController.uploadDocument);
+kioskDocumentsRouter.post('/upload', optionalUploadMiddleware, DocumentsController.uploadDocument);
 kioskDocumentsRouter.get('/', DocumentsController.listVisitDocuments);
 kioskDocumentsRouter.get('/:id/status', DocumentsController.getDocumentStatus);
+kioskDocumentsRouter.get('/:id/file', DocumentsController.streamDocumentFile);
+kioskDocumentsRouter.get('/:id/image', DocumentsController.streamDocumentFile);
 kioskDocumentsRouter.get('/:id/validated-fields', DocumentsController.getValidatedFields);
 kioskDocumentsRouter.post('/:id/revalidate', DocumentsController.revalidate);
 

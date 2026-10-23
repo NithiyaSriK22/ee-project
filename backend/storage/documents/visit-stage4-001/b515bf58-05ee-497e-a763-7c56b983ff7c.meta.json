@@ -1,0 +1,19 @@
+{
+  "id": "b515bf58-05ee-497e-a763-7c56b983ff7c",
+  "visit_id": "visit-stage4-001",
+  "patient_id": "2897ce67-89c4-4043-a384-a6e2aee6da36",
+  "document_type": "PRESCRIPTION",
+  "file_name": "handwritten_cursive_rx.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 92,
+  "storage_reference": "storage/documents/visit-stage4-001/1f3b3983-b093-433b-b287-b19d03092326_1792784554984_handwritten_cursive_rx.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Handwritten prescription could not be automatically digitized. Low OCR legibility score.",
+  "uploaded_at": "2026-10-23T19:42:34.990Z",
+  "created_at": "2026-10-23T19:42:34.990Z",
+  "updated_at": "2026-10-23T19:42:34.999Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

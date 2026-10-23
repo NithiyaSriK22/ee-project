@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VALIDATION_THRESHOLDS = exports.FormularyStatus = exports.OcrStatuses = exports.DocumentOverallStatuses = exports.FieldVerificationResults = exports.EvaluationStates = exports.FieldTypeMetadata = exports.FieldTypes = exports.DocumentTypes = void 0;
+exports.updateGovernedValidationThresholds = updateGovernedValidationThresholds;
 exports.DocumentTypes = {
     PRESCRIPTION: 'PRESCRIPTION',
     LAB_REPORT: 'LAB_REPORT',
@@ -58,10 +59,22 @@ exports.FormularyStatus = {
     ACTIVE: 'ACTIVE',
     RETIRED: 'RETIRED',
 };
-// Threshold Constants
+// Threshold Constants (Calibrated via Module 5A Ground-Truth Program)
 exports.VALIDATION_THRESHOLDS = {
     MIN_USABLE_OCR_CONFIDENCE: 0.40, // Below 40% is marked UNREADABLE
     HIGH_OCR_CONFIDENCE: 0.70, // Minimum confidence for automated VERIFIED
     FORMULARY_SIMILARITY_THRESHOLD: 0.80, // Minimum fuzzy string similarity score (80%)
     DEFAULT_FORMULARY_VERSION: 'NFI-EML-2026.1',
 };
+function updateGovernedValidationThresholds(thresholds) {
+    if (thresholds.minUsableOcrConfidence !== undefined) {
+        exports.VALIDATION_THRESHOLDS.MIN_USABLE_OCR_CONFIDENCE = thresholds.minUsableOcrConfidence;
+    }
+    if (thresholds.highOcrConfidence !== undefined) {
+        exports.VALIDATION_THRESHOLDS.HIGH_OCR_CONFIDENCE = thresholds.highOcrConfidence;
+    }
+    if (thresholds.formularySimilarityThreshold !== undefined) {
+        exports.VALIDATION_THRESHOLDS.FORMULARY_SIMILARITY_THRESHOLD = thresholds.formularySimilarityThreshold;
+    }
+    return exports.VALIDATION_THRESHOLDS;
+}

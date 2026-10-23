@@ -1,0 +1,19 @@
+{
+  "id": "49ccec98-d1b5-46da-bf13-b6cf433fb821",
+  "visit_id": "visit-stage3-001",
+  "patient_id": "d40f3c73-c6ce-47db-ac1f-e17f035a58f6",
+  "document_type": "PRESCRIPTION",
+  "file_name": "expired_doc.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 89,
+  "storage_reference": "storage/documents/visit-stage3-001/f2712880-5383-4334-8a24-f12611fcee30_1792784586753_expired_doc.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document image appears blank or unreadable (file size below threshold).",
+  "uploaded_at": "2026-10-23T19:43:06.756Z",
+  "created_at": "2026-10-23T19:43:06.756Z",
+  "updated_at": "2026-10-23T19:43:06.765Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

@@ -1,0 +1,19 @@
+{
+  "id": "0622d3d5-9e81-49b6-b942-34b55d265fbf",
+  "visit_id": "visit-stage4-001",
+  "patient_id": "2897ce67-89c4-4043-a384-a6e2aee6da36",
+  "document_type": "PRESCRIPTION",
+  "file_name": "original_scan_intact.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 87,
+  "storage_reference": "storage/documents/visit-stage4-001/8675c62e-c23a-4438-8635-a816e567306f_1792786048699_original_scan_intact.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Handwritten prescription could not be automatically digitized. Low OCR legibility score.",
+  "uploaded_at": "2026-10-23T20:07:28.703Z",
+  "created_at": "2026-10-23T20:07:28.703Z",
+  "updated_at": "2026-10-23T20:07:28.711Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

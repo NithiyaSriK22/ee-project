@@ -198,6 +198,10 @@ class DevFallbackRedflagsStore {
         this.alerts.set(id, alert);
         return alert;
     }
+    saveAlert(alert) {
+        this.alerts.set(alert.id, alert);
+        return alert;
+    }
     addEvidenceToAlert(alertId, evidences) {
         const alert = this.alerts.get(alertId);
         if (!alert)

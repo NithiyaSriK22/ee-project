@@ -112,7 +112,7 @@ export const confirmReviewSchema = z.object({
     attestationAccepted: z.boolean().refine((val) => val === true, {
       message: 'Physician attestation must be explicitly accepted to confirm clinical record',
     }),
-    attestationVersion: z.string().min(1, 'Attestation version is required'),
+    attestationVersion: z.string().default('ATTEST-v1.0.0'),
   }),
 });
 

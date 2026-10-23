@@ -12,7 +12,7 @@ export const interviewApi = {
    */
   async startInterview(templateId?: string): Promise<InterviewSessionState> {
     const res = await apiClient.post<ApiResponse<InterviewSessionState>>(
-      '/api/v1/kiosk/interview/start',
+      '/kiosk/interview/start',
       { templateId }
     );
     return res.data.data as InterviewSessionState;
@@ -23,7 +23,7 @@ export const interviewApi = {
    */
   async getCurrentQuestion(): Promise<InterviewSessionState> {
     const res = await apiClient.get<ApiResponse<InterviewSessionState>>(
-      '/api/v1/kiosk/interview/current-question'
+      '/kiosk/interview/current-question'
     );
     return res.data.data as InterviewSessionState;
   },
@@ -50,7 +50,7 @@ export const interviewApi = {
         isFinished: boolean;
         sessionState: InterviewSessionState | null;
       }>
-    >('/api/v1/kiosk/interview/answer', payload);
+    >('/kiosk/interview/answer', payload);
     return res.data.data as {
       recordedAnswer: any;
       nextQuestionId: string | null;
@@ -69,7 +69,7 @@ export const interviewApi = {
   }> {
     const res = await apiClient.post<
       ApiResponse<{ success: boolean; message: string; completedAt: string }>
-    >('/api/v1/kiosk/interview/complete');
+    >('/kiosk/interview/complete');
     return res.data.data as {
       success: boolean;
       message: string;
@@ -91,7 +91,7 @@ export const interviewApi = {
         sessionStatus: string;
         currentSection: string | null;
       }>
-    >('/api/v1/kiosk/interview/progress');
+    >('/kiosk/interview/progress');
     return res.data.data as {
       progress: InterviewProgress;
       sessionStatus: string;

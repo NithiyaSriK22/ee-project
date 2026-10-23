@@ -124,11 +124,12 @@ export const DoctorReviewApi = {
 
   async confirmReview(
     reviewId: string,
-    attestationAccepted: boolean
+    attestationAccepted: boolean,
+    attestationVersion: string = 'ATTEST-v1.0.0'
   ): Promise<ConfirmedRecordDTO> {
     const res = await apiClient.post<ApiResponse<ConfirmedRecordDTO>>(
       `/doctor/reviews/${reviewId}/confirm`,
-      { attestationAccepted }
+      { attestationAccepted, attestationVersion }
     );
     return res.data.data as ConfirmedRecordDTO;
   },
@@ -191,6 +192,7 @@ export const DoctorReviewApi = {
     snippetCropCoordinates: { x: number; y: number; width: number; height: number };
     snippetRef: string;
     fileName: string;
+    mimeType?: string;
   }> {
     const params = snippetRef ? { snippetRef } : {};
     const res = await apiClient.get<ApiResponse<any>>(`/doctor/documents/${documentId}/snippet`, {
@@ -203,6 +205,7 @@ export const DoctorReviewApi = {
       snippetCropCoordinates: { x: number; y: number; width: number; height: number };
       snippetRef: string;
       fileName: string;
+      mimeType?: string;
     };
   },
 };

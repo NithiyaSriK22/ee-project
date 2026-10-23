@@ -129,7 +129,7 @@ export const DocumentReviewPage: React.FC = () => {
       </div>
 
       <footer className="w-full border-t border-slate-900 py-3 text-center text-xs text-slate-500 mt-8">
-        MediKiosk • Module 4 Deterministic Document Digitization
+        THUNAI • Deterministic Document Digitization & Verification
       </footer>
     </div>
   );

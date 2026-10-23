@@ -6,6 +6,8 @@ const app_error_js_1 = require("../errors/app-error.js");
 const prisma_js_1 = require("../database/prisma.js");
 const auth_repository_js_1 = require("../modules/auth/auth.repository.js");
 const auth_types_js_1 = require("../types/auth.types.js");
+const kiosk_hardening_service_js_1 = require("../modules/deployment/kiosk-hardening.service.js");
+const dev_fallback_patient_store_js_1 = require("../modules/patients/dev-fallback-patient-store.js");
 /**
  * Middleware: Authenticates Staff / Doctor / Admin users using short-lived Bearer JWT
  */
@@ -88,33 +90,57 @@ const authenticateKioskSession = async (req, _res, next) => {
         catch {
             throw new app_error_js_1.UnauthorizedError('Invalid or expired kiosk session token');
         }
+        if (kiosk_hardening_service_js_1.KioskHardeningService.isSessionWiped(claims.visitId)) {
+            throw new app_error_js_1.UnauthorizedError('Kiosk session has ended and all local/session context has been wiped');
+        }
         // Lookup session in DB to ensure not ended/revoked
         let session = null;
-        try {
-            session = await prisma_js_1.prisma.kioskSession.findUnique({
-                where: { visit_id: claims.visitId },
-                include: {
-                    patient: {
-                        select: {
-                            hospital_registration_number: true,
+        const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
+        if (isDbUp) {
+            try {
+                session = await prisma_js_1.prisma.kioskSession.findUnique({
+                    where: { visit_id: claims.visitId },
+                    include: {
+                        patient: {
+                            select: {
+                                hospital_registration_number: true,
+                            },
                         },
                     },
-                },
-            });
+                });
+            }
+            catch { }
         }
-        catch {
-            // Offline fallback: Use cryptographically verified claims
-            session = {
-                id: claims.sessionId || 'dev-kiosk-session',
-                visit_id: claims.visitId,
-                patient_id: claims.patientId,
-                visit_profile_id: claims.visitProfileId,
-                status: 'ACTIVE',
-                expires_at: new Date(Date.now() + 3600000),
-                patient: {
-                    hospital_registration_number: claims.hospitalRegistrationNumber || 'HRN-DEFAULT',
-                },
-            };
+        if (!session) {
+            const fallbackSession = dev_fallback_patient_store_js_1.devFallbackPatientStore.findSessionByVisitId(claims.visitId);
+            if (fallbackSession) {
+                session = {
+                    id: fallbackSession.id,
+                    visit_id: fallbackSession.visit_id,
+                    patient_id: fallbackSession.patient_id,
+                    visit_profile_id: fallbackSession.visit_profile_id,
+                    status: fallbackSession.status,
+                    expires_at: fallbackSession.expires_at,
+                    patient: {
+                        hospital_registration_number: fallbackSession.patient?.hospital_registration_number ||
+                            claims.hospitalRegistrationNumber ||
+                            'HRN-DEFAULT',
+                    },
+                };
+            }
+            else {
+                session = {
+                    id: claims.sessionId || 'dev-kiosk-session',
+                    visit_id: claims.visitId,
+                    patient_id: claims.patientId,
+                    visit_profile_id: claims.visitProfileId,
+                    status: 'ACTIVE',
+                    expires_at: new Date(Date.now() + 3600000),
+                    patient: {
+                        hospital_registration_number: claims.hospitalRegistrationNumber || 'HRN-DEFAULT',
+                    },
+                };
+            }
         }
         if (!session) {
             throw new app_error_js_1.UnauthorizedError('Active kiosk session not found for this visit');
@@ -123,18 +149,27 @@ const authenticateKioskSession = async (req, _res, next) => {
             throw new app_error_js_1.UnauthorizedError(`Kiosk session is ${session.status.toLowerCase()}`);
         }
         if (new Date() > session.expires_at) {
-            // Mark expired
-            await prisma_js_1.prisma.kioskSession.update({
-                where: { id: session.id },
-                data: { status: 'EXPIRED' },
-            });
+            if (isDbUp) {
+                try {
+                    await prisma_js_1.prisma.kioskSession.update({
+                        where: { id: session.id },
+                        data: { status: 'EXPIRED' },
+                    });
+                }
+                catch { }
+            }
+            dev_fallback_patient_store_js_1.devFallbackPatientStore.endSession(session.visit_id);
             throw new app_error_js_1.UnauthorizedError('Kiosk session has expired. Please restart your visit.');
         }
-        // Touch last accessed timestamp asynchronously
-        prisma_js_1.prisma.kioskSession.update({
-            where: { id: session.id },
-            data: { last_accessed_at: new Date() },
-        }).catch(() => { });
+        // Touch last accessed timestamp asynchronously only if DB is up
+        if (isDbUp) {
+            prisma_js_1.prisma.kioskSession
+                .update({
+                where: { id: session.id },
+                data: { last_accessed_at: new Date() },
+            })
+                .catch(() => { });
+        }
         req.kioskSession = {
             sessionId: session.id,
             visitId: session.visit_id,

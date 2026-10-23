@@ -6,6 +6,7 @@ exports.SeverityTiers = {
     URGENT: 'URGENT',
     STAFF_CHECK: 'STAFF_CHECK',
     MANUAL: 'MANUAL',
+    SENSITIVE_DISCLOSURE: 'SENSITIVE_DISCLOSURE',
 };
 exports.FactStates = {
     KNOWN: 'KNOWN',

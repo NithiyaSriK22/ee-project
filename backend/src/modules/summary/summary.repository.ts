@@ -138,6 +138,7 @@ export class SummaryRepository {
               order: s.order,
               statements: {
                 create: s.statements.map((st) => ({
+                  id: st.id || undefined,
                   text: st.text,
                   origin: st.origin,
                   order: st.order,
@@ -516,6 +517,16 @@ export class SummaryRepository {
   }
 
   private static mapPrismaToDto(raw: any): ClinicalSummaryDto {
+    const isMock = raw.model_id === 'medikiosk-constrained-summary-v1';
+    const isInsufficient = raw.status === 'INSUFFICIENT_EVIDENCE';
+    const safetyLabel = isInsufficient
+      ? 'Incomplete draft — insufficient clinical source information'
+      : raw.generation_mode === 'TEMPLATE_FALLBACK'
+      ? 'Template-only fallback draft — not confirmed by a doctor'
+      : isMock
+      ? 'Mock AI draft (deterministic simulation) — not confirmed by a doctor'
+      : 'AI-assisted draft (Local LLM) — not confirmed by a doctor';
+
     return {
       id: raw.id,
       visitId: raw.visit_id,
@@ -523,6 +534,8 @@ export class SummaryRepository {
       version: raw.version,
       status: raw.status,
       generationMode: raw.generation_mode,
+      providerId: isMock ? 'MOCK_PROVIDER' : (raw.model_id ? 'LOCAL_LLM' : null),
+      isMock,
       modelId: raw.model_id,
       modelVersion: raw.model_version,
       promptTemplateVersion: raw.prompt_template_version,
@@ -533,7 +546,7 @@ export class SummaryRepository {
       supersededBy: raw.superseded_by,
       createdAt: raw.created_at,
       updatedAt: raw.updated_at,
-      safetyLabel: 'AI-assisted draft — not confirmed by a doctor',
+      safetyLabel,
       sections: (raw.sections || []).map((sec: any) => ({
         id: sec.id,
         section: sec.section,

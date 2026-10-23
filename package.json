@@ -12,10 +12,6 @@
     "dev:backend": "npm --workspace=backend run dev",
     "dev:kiosk": "npm --workspace=frontend-kiosk run dev",
     "dev:doctor": "npm --workspace=frontend-doctor-portal run dev",
-    "seed": "npm --prefix thunai run seed",
-    "reset": "npm --prefix thunai run reset",
-    "dev:thunai": "npm --prefix thunai run dev",
-    "test:thunai": "npm --prefix thunai test",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces"

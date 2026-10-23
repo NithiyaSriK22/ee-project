@@ -199,6 +199,76 @@ class RedFlagsService {
         });
         return alert;
     }
+    /**
+     * MODULE 3B: Neutral Sensitive Disclosure Floor Alert
+     * Triggers a dedicated SENSITIVE_DISCLOSURE alert category with pure neutral text ("Please assist the patient at kiosk X").
+     * Zero sensitive clinical details in the alert text, notifications, or on the kiosk screen.
+     */
+    static async raiseSensitiveDisclosureAlert(visitId, kioskDeviceId, kioskLocation) {
+        const location = kioskLocation || (await redflags_repository_js_1.RedFlagsRepository.getKioskLocation(kioskDeviceId)) || 'Device Kiosk';
+        // Neutral text per Section 8: "Please assist the patient at kiosk X"
+        const neutralDescription = `Please assist the patient at ${location}.`;
+        const alert = await redflags_repository_js_1.RedFlagsRepository.createAlert({
+            visitId,
+            kioskDeviceId,
+            kioskLocation: location,
+            severityTier: redflags_types_js_1.SeverityTiers.SENSITIVE_DISCLOSURE,
+            triggerType: redflags_types_js_1.TriggerTypes.MANUAL,
+            ruleDescription: neutralDescription,
+            recommendedStaffAction: 'Please attend kiosk to provide confidential patient assistance.',
+            evidences: [
+                {
+                    sourceType: 'SENSITIVE_DISCLOSURE',
+                    sourceId: `disclosure-${Date.now()}`,
+                    factKey: 'sensitive_disclosure_triggered',
+                    factValueSnippet: 'Neutral assistance requested',
+                },
+            ],
+        });
+        sse_broadcaster_js_1.SSEBroadcaster.broadcastAlert('alert:raised', alert);
+        logger_js_1.logger.info('Neutral sensitive disclosure alert raised for floor staff', {
+            alertId: alert.id,
+            visitId,
+            kioskLocation: location,
+            tier: redflags_types_js_1.SeverityTiers.SENSITIVE_DISCLOSURE,
+        });
+        return {
+            alert,
+            supportiveMessage: 'A trained staff member has been notified and will assist you in private. You are in a safe, confidential environment.',
+            helplineDetails: 'National Support Helpline: 112 / Patient Care Advocacy: Ext. 4004',
+        };
+    }
+    /**
+     * MODULE 3B Section 5: Staff flag "patient unwell or unable"
+     * Stops intake and routes straight to staff through Module 6 manual-alert path.
+     */
+    static async flagPatientUnwellOrUnable(visitId, kioskDeviceId, reason) {
+        const location = (await redflags_repository_js_1.RedFlagsRepository.getKioskLocation(kioskDeviceId)) || 'Device Kiosk';
+        const alert = await redflags_repository_js_1.RedFlagsRepository.createAlert({
+            visitId,
+            kioskDeviceId,
+            kioskLocation: location,
+            severityTier: redflags_types_js_1.SeverityTiers.MANUAL,
+            triggerType: redflags_types_js_1.TriggerTypes.MANUAL,
+            ruleDescription: `Patient unwell or unable to continue intake at ${location}. Direct clinical assistance needed.`,
+            recommendedStaffAction: 'Attend to kiosk immediately and escort patient to clinical assessment area.',
+            evidences: [
+                {
+                    sourceType: 'PATIENT_UNWELL_FLAG',
+                    sourceId: `unwell-${Date.now()}`,
+                    factKey: 'patient_unwell_or_unable',
+                    factValueSnippet: reason || 'Patient flagged unwell/unable',
+                },
+            ],
+        });
+        sse_broadcaster_js_1.SSEBroadcaster.broadcastAlert('alert:raised', alert);
+        logger_js_1.logger.info('Patient unwell/unable flag raised, intake halted', {
+            alertId: alert.id,
+            visitId,
+            reason,
+        });
+        return alert;
+    }
     static async getKioskAlertStatus(visitId) {
         const openAlert = await redflags_repository_js_1.RedFlagsRepository.findOpenAlertForVisit(visitId);
         if (!openAlert) {

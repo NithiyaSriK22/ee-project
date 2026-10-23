@@ -23,7 +23,37 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000), // 15 mins
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
   AUTH_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(20), // Stricter for auth
+  // Module 10: Production Deployment & Health Configuration
+  RELEASE_VERSION: z.string().default('1.0.0'),
+  KIOSK_MIN_SUPPORTED_VERSION: z.string().default('1.0.0'),
+  MAX_RESTORE_DRILL_AGE_DAYS: z.coerce.number().default(30),
+  ALERT_LATENCY_TARGET_MS: z.coerce.number().default(5000),
+  EMERGENCY_OVERRIDE_ENABLED: z.coerce.boolean().default(false),
+  IS_SYNTHETIC_DATA: z.coerce.boolean().default(true),
 });
+
+const validateProductionSecrets = (data: z.infer<typeof envSchema>) => {
+  if (data.NODE_ENV === 'production') {
+    const errors: string[] = [];
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.includes('development')) {
+      errors.push('JWT_SECRET must be set to a secure, high-entropy production secret (cannot use development default)');
+    }
+    if (!process.env.REFRESH_TOKEN_SECRET || process.env.REFRESH_TOKEN_SECRET.includes('development')) {
+      errors.push('REFRESH_TOKEN_SECRET must be set to a secure production secret');
+    }
+    if (!process.env.KIOSK_SESSION_SECRET || process.env.KIOSK_SESSION_SECRET.includes('development')) {
+      errors.push('KIOSK_SESSION_SECRET must be set to a secure production secret');
+    }
+    if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('medikiosk_password')) {
+      errors.push('DATABASE_URL must be an authenticated production database connection string');
+    }
+    if (errors.length > 0) {
+      console.error('❌ FATAL PRODUCTION SECURITY GATE FAILED: Default or insecure credentials detected in production:');
+      errors.forEach((err) => console.error(`  - ${err}`));
+      process.exit(1);
+    }
+  }
+};
 
 const parseEnv = () => {
   const result = envSchema.safeParse(process.env);
@@ -39,6 +69,8 @@ const parseEnv = () => {
     // Fallback safe defaults for test if needed
     return envSchema.parse({});
   }
+
+  validateProductionSecrets(result.data);
   return result.data;
 };
 

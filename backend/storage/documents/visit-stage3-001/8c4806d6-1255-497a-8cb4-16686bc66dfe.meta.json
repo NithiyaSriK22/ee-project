@@ -1,0 +1,19 @@
+{
+  "id": "8c4806d6-1255-497a-8cb4-16686bc66dfe",
+  "visit_id": "visit-stage3-001",
+  "patient_id": "d40f3c73-c6ce-47db-ac1f-e17f035a58f6",
+  "document_type": "PRESCRIPTION",
+  "file_name": "secret_rx2.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 89,
+  "storage_reference": "storage/documents/visit-stage3-001/2cd6691d-2dfc-4039-8145-d1a794e1656f_1792783021586_secret_rx2.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document image appears blank or unreadable (file size below threshold).",
+  "uploaded_at": "2026-10-23T19:17:01.592Z",
+  "created_at": "2026-10-23T19:17:01.592Z",
+  "updated_at": "2026-10-23T19:17:01.604Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

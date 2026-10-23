@@ -68,6 +68,7 @@ export class DoctorReviewRepository {
           },
         });
 
+        devFallbackDoctorReviewStore.upsertQueueEntry(entry);
         return {
           id: row.id,
           visitId: row.visit_id,
@@ -128,7 +129,13 @@ export class DoctorReviewRepository {
     if (available) {
       try {
         const where: any = {};
-        if (filters?.department) where.department = filters.department;
+        if (filters?.department) {
+          const cleanDept = filters.department.replace(/^(department of\s*|opd\s*)/i, '').trim();
+          where.department = {
+            contains: cleanDept,
+            mode: 'insensitive',
+          };
+        }
         if (filters?.assignedDoctorId) where.assigned_doctor_id = filters.assignedDoctorId;
         if (filters?.status) where.queue_status = filters.status;
 
@@ -137,18 +144,34 @@ export class DoctorReviewRepository {
           orderBy: [{ has_open_alert: 'desc' }, { ready_at: 'asc' }],
         });
 
-        return rows.map((r) => ({
-          id: r.id,
-          visitId: r.visit_id,
-          department: r.department,
-          assignedDoctorId: r.assigned_doctor_id,
-          queueStatus: r.queue_status as QueueStatus,
-          hasOpenAlert: r.has_open_alert,
-          readyAt: r.ready_at,
-          patientTokenOrName: `Token #${r.visit_id.substring(0, 4).toUpperCase()}`,
-          createdAt: r.created_at,
-          updatedAt: r.updated_at,
-        }));
+        if (rows.length > 0) {
+          return await Promise.all(
+            rows.map(async (r) => {
+              let patientName = `Token #${r.visit_id.substring(0, 4).toUpperCase()}`;
+              try {
+                const profile = await prisma.patientVisitProfile.findFirst({
+                  where: { visit_id: r.visit_id },
+                  include: { patient: true },
+                });
+                if (profile?.patient) {
+                  patientName = `${profile.patient.full_name} (${profile.patient.hospital_registration_number})`;
+                }
+              } catch {}
+              return {
+                id: r.id,
+                visitId: r.visit_id,
+                department: r.department,
+                assignedDoctorId: r.assigned_doctor_id,
+                queueStatus: r.queue_status as QueueStatus,
+                hasOpenAlert: r.has_open_alert,
+                readyAt: r.ready_at,
+                patientTokenOrName: patientName,
+                createdAt: r.created_at,
+                updatedAt: r.updated_at,
+              };
+            })
+          );
+        }
       } catch (err) {
         logger.warn('Database error in listQueue, using fallback', { error: (err as any).message });
       }

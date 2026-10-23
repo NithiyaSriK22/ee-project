@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InternalServerError = exports.DatabaseError = exports.RateLimitError = exports.ConflictError = exports.NotFoundError = exports.ForbiddenError = exports.UnauthorizedError = exports.AuthorizationError = exports.AuthenticationError = exports.ValidationError = exports.AppError = void 0;
+exports.ServiceUnavailableError = exports.InternalServerError = exports.DatabaseError = exports.RateLimitError = exports.ConflictError = exports.NotFoundError = exports.ForbiddenError = exports.UnauthorizedError = exports.AuthorizationError = exports.AuthenticationError = exports.ValidationError = exports.AppError = void 0;
 const error_codes_js_1 = require("./error-codes.js");
 class AppError extends Error {
     statusCode;
@@ -68,3 +68,9 @@ class InternalServerError extends AppError {
     }
 }
 exports.InternalServerError = InternalServerError;
+class ServiceUnavailableError extends AppError {
+    constructor(message = 'Service temporarily unavailable. Please proceed to the OPD intake desk.') {
+        super(message, 503, error_codes_js_1.ErrorCode.INTERNAL_ERROR);
+    }
+}
+exports.ServiceUnavailableError = ServiceUnavailableError;

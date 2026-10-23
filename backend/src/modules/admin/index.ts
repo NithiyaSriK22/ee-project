@@ -1,4 +1,17 @@
-// Module 9 Architecture Placeholder: Admin, Analytics & Audit
-import { Router } from 'express';
-const router = Router();
-export const adminRoutes = router;
+export { adminRoutes } from './admin.routes.js';
+export { AdminController } from './admin.controller.js';
+export * from './admin.types.js';
+export { METRIC_CATALOG, getMetricDefinition, listAllMetricDefinitions } from './analytics/metric-catalog.js';
+export { PrivacySuppressionService, MIN_GROUP_SIZE, ALLOWED_ATTRIBUTE_KEYS } from './analytics/privacy-suppression.js';
+export { AnalyticsEventService } from './analytics/analytics-event.service.js';
+export { AggregationService } from './analytics/aggregation.service.js';
+export { AuditService } from './audit/audit.service.js';
+export { OutboxService, CRITICAL_AUDIT_ACTIONS } from './audit/outbox.service.js';
+export { AccessReportsService } from './audit/access-reports.service.js';
+export { SystemHealthService } from './health/system-health.service.js';
+export { KioskFleetService } from './kiosk-fleet/kiosk-fleet.service.js';
+export { ReportsService } from './reports/reports.service.js';
+export { ExportsService } from './exports/exports.service.js';
+export { RetentionService } from './retention/retention.service.js';
+export { StaffAdminService } from './staff-admin/staff-admin.service.js';
+export { devFallbackAdminStore } from './dev-fallback-admin-store.js';

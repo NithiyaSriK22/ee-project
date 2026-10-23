@@ -214,6 +214,9 @@ export interface WorkspaceSummaryPayload {
   version: number;
   status: string;
   generationMode: string; // LLM, TEMPLATE_FALLBACK
+  providerId?: string | null;
+  isMock?: boolean;
+  safetyLabel?: string | null;
   modelId?: string | null;
   modelVersion?: string | null;
   isStale: boolean;
@@ -244,6 +247,18 @@ export interface ReviewWorkspaceDTO {
     text: string;
   };
   rawViewAvailable: boolean;
+  failedDocuments?: Array<{
+    id: string;
+    fileName: string;
+    documentType: string;
+    ocrStatus: string;
+    ocrErrorMessage?: string | null;
+    uploadedAt: string;
+    missingFields?: string[];
+    extractedTextSnippet?: string | null;
+    confidence?: number;
+    unverifiedNotice?: string;
+  }>;
 }
 
 export interface RawViewDTO {

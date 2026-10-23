@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Volume2, CheckCircle2, Bot, FileText, Stethoscope } from 'lucide-react';
+import { useLanguage } from '../../language/useLanguage';
 
 interface ConsentStepProps {
   isCompanionAssisted: boolean;
@@ -21,6 +22,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
   isLoading = false,
   onSpeakPrompt,
 }) => {
+  const { locale } = useLanguage();
   const [agreeAll, setAgreeAll] = useState(true);
   const [grantedVia, setGrantedVia] = useState<'patient' | 'companion' | 'staff_assisted'>(
     isCompanionAssisted ? 'companion' : 'patient'
@@ -29,21 +31,18 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
   const consentPoints = [
     {
       icon: <FileText className="w-5 h-5 text-teal-700" />,
-      title: 'OPD Visit Data Collection / வெளிநோயாளி பதிவு',
-      description:
-        'We collect your basic demographics and symptom answers to create your clinical intake record for today’s hospital visit.',
+      title: locale.consentPoint1Title,
+      description: locale.consentPoint1Desc,
     },
     {
       icon: <Bot className="w-5 h-5 text-teal-700" />,
-      title: 'AI Clinical Case-Taking Assistant / செயற்கை நுண்ணறிவு உதவி',
-      description:
-        'An AI assistant will organize your symptoms into a structured draft for the doctor. The AI does not diagnose or prescribe medicine.',
+      title: locale.consentPoint2Title,
+      description: locale.consentPoint2Desc,
     },
     {
       icon: <Stethoscope className="w-5 h-5 text-teal-700" />,
-      title: 'Doctor Sharing & Review / மருத்துவரிடம் பகிர்தல்',
-      description:
-        'Your answers will be securely transferred to your treating OPD physician who will verify and confirm all medical decisions.',
+      title: locale.consentPoint3Title,
+      description: locale.consentPoint3Desc,
     },
   ];
 
@@ -59,27 +58,23 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
       <div className="text-center">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 text-teal-800 text-xs font-semibold mb-2 border border-teal-200">
           <ShieldCheck className="w-4 h-4" />
-          <span>Patient Consent & Privacy / ஒப்புதல்</span>
+          <span>{locale.consentBadge}</span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
-          Consent for Case-Taking & Care
+          {locale.consentHeading}
         </h2>
         <p className="text-sm text-slate-600 mt-1">
-          Simple and transparent consent for your outpatient visit and clinical assistance.
+          {locale.consentSubtitle}
         </p>
 
         {onSpeakPrompt && (
           <button
             type="button"
-            onClick={() =>
-              onSpeakPrompt(
-                'Please review the clinical intake consent. Your data is strictly used for your hospital care and shared only with your treating doctor.'
-              )
-            }
+            onClick={() => onSpeakPrompt(locale.consentAudioPrompt)}
             className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded-lg border border-teal-200 transition-colors"
           >
             <Volume2 className="w-3.5 h-3.5" />
-            <span>Read Aloud / வாசித்து கேட்கவும்</span>
+            <span>{locale.consentAudioButton}</span>
           </button>
         )}
       </div>
@@ -105,7 +100,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
         {/* Who is granting consent? */}
         <div className="pt-4 border-t border-slate-200">
           <div className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-            Consent Provided By / ஒப்புதல் அளிப்பவர்:
+            {locale.consentProvidedByLabel}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <button
@@ -117,7 +112,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
                   : 'border-slate-200 bg-slate-50 text-slate-600'
               }`}
             >
-              Patient Themselves (நோயாளி நேரடியாக)
+              {locale.consentByPatient}
             </button>
             <button
               type="button"
@@ -129,8 +124,8 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               }`}
             >
               {isCompanionAssisted
-                ? `Companion / Family: ${companionName || 'Assisting Person'}`
-                : 'Hospital Staff / Attendant on Behalf'}
+                ? `${locale.consentByCompanion}${companionName ? `: ${companionName}` : ''}`
+                : locale.consentByStaff}
             </button>
           </div>
         </div>
@@ -148,7 +143,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             {agreeAll && <CheckCircle2 className="w-4 h-4" />}
           </div>
           <div className="text-xs sm:text-sm font-semibold text-slate-800">
-            I understand and give consent to proceed with this OPD intake session.
+            {locale.consentAgreeCheckbox}
           </div>
         </div>
       </div>
@@ -159,7 +154,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
           onClick={onBack}
           className="flex-1 py-4 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-base transition-colors cursor-pointer"
         >
-          ← Back
+          {locale.consentBack}
         </button>
         <button
           type="button"
@@ -167,7 +162,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
           onClick={handleAgree}
           className="flex-2 py-4 px-6 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-2xl text-base transition-colors flex items-center justify-center gap-2 shadow-lg shadow-teal-800/20 disabled:opacity-50 cursor-pointer"
         >
-          <span>{isLoading ? 'Creating Session...' : 'I Agree & Start Visit →'}</span>
+          <span>{isLoading ? locale.consentCreatingSession : locale.consentSubmit}</span>
         </button>
       </div>
     </div>

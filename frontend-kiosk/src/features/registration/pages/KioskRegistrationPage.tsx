@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useKioskSession } from '../hooks/useKioskSession';
 import { StartKioskSessionPayload, SupportedLanguage } from '../types/registration.types';
 import { WelcomeStep } from '../components/WelcomeStep';
@@ -8,17 +9,28 @@ import { LanguageSelectionStep } from '../components/LanguageSelectionStep';
 import { ConsentStep } from '../components/ConsentStep';
 import { ProfileReviewStep } from '../components/ProfileReviewStep';
 import { Volume2, HelpCircle, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../../language/useLanguage';
 
 type WizardStep = 'welcome' | 'returning-lookup' | 'new-patient' | 'language' | 'consent' | 'review';
 
 export const KioskRegistrationPage: React.FC = () => {
+  const navigate = useNavigate();
   const { startSession, endSession, isSessionActive, isLoading, error } = useKioskSession();
+  const { currentLanguage, locale, l } = useLanguage();
 
   const [step, setStep] = useState<WizardStep>(isSessionActive ? 'review' : 'welcome');
   const [formData, setFormData] = useState<Partial<StartKioskSessionPayload>>({
-    preferredLanguage: 'en',
+    preferredLanguage: currentLanguage as SupportedLanguage,
     isCompanionAssisted: false,
   });
+
+  // Keep form language aligned with active language
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      preferredLanguage: currentLanguage as SupportedLanguage,
+    }));
+  }, [currentLanguage]);
 
   const [audioFeedback, setAudioFeedback] = useState<string | null>(null);
 
@@ -84,18 +96,19 @@ export const KioskRegistrationPage: React.FC = () => {
   };
 
   const handleProceedToInterview = () => {
-    // For Module 2, we display a clear visual confirmation that the session foundation is established and ready for Module 3
-    alert(
-      'Session Established! Patient profile is ready for Module 3 (Guided Interview). In Module 3, this transitions into the adaptive symptom interview.'
-    );
+    navigate('/interview');
+  };
+
+  const handleProceedToDocuments = () => {
+    navigate('/documents/scan');
   };
 
   const stepLabels = [
-    { id: 'welcome', label: '1. Welcome' },
-    { id: 'patient-info', label: '2. Identity' },
-    { id: 'language', label: '3. Language' },
-    { id: 'consent', label: '4. Consent' },
-    { id: 'review', label: '5. Ready' },
+    { id: 'welcome', label: locale.stepWelcome },
+    { id: 'patient-info', label: locale.stepIdentity },
+    { id: 'language', label: locale.stepLanguage },
+    { id: 'consent', label: locale.stepConsent },
+    { id: 'review', label: locale.stepReady },
   ];
 
   const getActiveStepIndex = () => {
@@ -149,10 +162,15 @@ export const KioskRegistrationPage: React.FC = () => {
           <button
             type="button"
             onClick={() =>
-              speakText('Assistance is available. Hospital staff attendants can assist at any step.')
+              speakText(
+                l(
+                  'Assistance is available. Hospital staff attendants can assist at any step.',
+                  'உதவி வசதி உள்ளது. எந்த நிலையிலும் மருத்துவமனை பணியாளர்களின் உதவியைப் பெறலாம்.'
+                )
+              )
             }
             className="p-2 text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-xl transition-colors"
-            title="Assistance Information"
+            title={l('Assistance Information', 'உதவி விவரம்')}
           >
             <HelpCircle className="w-5 h-5" />
           </button>
@@ -164,13 +182,15 @@ export const KioskRegistrationPage: React.FC = () => {
         <div className="p-3 bg-teal-50/80 border border-teal-200 rounded-xl flex items-center justify-between text-xs text-teal-900 animate-in fade-in">
           <div className="flex items-center gap-2">
             <Volume2 className="w-4 h-4 text-teal-700 shrink-0" />
-            <span className="font-medium">Voice Guidance: "{audioFeedback}"</span>
+            <span className="font-medium">
+              {l('Voice Guidance', 'குரல் வழிகாட்டுதல்')}: "{audioFeedback}"
+            </span>
           </div>
           <button
             onClick={() => setAudioFeedback(null)}
-            className="text-teal-700 font-bold text-xs hover:underline"
+            className="text-teal-700 font-bold text-xs hover:underline cursor-pointer"
           >
-            Dismiss
+            {l('Dismiss', 'மூடு')}
           </button>
         </div>
       )}
@@ -220,9 +240,9 @@ export const KioskRegistrationPage: React.FC = () => {
               onClick={() =>
                 setStep(formData.hospitalRegistrationNumber ? 'returning-lookup' : 'new-patient')
               }
-              className="py-3 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm"
+              className="py-3 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm cursor-pointer"
             >
-              ← Back to Demographics
+              {locale.languageBack}
             </button>
           </div>
         </div>
@@ -242,6 +262,7 @@ export const KioskRegistrationPage: React.FC = () => {
       {step === 'review' && (
         <ProfileReviewStep
           onProceedToInterview={handleProceedToInterview}
+          onProceedToDocuments={handleProceedToDocuments}
           onEndSession={handleEndSession}
         />
       )}

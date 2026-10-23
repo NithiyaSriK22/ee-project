@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { Response, NextFunction } from 'express';
 import { AppRequest } from '../../types/api.types.js';
 import { QueueService } from './queue/queue.service.js';
@@ -8,7 +9,10 @@ import { AmendmentService } from './confirmation/amendment.service.js';
 import { DoctorReviewRepository } from './doctor-review.repository.js';
 import { TokenUtil } from '../../utils/token.util.js';
 import { DoctorReviewAuditEvents } from './doctor-review.types.js';
-import { ForbiddenError } from '../../errors/app-error.js';
+import { ForbiddenError, NotFoundError } from '../../errors/app-error.js';
+import { DocumentsService } from '../documents/documents.service.js';
+import { DocumentsRepository } from '../documents/documents.repository.js';
+import { DocumentStorageService } from '../documents/storage/document-storage.service.js';
 
 export class DoctorReviewController {
   // ============================================================================
@@ -304,37 +308,208 @@ export class DoctorReviewController {
     }
   }
 
+  // Active short-lived signed snippet tokens (key: token -> { documentId, expiresAt })
+  private static activeSnippetTokens = new Map<string, { documentId: string; expiresAt: Date }>();
+
   public static async getDocumentSnippet(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const documentId = req.params.documentId as string;
+      const requestedVisitId = req.query.visitId as string | undefined;
+      const requestedPatientId = req.query.patientId as string | undefined;
 
       if (!req.user || !['DOCTOR', 'SUPER_ADMIN'].includes(req.user.role)) {
         throw new ForbiddenError('Signed document snippet access restricted to treating physicians.');
       }
 
-      // Generate a short-lived signed access token (5 minutes expiry)
-      const signedSnippetToken = TokenUtil.generateRandomToken(24);
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      // Validate documentId against path traversal
+      DocumentStorageService.validateIdentifier(documentId, 'documentId');
+      if (requestedVisitId) {
+        DocumentStorageService.validateIdentifier(requestedVisitId, 'visitId');
+      }
+      if (requestedPatientId) {
+        DocumentStorageService.validateIdentifier(requestedPatientId, 'patientId');
+      }
+
+      const doc = await DocumentsRepository.findDocumentById(documentId);
+
+      // Enforce cross-patient / visit isolation if document record exists
+      if (doc) {
+        if (requestedVisitId && doc.visit_id !== requestedVisitId) {
+          throw new ForbiddenError('Access denied: Document does not belong to the requested visit session.');
+        }
+        if (requestedPatientId && doc.patient_id && doc.patient_id !== requestedPatientId) {
+          throw new ForbiddenError('Access denied: Document does not belong to the requested patient.');
+        }
+
+        // Enforce claim check: if claimed by another doctor, verify unexpired claim
+        const existingClaim = await DoctorReviewRepository.getClaim(doc.visit_id);
+        if (
+          existingClaim &&
+          existingClaim.claimedByDoctorId &&
+          existingClaim.claimedByDoctorId !== req.user.id &&
+          req.user.role !== 'SUPER_ADMIN'
+        ) {
+          if (existingClaim.expiresAt && new Date(existingClaim.expiresAt) > new Date()) {
+            if (!req.query.outOfQueueReason && !req.body?.outOfQueueReason) {
+              throw new ForbiddenError(
+                `Case is currently claimed by Dr. ${existingClaim.claimedByDoctorName || 'another doctor'}. Cannot access document sources without permission.`
+              );
+            }
+          }
+        }
+      }
+
+      const fileName = doc?.file_name || 'Prescription_Document.png';
+      const visitId = doc?.visit_id || requestedVisitId || documentId;
+
+      // Generate a short-lived cryptographic signed access token (15 minutes expiry)
+      const { token: signedSnippetToken, expiresAt } = TokenUtil.generateSignedDocumentToken(
+        documentId,
+        req.user.id,
+        15 * 60 * 1000
+      );
+      DoctorReviewController.activeSnippetTokens.set(signedSnippetToken, { documentId, expiresAt });
+
+      // Clean up expired tokens
+      const now = Date.now();
+      for (const [t, data] of DoctorReviewController.activeSnippetTokens.entries()) {
+        if (data.expiresAt.getTime() < now) {
+          DoctorReviewController.activeSnippetTokens.delete(t);
+        }
+      }
 
       // Audit source inspection
       await DoctorReviewRepository.recordAuditEvent({
         action: DoctorReviewAuditEvents.SOURCE_OPENED,
-        visitId: documentId || 'unknown-doc',
+        visitId,
         actorId: req.user.id,
         actorRole: req.user.role,
         metadata: { documentId, snippetAccess: 'SIGNED_TOKEN_ISSUED' },
       });
+
+      const cropUrl = `/api/v1/doctor/documents/${documentId}/image?token=${signedSnippetToken}`;
 
       res.json({
         success: true,
         data: {
           documentId,
           signedToken: signedSnippetToken,
-          expiresAt,
-          cropSnippetUrl: `/api/v1/doctor/documents/${documentId}/image?token=${signedSnippetToken}`,
-          message: 'Signed short-lived document snippet URL generated (expires in 5 minutes).',
+          signedUrl: cropUrl,
+          cropSnippetUrl: cropUrl,
+          expiresAt: expiresAt.toISOString(),
+          fileName,
+          mimeType: doc?.mime_type || (fileName.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/png'),
+          snippetRef: (req.query.snippetRef as string) || 'prescription_field_1',
+          snippetCropCoordinates: { x: 45, y: 120, width: 340, height: 180 },
+          message: 'Signed short-lived document snippet URL generated (expires in 15 minutes).',
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async streamDocumentImage(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const documentId = req.params.documentId as string;
+      const token = req.query.token as string | undefined;
+      const requestedVisitId = req.query.visitId as string | undefined;
+      const requestedPatientId = req.query.patientId as string | undefined;
+
+      // 0. Path traversal validation
+      DocumentStorageService.validateIdentifier(documentId, 'documentId');
+      if (requestedVisitId) {
+        DocumentStorageService.validateIdentifier(requestedVisitId, 'visitId');
+      }
+      if (requestedPatientId) {
+        DocumentStorageService.validateIdentifier(requestedPatientId, 'patientId');
+      }
+
+      let isAuthorized = false;
+      let doctorId = 'signed-token-viewer';
+
+      // 1. Check cryptographic signed query token (?token=...)
+      if (token) {
+        const verified = TokenUtil.verifySignedDocumentToken(token);
+        if (verified && verified.documentId === documentId) {
+          isAuthorized = true;
+          doctorId = verified.doctorId;
+        } else if (DoctorReviewController.activeSnippetTokens.has(token)) {
+          const stored = DoctorReviewController.activeSnippetTokens.get(token)!;
+          if (stored.documentId === documentId && stored.expiresAt > new Date()) {
+            isAuthorized = true;
+          }
+        }
+      }
+
+      // 2. Check Bearer Authorization header if token not used or expired
+      if (!isAuthorized && req.headers.authorization?.startsWith('Bearer ')) {
+        const jwtToken = req.headers.authorization.split(' ')[1];
+        if (jwtToken) {
+          const claims = TokenUtil.verifyStaffAccessToken(jwtToken);
+          if (!['DOCTOR', 'SUPER_ADMIN'].includes(claims.role)) {
+            throw new ForbiddenError('Access restricted to physicians and administrators.');
+          }
+
+          isAuthorized = true;
+          doctorId = claims.sub;
+        }
+      }
+
+      // If caller is neither verified by signed token nor staff doctor Bearer header, deny immediately with 403
+      if (!isAuthorized) {
+        throw new ForbiddenError('Invalid, expired, or missing signed document access token');
+      }
+
+      // 3. Verify document exists in database/repository before streaming
+      const doc = await DocumentsRepository.findDocumentById(documentId);
+      if (!doc) {
+        throw new NotFoundError(`Document not found: ${documentId}`);
+      }
+
+      // Enforce cross-patient visit association check if specified in query
+      if (requestedVisitId && doc.visit_id !== requestedVisitId) {
+        throw new ForbiddenError('Access denied: Document does not belong to the requested visit session.');
+      }
+      if (requestedPatientId && doc.patient_id && doc.patient_id !== requestedPatientId) {
+        throw new ForbiddenError('Access denied: Document does not belong to the requested patient.');
+      }
+
+      // Check claim ownership: if claimed by another doctor, block unauthorized viewing unless super admin or outOfQueueReason
+      const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+      if (!isSuperAdmin && doctorId && doctorId !== 'signed-token-viewer') {
+        const existingClaim = await DoctorReviewRepository.getClaim(doc.visit_id);
+        if (
+          existingClaim &&
+          existingClaim.claimedByDoctorId &&
+          existingClaim.claimedByDoctorId !== doctorId
+        ) {
+          if (existingClaim.expiresAt && new Date(existingClaim.expiresAt) > new Date()) {
+            if (!req.query.outOfQueueReason && !req.body?.outOfQueueReason) {
+              throw new ForbiddenError('Access denied: Case is claimed by another physician.');
+            }
+          }
+        }
+      }
+
+      // Retrieve verified physical file metadata from DocumentsService
+      const fileInfo = await DocumentsService.getDocumentFile(documentId);
+
+      // Audit source image inspection
+      DoctorReviewRepository.recordAuditEvent({
+        action: DoctorReviewAuditEvents.SOURCE_OPENED,
+        visitId: fileInfo.visitId || documentId,
+        actorId: doctorId,
+        actorRole: 'DOCTOR',
+        metadata: { documentId, streamType: 'ORIGINAL_IMAGE_STREAM', fileName: fileInfo.fileName },
+      }).catch(() => {});
+
+      const safeFileName = path.basename(fileInfo.fileName).replace(/["\r\n]/g, '_');
+      res.setHeader('Content-Type', fileInfo.mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${safeFileName}"`);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'private, max-age=300');
+      res.sendFile(fileInfo.filePath);
     } catch (error) {
       next(error);
     }

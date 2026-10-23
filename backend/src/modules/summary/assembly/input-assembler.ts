@@ -83,9 +83,21 @@ export class InputAssembler {
       );
 
       for (const ans of sortedAnswers) {
+        // MODULE 3B PRIVACY ENFORCEMENT: Exclude sensitive/doctor-only items from AI summarizer input
+        const ansAny = ans as any;
+        if (
+          ansAny.aiSummarizationAllowed === false ||
+          ansAny.visibilityScope === 'DOCTOR_ONLY' ||
+          ansAny.sensitivityLevel === 'HIGHLY_SENSITIVE' ||
+          ansAny.isDeferredToDoctor === true
+        ) {
+          continue;
+        }
+
         const itemId = `itm_int_${String(itemSeq++).padStart(3, '0')}`;
         const section =
           INTERVIEW_SECTION_TO_SUMMARY_SECTION[ans.section] || SummarySections.CHIEF_COMPLAINT;
+
 
         const { status, formattedValue, rawStr } = this.normalizeInterviewAnswer(ans);
         const itemKey = deriveSemanticItemKey('INTERVIEW', ans.section, rawStr);

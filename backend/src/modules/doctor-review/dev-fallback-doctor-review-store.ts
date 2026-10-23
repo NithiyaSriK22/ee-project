@@ -291,6 +291,10 @@ class DevFallbackDoctorReviewStore {
     this.claims.clear();
     this.confirmedRecords.clear();
   }
+
+  public resetState(): void {
+    this.clearAll();
+  }
 }
 
 export const devFallbackDoctorReviewStore = new DevFallbackDoctorReviewStore();

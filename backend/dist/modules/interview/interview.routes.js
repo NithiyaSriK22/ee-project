@@ -14,6 +14,14 @@ kioskInterviewRouter.use(auth_middleware_js_1.authenticateKioskSession);
 kioskInterviewRouter.post('/start', (0, validate_middleware_js_1.validateRequest)({ body: interview_schemas_js_1.startKioskInterviewSchema }), interview_controller_js_1.InterviewKioskController.start);
 kioskInterviewRouter.get('/current-question', interview_controller_js_1.InterviewKioskController.getCurrentQuestion);
 kioskInterviewRouter.post('/answer', (0, validate_middleware_js_1.validateRequest)({ body: interview_schemas_js_1.submitInterviewAnswerSchema }), interview_controller_js_1.InterviewKioskController.submitAnswer);
+// Module 3B: Special Populations & Interview Privacy Routes
+kioskInterviewRouter.post('/mode/guardian', (0, validate_middleware_js_1.validateRequest)({ body: interview_schemas_js_1.configureGuardianModeSchema }), interview_controller_js_1.InterviewKioskController.configureGuardian);
+kioskInterviewRouter.post('/mode/surrogate', (0, validate_middleware_js_1.validateRequest)({ body: interview_schemas_js_1.configureSurrogateModeSchema }), interview_controller_js_1.InterviewKioskController.configureSurrogate);
+kioskInterviewRouter.post('/privacy/headset', (0, validate_middleware_js_1.validateRequest)({ body: interview_schemas_js_1.updateHeadsetSchema }), interview_controller_js_1.InterviewKioskController.updateHeadset);
+kioskInterviewRouter.post('/defer-to-doctor', (0, validate_middleware_js_1.validateRequest)({ body: interview_schemas_js_1.deferToDoctorSchema }), interview_controller_js_1.InterviewKioskController.deferToDoctor);
+kioskInterviewRouter.post('/patient-unwell', (0, validate_middleware_js_1.validateRequest)({ body: interview_schemas_js_1.flagPatientUnwellSchema }), interview_controller_js_1.InterviewKioskController.flagPatientUnwell);
+kioskInterviewRouter.post('/sensitive-consent', (0, validate_middleware_js_1.validateRequest)({ body: interview_schemas_js_1.sensitiveSectionConsentSchema }), interview_controller_js_1.InterviewKioskController.sensitiveSectionConsent);
+kioskInterviewRouter.post('/disclosure-alert', interview_controller_js_1.InterviewKioskController.triggerSensitiveDisclosure);
 kioskInterviewRouter.post('/complete', interview_controller_js_1.InterviewKioskController.complete);
 kioskInterviewRouter.get('/progress', interview_controller_js_1.InterviewKioskController.getProgress);
 // Router for Admin Template & Question Bank Management

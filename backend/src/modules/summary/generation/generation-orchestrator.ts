@@ -18,6 +18,8 @@ export interface GenerationResult {
   summaryId: string;
   version: number;
   generationMode: GenerationMode;
+  providerId: string;
+  isMock: boolean;
   modelId: string | null;
   modelVersion: string | null;
   promptTemplateVersion: string | null;
@@ -40,6 +42,7 @@ export class GenerationOrchestrator {
     const startTime = Date.now();
     const summaryId = crypto.randomUUID();
     const provider = options.provider || mockSummarizationProvider;
+    const isMock = provider.isMock ?? (provider.providerId === 'MOCK_PROVIDER' || provider.modelId === 'medikiosk-constrained-summary-v1');
     const prompt = options.promptTemplate;
 
     // 1. CONSENT GATE: If AI_SUMMARIZATION consent not granted, do not call model
@@ -56,6 +59,8 @@ export class GenerationOrchestrator {
         summaryId,
         version: options.version,
         generationMode: 'TEMPLATE_FALLBACK',
+        providerId: 'TEMPLATE_FALLBACK',
+        isMock: false,
         modelId: null,
         modelVersion: null,
         promptTemplateVersion: null,
@@ -149,6 +154,8 @@ export class GenerationOrchestrator {
         summaryId,
         version: options.version,
         generationMode: 'LLM',
+        providerId: provider.providerId,
+        isMock,
         modelId: provider.modelId,
         modelVersion: provider.modelVersion,
         promptTemplateVersion: prompt?.version || null,
@@ -174,6 +181,8 @@ export class GenerationOrchestrator {
       summaryId,
       version: options.version,
       generationMode: 'TEMPLATE_FALLBACK',
+      providerId: 'TEMPLATE_FALLBACK',
+      isMock: false,
       modelId: provider.modelId,
       modelVersion: provider.modelVersion,
       promptTemplateVersion: prompt?.version || null,
