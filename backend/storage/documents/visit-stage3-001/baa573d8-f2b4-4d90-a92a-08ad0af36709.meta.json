@@ -1,0 +1,19 @@
+{
+  "id": "baa573d8-f2b4-4d90-a92a-08ad0af36709",
+  "visit_id": "visit-stage3-001",
+  "patient_id": "pat-stage3-001",
+  "document_type": "PRESCRIPTION",
+  "file_name": "rx_scan.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 89,
+  "storage_reference": "storage/documents/visit-stage3-001/e4d2a4e7-59c6-4079-a97e-9d5ff00ecd58_1792797903188_rx_scan.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document image appears blank or unreadable (file size below threshold).",
+  "uploaded_at": "2026-10-23T23:25:03.191Z",
+  "created_at": "2026-10-23T23:25:03.191Z",
+  "updated_at": "2026-10-23T23:25:03.196Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

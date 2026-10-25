@@ -17,6 +17,7 @@ import { MustResolveCard } from '../components/MustResolveCard';
 import { ProvenancePanel } from '../components/ProvenancePanel';
 import { ConfirmBar } from '../components/ConfirmBar';
 import { DocumentSnippetViewer } from '../components/DocumentSnippetViewer';
+import { MedicalRecordsSection } from '../components/MedicalRecordsSection';
 import {
   RefreshCw,
   AlertTriangle,
@@ -414,6 +415,12 @@ export const ReviewWorkspacePage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Medical Records Section: All Uploaded Records, Individual Summaries & Combined Cross-Document Synthesis */}
+                <MedicalRecordsSection
+                  visitId={workspace.visitHeader.visitId}
+                  onInspectDocument={(docId) => setInspectingDocumentId(docId)}
+                />
 
                 {/* Top Must-Resolve Cards */}
                 {workspace.mustResolveItems.length > 0 && (

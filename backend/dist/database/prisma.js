@@ -24,23 +24,30 @@ class DatabaseClient {
         return DatabaseClient.instance;
     }
     static cachedStatus = null;
-    static async testConnection() {
+    static async testConnection(forceRefresh = false) {
         const now = Date.now();
-        if (DatabaseClient.cachedStatus && now - DatabaseClient.cachedStatus.checkedAt < 5000) {
-            return DatabaseClient.cachedStatus.result;
+        // Cache positive connection status for up to 3 seconds to avoid connection thrashing.
+        // Negative/failed status is never cached for more than 1 second to ensure rapid recovery detection.
+        if (!forceRefresh && DatabaseClient.cachedStatus) {
+            const ttl = DatabaseClient.cachedStatus.result ? 3000 : 1000;
+            if (now - DatabaseClient.cachedStatus.checkedAt < ttl) {
+                return DatabaseClient.cachedStatus.result;
+            }
         }
         try {
             const client = DatabaseClient.getInstance();
             const checkPromise = client.$queryRaw `SELECT 1`;
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('PostgreSQL connection check timed out (server unreachable at localhost:5432)')), 500));
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('PostgreSQL query timed out after 3000ms (database may be under heavy load or locked)')), 3000));
             await Promise.race([checkPromise, timeoutPromise]);
             DatabaseClient.cachedStatus = { result: true, checkedAt: now };
             return true;
         }
         catch (error) {
-            logger_js_1.logger.warn('Database connectivity check: PostgreSQL server unreachable', {
-                error: error instanceof Error ? error.message : String(error),
-            });
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            const isTimeout = errorMsg.includes('timed out');
+            logger_js_1.logger.warn(isTimeout
+                ? 'Database connectivity check: PostgreSQL query timed out'
+                : 'Database connectivity check: PostgreSQL server unreachable', { error: errorMsg, isTimeout });
             DatabaseClient.cachedStatus = { result: false, checkedAt: now };
             return false;
         }

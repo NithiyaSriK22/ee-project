@@ -1,0 +1,219 @@
+{
+  "id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+  "visit_id": "b38cf81b-1197-4e04-8b6e-8a8dd05ee39c",
+  "patient_id": "7b363aa3-9285-4975-bfe2-a0fabdb9c2e6",
+  "document_type": "PRESCRIPTION",
+  "file_name": "Prescription_Cardiology_2026.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 407,
+  "storage_reference": "storage/documents/b38cf81b-1197-4e04-8b6e-8a8dd05ee39c/02a3325c-6b15-4e88-8e5f-f0937c08a3ec_1792816673430_Prescription_Cardiology_2026.png",
+  "consent_verified": true,
+  "ocr_status": "COMPLETED",
+  "overall_status": "FULLY_VERIFIED",
+  "ocr_error_message": null,
+  "uploaded_at": "2026-10-24T04:37:53.436Z",
+  "created_at": "2026-10-24T04:37:53.436Z",
+  "updated_at": "2026-10-24T04:39:48.011Z",
+  "raw_fields": [
+    {
+      "id": "ceb4fee4-fde4-4dfa-a624-bd60569cedc4",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "field_type": "drug_name",
+      "raw_text": "Amoxi 500",
+      "ocr_confidence": 0.88,
+      "source_snippet_ref": "rx_line_1_drug",
+      "bounding_box": {
+        "x": 60,
+        "y": 210,
+        "width": 180,
+        "height": 35
+      },
+      "created_at": "2026-10-24T04:37:53.443Z"
+    },
+    {
+      "id": "b4d468c9-9043-4df5-a5f8-f6b4b5a630ec",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "field_type": "dosage",
+      "raw_text": "1-0-1",
+      "ocr_confidence": 0.82,
+      "source_snippet_ref": "rx_line_1_dose",
+      "bounding_box": {
+        "x": 260,
+        "y": 210,
+        "width": 90,
+        "height": 35
+      },
+      "created_at": "2026-10-24T04:37:53.443Z"
+    },
+    {
+      "id": "be8f41e9-4a3c-42d8-9360-e7a6fb5fb782",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "field_type": "allergy",
+      "raw_text": "No known allergies",
+      "ocr_confidence": 0.79,
+      "source_snippet_ref": "patient_notes_allergy",
+      "bounding_box": {
+        "x": 60,
+        "y": 350,
+        "width": 200,
+        "height": 30
+      },
+      "created_at": "2026-10-24T04:37:53.443Z"
+    },
+    {
+      "id": "9c5805c8-78eb-4816-a527-ab7038f5fc2e",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "field_type": "date",
+      "raw_text": "24/10/2026",
+      "ocr_confidence": 0.94,
+      "source_snippet_ref": "rx_header_date",
+      "bounding_box": {
+        "x": 450,
+        "y": 60,
+        "width": 110,
+        "height": 25
+      },
+      "created_at": "2026-10-24T04:37:53.443Z"
+    },
+    {
+      "id": "a1b5fce5-db2f-44bc-ac62-428249beeb70",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "field_type": "physician_name",
+      "raw_text": "Dr. Ramesh Kumar, MD",
+      "ocr_confidence": 0.85,
+      "source_snippet_ref": "rx_footer_doctor",
+      "bounding_box": {
+        "x": 380,
+        "y": 480,
+        "width": 210,
+        "height": 30
+      },
+      "created_at": "2026-10-24T04:37:53.443Z"
+    }
+  ],
+  "validated_fields": [
+    {
+      "id": "ad19b6de-fd3f-4932-9317-d9d6d5bc99c6",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "raw_field_id": "ceb4fee4-fde4-4dfa-a624-bd60569cedc4",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "drug_name",
+      "is_critical": true,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Amoxicillin 500mg",
+      "match_score": 1,
+      "ocr_confidence": 0.88,
+      "explanation": "✓ Drug / Medication Name: matched to \"Amoxicillin 500mg\" (100% reference match).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T04:37:53.471Z",
+      "created_at": "2026-10-24T04:37:53.475Z",
+      "updated_at": "2026-10-24T04:37:53.475Z"
+    },
+    {
+      "id": "fc39f851-da7a-411d-8cd2-155c44b52d47",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "raw_field_id": "b4d468c9-9043-4df5-a5f8-f6b4b5a630ec",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "dosage",
+      "is_critical": true,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "1-0-1",
+      "match_score": 1,
+      "ocr_confidence": 0.82,
+      "explanation": "✓ Dosage & Frequency: recognized valid schedule pattern \"1-0-1\".",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T04:37:53.471Z",
+      "created_at": "2026-10-24T04:37:53.477Z",
+      "updated_at": "2026-10-24T04:37:53.477Z"
+    },
+    {
+      "id": "f35089e1-f227-4093-81c4-f76d4d21db33",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "raw_field_id": "be8f41e9-4a3c-42d8-9360-e7a6fb5fb782",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "allergy",
+      "is_critical": true,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "No Known Drug Allergies (NKDA)",
+      "match_score": 1,
+      "ocr_confidence": 0.79,
+      "explanation": "✓ Allergy & Adverse Reactions: explicit documentation verified (\"No Known Drug Allergies (NKDA)\").",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T04:37:53.471Z",
+      "created_at": "2026-10-24T04:37:53.481Z",
+      "updated_at": "2026-10-24T04:37:53.481Z"
+    },
+    {
+      "id": "8dd4cc93-9e1b-4c37-9f6e-c4c55a122566",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "raw_field_id": "9c5805c8-78eb-4816-a527-ab7038f5fc2e",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "date",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "24/10/2026",
+      "match_score": 1,
+      "ocr_confidence": 0.94,
+      "explanation": "✓ Prescription / Report Date: verified calendar date \"24/10/2026\".",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T04:37:53.471Z",
+      "created_at": "2026-10-24T04:37:53.483Z",
+      "updated_at": "2026-10-24T04:37:53.483Z"
+    },
+    {
+      "id": "0b99a8f4-dff4-46e6-af61-2f266d9ca0b1",
+      "document_id": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+      "raw_field_id": "a1b5fce5-db2f-44bc-ac62-428249beeb70",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "physician_name",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Dr. Ramesh Kumar, MD",
+      "match_score": 0.85,
+      "ocr_confidence": 0.85,
+      "explanation": "✓ Consulting Physician: verified against reference standards (Dr. Ramesh Kumar, MD).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T04:37:53.471Z",
+      "created_at": "2026-10-24T04:37:53.485Z",
+      "updated_at": "2026-10-24T04:37:53.485Z"
+    }
+  ],
+  "summary": {
+    "documentId": "394da5dc-34d1-42ef-95fd-c10c7578c5ee",
+    "fileName": "Prescription_Cardiology_2026.png",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "24/10/2026",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Active prescription for Amoxicillin 500mg (1-0-1)",
+      "Documented drug/substance allergy: No known allergies"
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [
+      {
+        "name": "Amoxicillin 500mg",
+        "dosage": "1-0-1",
+        "frequency": "As indicated on prescription",
+        "duration": null
+      }
+    ],
+    "allergies": [
+      "No known allergies"
+    ],
+    "clinicalObservations": [
+      "Record analyzed with 5 verified clinical formulary tokens."
+    ],
+    "missingOrUnreadableInfo": [],
+    "generatedAt": "2026-10-24T04:39:48.100Z",
+    "modelId": "medikiosk-constrained-summary-v1",
+    "isMock": true,
+    "rawTextExcerpt": "Amoxi 500 1-0-1 No known allergies 24/10/2026 Dr. Ramesh Kumar, MD"
+  }
+}

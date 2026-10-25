@@ -1,0 +1,19 @@
+{
+  "id": "ef8d1ef7-468a-452b-8330-9397e4c4e888",
+  "visit_id": "vis_1792814449653_gly81i",
+  "patient_id": "4f8e70f5-589d-4f08-a447-08a60183d4c1",
+  "document_type": "PRESCRIPTION",
+  "file_name": "faded_old_prescription.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 70,
+  "storage_reference": "storage/documents/vis_1792814449653_gly81i/cb4a1231-2b3c-451b-9577-f67b0ed277ab_1792814449793_faded_old_prescription.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document is illegible due to heavy ink smudging and low camera lighting.",
+  "uploaded_at": "2026-10-24T04:00:49.798Z",
+  "created_at": "2026-10-24T04:00:49.798Z",
+  "updated_at": "2026-10-24T04:00:49.809Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

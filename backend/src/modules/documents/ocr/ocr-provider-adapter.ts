@@ -352,11 +352,21 @@ export class TesseractOcrProvider implements IOcrProvider {
         if (drugName) {
           fields.push({
             fieldType: 'drug_name',
-            rawText: dosageVal ? `${drugName} ${dosageVal}` : drugName,
+            rawText: drugName,
             confidence: 0.88,
             sourceSnippetRef: `tess_line_${fields.length + 1}`,
             boundingBox: { x: 60, y: 150 + fields.length * 40, width: 220, height: 35 },
           });
+
+          if (dosageVal) {
+            fields.push({
+              fieldType: 'dosage',
+              rawText: dosageVal,
+              confidence: 0.88,
+              sourceSnippetRef: `tess_dosage_${fields.length + 1}`,
+              boundingBox: { x: 290, y: 150 + fields.length * 40, width: 100, height: 35 },
+            });
+          }
         }
       }
     }
@@ -511,7 +521,7 @@ export class CorruptedDocOcrProvider implements IOcrProvider {
  */
 export class OcrProviderFactory {
   public static getProvider(type?: string): IOcrProvider {
-    const configured = type || (process.env.OCR_ENGINE as string) || 'STANDARD';
+    const configured = type || (process.env.OCR_PROVIDER as string) || (process.env.OCR_ENGINE as string) || 'STANDARD';
     switch (configured.toUpperCase()) {
       case 'TESSERACT':
         return new TesseractOcrProvider();

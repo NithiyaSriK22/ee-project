@@ -211,4 +211,37 @@ router.get(
   DoctorReviewController.getDocumentSnippet
 );
 
+// ============================================================================
+// MEDICAL RECORDS & AI SUMMARIES (Patient-Doctor Portal Integration)
+// ============================================================================
+router.get(
+  '/visits/:visitId/medical-records',
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  DoctorReviewController.getMedicalRecordsForVisit
+);
+
+router.get(
+  '/documents/:documentId/summary',
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  DoctorReviewController.getIndividualDocumentSummary
+);
+
+router.get(
+  '/visits/:visitId/combined-summary',
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  DoctorReviewController.getCombinedRecordSummary
+);
+
+router.post(
+  '/visits/:visitId/combined-summary/regenerate',
+  authorizeRoles('DOCTOR', 'SUPER_ADMIN'),
+  DoctorReviewController.regenerateCombinedRecordSummary
+);
+
+router.post(
+  '/visits/:visitId/combined-summary/approve',
+  authorizeRoles('DOCTOR', 'SUPER_ADMIN'),
+  DoctorReviewController.approveCombinedRecordSummary
+);
+
 export const doctorReviewRoutes = router;

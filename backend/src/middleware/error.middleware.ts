@@ -48,6 +48,44 @@ export const globalErrorHandler = (
     return;
   }
 
+  // Handle Prisma Known Request Errors (e.g. unique constraint, not found, foreign key)
+  if (err.name === 'PrismaClientKnownRequestError') {
+    const prismaErr = err as any;
+    logger.warn(`Database constraint error: ${prismaErr.code}`, {
+      requestId,
+      code: prismaErr.code,
+      path: req.originalUrl,
+    });
+
+    if (prismaErr.code === 'P2002') {
+      ResponseUtil.error(
+        res,
+        409,
+        ErrorCode.CONFLICT,
+        'A conflicting clinical record or session already exists for this visit.'
+      );
+      return;
+    }
+    if (prismaErr.code === 'P2025') {
+      ResponseUtil.error(res, 404, ErrorCode.NOT_FOUND, 'The requested clinical resource was not found.');
+      return;
+    }
+    if (prismaErr.code === 'P2003') {
+      ResponseUtil.error(res, 400, ErrorCode.VALIDATION_ERROR, 'Referenced clinical record does not exist.');
+      return;
+    }
+  }
+
+  // Handle Prisma Validation Errors (e.g. malformed UUID or parameter type conversion)
+  if (err.name === 'PrismaClientValidationError') {
+    logger.warn('Database validation error caught in error middleware', {
+      requestId,
+      path: req.originalUrl,
+    });
+    ResponseUtil.error(res, 400, ErrorCode.VALIDATION_ERROR, 'Invalid record format or identifier provided.');
+    return;
+  }
+
   // Unhandled / unexpected internal error
   logger.error(`Unhandled system error: ${err.message}`, {
     requestId,

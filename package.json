@@ -9,6 +9,8 @@
     "frontend-doctor-portal"
   ],
   "scripts": {
+    "db:start": "npm --workspace=backend run db:start",
+    "db:ready": "npm --workspace=backend run db:ready",
     "dev:backend": "npm --workspace=backend run dev",
     "dev:kiosk": "npm --workspace=frontend-kiosk run dev",
     "dev:doctor": "npm --workspace=frontend-doctor-portal run dev",

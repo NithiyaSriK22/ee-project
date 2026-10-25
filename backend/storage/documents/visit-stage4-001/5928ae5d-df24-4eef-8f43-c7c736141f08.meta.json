@@ -1,0 +1,19 @@
+{
+  "id": "5928ae5d-df24-4eef-8f43-c7c736141f08",
+  "visit_id": "visit-stage4-001",
+  "patient_id": "2897ce67-89c4-4043-a384-a6e2aee6da36",
+  "document_type": "PRESCRIPTION",
+  "file_name": "blurry_low_quality_scan.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 79,
+  "storage_reference": "storage/documents/visit-stage4-001/772fcf13-a7f3-4de2-889a-854b7fc89ffa_1792814424859_blurry_low_quality_scan.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document could not be reliably digitized. Legibility confidence is below clinical threshold (confidence: 22%).",
+  "uploaded_at": "2026-10-24T04:00:24.880Z",
+  "created_at": "2026-10-24T04:00:24.880Z",
+  "updated_at": "2026-10-24T04:00:24.930Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

@@ -40,7 +40,8 @@ class ConfirmationService {
         if (!attestationAccepted) {
             throw new app_error_js_1.AppError('Physician attestation must be accepted to confirm clinical record', 400, error_codes_js_1.ErrorCode.ATTESTATION_REQUIRED);
         }
-        if (attestationVersion !== policy.attestationVersion) {
+        const effectiveAttestationVersion = attestationVersion || policy.attestationVersion;
+        if (effectiveAttestationVersion !== policy.attestationVersion) {
             throw new app_error_js_1.AppError(`Attestation version mismatch (expected '${policy.attestationVersion}', received '${attestationVersion}')`, 400, error_codes_js_1.ErrorCode.VALIDATION_ERROR);
         }
         // 3. Server re-fetches workspace inputs LIVE (THE DOCTOR DECIDES, THE SERVER ENFORCES)

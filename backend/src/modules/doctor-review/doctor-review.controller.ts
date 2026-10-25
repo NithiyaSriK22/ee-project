@@ -13,6 +13,7 @@ import { ForbiddenError, NotFoundError } from '../../errors/app-error.js';
 import { DocumentsService } from '../documents/documents.service.js';
 import { DocumentsRepository } from '../documents/documents.repository.js';
 import { DocumentStorageService } from '../documents/storage/document-storage.service.js';
+import { DocumentSummaryService } from '../summary/document-summary.service.js';
 
 export class DoctorReviewController {
   // ============================================================================
@@ -510,6 +511,108 @@ export class DoctorReviewController {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Cache-Control', 'private, max-age=300');
       res.sendFile(fileInfo.filePath);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ============================================================================
+  // MEDICAL RECORDS & AI SUMMARIES ENDPOINTS (Patient-Doctor Portal Integration)
+  // ============================================================================
+
+  public static async getMedicalRecordsForVisit(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const visitId = req.params.visitId as string;
+      const docs = await DocumentsRepository.findDocumentsByVisitId(visitId);
+
+      // Attach individual AI summary to each document
+      const enrichedDocs = await Promise.all(
+        docs.map(async (doc) => {
+          let summary = (doc as any).summary;
+          if (!summary && doc.ocr_status !== 'FAILED' && doc.overall_status !== 'EXTRACTION_FAILED') {
+            try {
+              summary = await DocumentSummaryService.summarizeDocument(doc.id);
+            } catch {}
+          }
+          return {
+            id: doc.id,
+            visitId: doc.visit_id,
+            patientId: doc.patient_id,
+            documentType: doc.document_type,
+            fileName: doc.file_name,
+            mimeType: doc.mime_type,
+            fileSizeBytes: doc.file_size_bytes,
+            ocrStatus: doc.ocr_status,
+            overallStatus: doc.overall_status,
+            ocrErrorMessage: doc.ocr_error_message,
+            uploadedAt: doc.uploaded_at,
+            summary,
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        data: enrichedDocs,
+        message: 'Medical records and individual AI summaries retrieved',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async getIndividualDocumentSummary(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const documentId = req.params.documentId as string;
+      const summary = await DocumentSummaryService.summarizeDocument(documentId);
+      res.json({
+        success: true,
+        data: summary,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async getCombinedRecordSummary(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const visitId = req.params.visitId as string;
+      const forceRegenerate = req.query.regenerate === 'true';
+      const summary = await DocumentSummaryService.getCombinedRecordSummary(visitId, forceRegenerate);
+      res.json({
+        success: true,
+        data: summary,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async regenerateCombinedRecordSummary(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const visitId = req.params.visitId as string;
+      const summary = await DocumentSummaryService.getCombinedRecordSummary(visitId, true);
+      res.json({
+        success: true,
+        data: summary,
+        message: 'Combined medical records summary regenerated successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async approveCombinedRecordSummary(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const visitId = req.params.visitId as string;
+      const doctorName = req.user?.fullName || req.user?.email || 'Attending Physician';
+      const notes = req.body?.notes;
+      const summary = await DocumentSummaryService.approveCombinedSummary(visitId, doctorName, notes);
+      res.json({
+        success: true,
+        data: summary,
+        message: 'Combined medical records summary approved by physician',
+      });
     } catch (error) {
       next(error);
     }

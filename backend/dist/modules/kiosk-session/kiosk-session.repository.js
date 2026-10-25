@@ -5,9 +5,6 @@ const prisma_js_1 = require("../../database/prisma.js");
 const dev_fallback_patient_store_js_1 = require("../patients/dev-fallback-patient-store.js");
 class KioskSessionRepository {
     static async findPatientByRegistrationNumber(regNumber) {
-        if (process.env.NODE_ENV === 'test') {
-            return dev_fallback_patient_store_js_1.devFallbackPatientStore.findPatientByRegistrationNumber(regNumber);
-        }
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {
             try {
@@ -28,9 +25,6 @@ class KioskSessionRepository {
         return dev_fallback_patient_store_js_1.devFallbackPatientStore.findPatientByRegistrationNumber(regNumber);
     }
     static async findPatientById(id) {
-        if (process.env.NODE_ENV === 'test') {
-            return dev_fallback_patient_store_js_1.devFallbackPatientStore.findPatientById(id);
-        }
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {
             try {
@@ -45,13 +39,10 @@ class KioskSessionRepository {
         return dev_fallback_patient_store_js_1.devFallbackPatientStore.findPatientById(id);
     }
     static async createPatient(data) {
-        if (process.env.NODE_ENV === 'test') {
-            return dev_fallback_patient_store_js_1.devFallbackPatientStore.createPatient(data);
-        }
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {
             try {
-                return await prisma_js_1.prisma.patient.create({
+                const created = await prisma_js_1.prisma.patient.create({
                     data: {
                         hospital_registration_number: data.hospitalRegistrationNumber,
                         full_name: data.fullName,
@@ -62,19 +53,25 @@ class KioskSessionRepository {
                         preferred_language: data.preferredLanguage,
                     },
                 });
+                // Mirror to in-memory store
+                try {
+                    dev_fallback_patient_store_js_1.devFallbackPatientStore.createPatient({
+                        ...data,
+                        hospitalRegistrationNumber: created.hospital_registration_number,
+                    });
+                }
+                catch { }
+                return created;
             }
             catch { }
         }
         return dev_fallback_patient_store_js_1.devFallbackPatientStore.createPatient(data);
     }
     static async createVisitProfile(data) {
-        if (process.env.NODE_ENV === 'test') {
-            return dev_fallback_patient_store_js_1.devFallbackPatientStore.createVisitProfile(data);
-        }
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {
             try {
-                return await prisma_js_1.prisma.patientVisitProfile.create({
+                const profile = await prisma_js_1.prisma.patientVisitProfile.create({
                     data: {
                         patient_id: data.patientId,
                         visit_id: data.visitId,
@@ -86,19 +83,22 @@ class KioskSessionRepository {
                         status: 'ACTIVE',
                     },
                 });
+                // Mirror to fallback store
+                try {
+                    dev_fallback_patient_store_js_1.devFallbackPatientStore.createVisitProfile(data);
+                }
+                catch { }
+                return profile;
             }
             catch { }
         }
         return dev_fallback_patient_store_js_1.devFallbackPatientStore.createVisitProfile(data);
     }
     static async createKioskSession(data) {
-        if (process.env.NODE_ENV === 'test') {
-            return dev_fallback_patient_store_js_1.devFallbackPatientStore.createKioskSession(data);
-        }
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {
             try {
-                return await prisma_js_1.prisma.kioskSession.create({
+                const session = await prisma_js_1.prisma.kioskSession.create({
                     data: {
                         visit_id: data.visitId,
                         patient_id: data.patientId,
@@ -108,15 +108,17 @@ class KioskSessionRepository {
                         expires_at: data.expiresAt,
                     },
                 });
+                try {
+                    dev_fallback_patient_store_js_1.devFallbackPatientStore.createKioskSession(data);
+                }
+                catch { }
+                return session;
             }
             catch { }
         }
         return dev_fallback_patient_store_js_1.devFallbackPatientStore.createKioskSession(data);
     }
     static async findSessionByVisitId(visitId) {
-        if (process.env.NODE_ENV === 'test') {
-            return dev_fallback_patient_store_js_1.devFallbackPatientStore.findSessionByVisitId(visitId);
-        }
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {
             try {
@@ -135,29 +137,28 @@ class KioskSessionRepository {
         return dev_fallback_patient_store_js_1.devFallbackPatientStore.findSessionByVisitId(visitId);
     }
     static async endSession(visitId) {
-        if (process.env.NODE_ENV === 'test') {
-            return dev_fallback_patient_store_js_1.devFallbackPatientStore.endSession(visitId);
-        }
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {
             try {
-                return await prisma_js_1.prisma.kioskSession.update({
+                const updated = await prisma_js_1.prisma.kioskSession.update({
                     where: { visit_id: visitId },
                     data: { status: 'ENDED' },
                 });
+                try {
+                    dev_fallback_patient_store_js_1.devFallbackPatientStore.endSession(visitId);
+                }
+                catch { }
+                return updated;
             }
             catch { }
         }
         return dev_fallback_patient_store_js_1.devFallbackPatientStore.endSession(visitId);
     }
     static async recordConsent(data) {
-        if (process.env.NODE_ENV === 'test') {
-            return dev_fallback_patient_store_js_1.devFallbackPatientStore.recordConsent(data);
-        }
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {
             try {
-                return await prisma_js_1.prisma.consent.upsert({
+                const consent = await prisma_js_1.prisma.consent.upsert({
                     where: {
                         patient_id_visit_id_consent_type: {
                             patient_id: data.patientId,
@@ -183,15 +184,17 @@ class KioskSessionRepository {
                         granted_at: new Date(),
                     },
                 });
+                try {
+                    dev_fallback_patient_store_js_1.devFallbackPatientStore.recordConsent(data);
+                }
+                catch { }
+                return consent;
             }
             catch { }
         }
         return dev_fallback_patient_store_js_1.devFallbackPatientStore.recordConsent(data);
     }
     static async getConsentsForVisit(patientId, visitId) {
-        if (process.env.NODE_ENV === 'test') {
-            return dev_fallback_patient_store_js_1.devFallbackPatientStore.getConsentsForVisit(patientId, visitId);
-        }
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {
             try {

@@ -15,6 +15,7 @@ import { RedFlagsService } from '../redflags/redflags.service.js';
 import { DocumentStorageService } from './storage/document-storage.service.js';
 import { DoctorReviewRepository } from '../doctor-review/doctor-review.repository.js';
 import { QueueStatuses } from '../doctor-review/doctor-review.types.js';
+import { DocumentSummaryService } from '../summary/document-summary.service.js';
 
 export class DocumentsService {
   /**
@@ -161,6 +162,18 @@ export class DocumentsService {
         logger.warn('Failed to update queue entry on document upload', { visitId, error: String(err) });
       });
 
+      // 7. Individual Document Summary Generation & Invalidation of Previous Combined Summary
+      let individualSummary = null;
+      try {
+        individualSummary = await DocumentSummaryService.summarizeDocument(document.id);
+        await DocumentSummaryService.markCombinedSummaryStale(visitId);
+      } catch (sumErr) {
+        logger.warn('Non-blocking individual document summary generation notice', {
+          documentId: document.id,
+          error: String(sumErr),
+        });
+      }
+
       const refreshedDoc = await DocumentsRepository.findDocumentById(document.id);
 
       return {
@@ -171,6 +184,7 @@ export class DocumentsService {
           errorMessage: ocrResult.errorMessage,
         },
         validationSummary,
+        individualSummary,
       };
     } catch (unhandledError) {
       // Clean up orphaned file on unhandled failure to maintain storage consistency

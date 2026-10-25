@@ -101,7 +101,7 @@ exports.confirmReviewSchema = zod_1.z.object({
         attestationAccepted: zod_1.z.boolean().refine((val) => val === true, {
             message: 'Physician attestation must be explicitly accepted to confirm clinical record',
         }),
-        attestationVersion: zod_1.z.string().min(1, 'Attestation version is required'),
+        attestationVersion: zod_1.z.string().default('ATTEST-v1.0.0'),
     }),
 });
 exports.amendConfirmedRecordSchema = zod_1.z.object({

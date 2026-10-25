@@ -1,0 +1,151 @@
+{
+  "id": "983645c9-2dbd-4a5d-9121-0d40da63b2b9",
+  "visit_id": "b38cf81b-1197-4e04-8b6e-8a8dd05ee39c",
+  "patient_id": "7b363aa3-9285-4975-bfe2-a0fabdb9c2e6",
+  "document_type": "LAB_REPORT",
+  "file_name": "Comprehensive_Metabolic_Panel.pdf",
+  "mime_type": "application/pdf",
+  "file_size_bytes": 771,
+  "storage_reference": "storage/documents/b38cf81b-1197-4e04-8b6e-8a8dd05ee39c/61080a94-42c6-4717-bff8-32ab42bf320c_1792816626974_Comprehensive_Metabolic_Panel.pdf",
+  "consent_verified": true,
+  "ocr_status": "COMPLETED",
+  "overall_status": "FULLY_VERIFIED",
+  "ocr_error_message": null,
+  "uploaded_at": "2026-10-24T04:37:06.979Z",
+  "created_at": "2026-10-24T04:37:06.979Z",
+  "updated_at": "2026-10-24T04:39:48.019Z",
+  "raw_fields": [
+    {
+      "id": "ac5b9116-d462-46b9-b71d-09752b02b879",
+      "document_id": "983645c9-2dbd-4a5d-9121-0d40da63b2b9",
+      "field_type": "lab_test_name",
+      "raw_text": "Fasting Blood Glucose",
+      "ocr_confidence": 0.92,
+      "source_snippet_ref": "line_2_box_1",
+      "bounding_box": {
+        "x": 50,
+        "y": 120,
+        "width": 220,
+        "height": 30
+      },
+      "created_at": "2026-10-24T04:37:06.988Z"
+    },
+    {
+      "id": "0a816bfb-0727-4362-a7ce-ace2553984b8",
+      "document_id": "983645c9-2dbd-4a5d-9121-0d40da63b2b9",
+      "field_type": "lab_value",
+      "raw_text": "142 mg/dL",
+      "ocr_confidence": 0.89,
+      "source_snippet_ref": "line_2_box_2",
+      "bounding_box": {
+        "x": 300,
+        "y": 120,
+        "width": 100,
+        "height": 30
+      },
+      "created_at": "2026-10-24T04:37:06.988Z"
+    },
+    {
+      "id": "03ee307c-77a0-4486-8893-3adcf29577c8",
+      "document_id": "983645c9-2dbd-4a5d-9121-0d40da63b2b9",
+      "field_type": "date",
+      "raw_text": "24/10/2026",
+      "ocr_confidence": 0.95,
+      "source_snippet_ref": "line_1_box_3",
+      "bounding_box": {
+        "x": 450,
+        "y": 50,
+        "width": 120,
+        "height": 25
+      },
+      "created_at": "2026-10-24T04:37:06.988Z"
+    }
+  ],
+  "validated_fields": [
+    {
+      "id": "44f62d0b-b065-4e65-99aa-9a8a6d2074cd",
+      "document_id": "983645c9-2dbd-4a5d-9121-0d40da63b2b9",
+      "raw_field_id": "0a816bfb-0727-4362-a7ce-ace2553984b8",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "lab_value",
+      "is_critical": true,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "142 mg/dL",
+      "match_score": 1,
+      "ocr_confidence": 0.89,
+      "explanation": "✓ Lab Result Value: verified against reference standards (142 mg/dL).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T04:37:07.025Z",
+      "created_at": "2026-10-24T04:37:07.030Z",
+      "updated_at": "2026-10-24T04:37:07.030Z"
+    },
+    {
+      "id": "4eb87d3e-cf1c-4e7b-9877-44e792d9f3f4",
+      "document_id": "983645c9-2dbd-4a5d-9121-0d40da63b2b9",
+      "raw_field_id": "ac5b9116-d462-46b9-b71d-09752b02b879",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "lab_test_name",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Fasting Blood Glucose",
+      "match_score": 0.92,
+      "ocr_confidence": 0.92,
+      "explanation": "✓ Lab Investigation Name: verified against reference standards (Fasting Blood Glucose).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T04:37:07.025Z",
+      "created_at": "2026-10-24T04:37:07.033Z",
+      "updated_at": "2026-10-24T04:37:07.033Z"
+    },
+    {
+      "id": "c3b51dd2-97cb-48ce-9d41-a149827cb5d7",
+      "document_id": "983645c9-2dbd-4a5d-9121-0d40da63b2b9",
+      "raw_field_id": "03ee307c-77a0-4486-8893-3adcf29577c8",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "date",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "24/10/2026",
+      "match_score": 1,
+      "ocr_confidence": 0.95,
+      "explanation": "✓ Prescription / Report Date: verified calendar date \"24/10/2026\".",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T04:37:07.025Z",
+      "created_at": "2026-10-24T04:37:07.036Z",
+      "updated_at": "2026-10-24T04:37:07.036Z"
+    }
+  ],
+  "summary": {
+    "documentId": "983645c9-2dbd-4a5d-9121-0d40da63b2b9",
+    "fileName": "Comprehensive_Metabolic_Panel.pdf",
+    "documentType": "LAB_REPORT",
+    "documentDate": "24/10/2026",
+    "reportOrTestName": "Diagnostic Laboratory Report",
+    "importantFindings": [
+      "Laboratory test Fasting Blood Glucose: 142 mg/dL"
+    ],
+    "laboratoryResults": [
+      {
+        "testName": "Fasting Blood Glucose",
+        "value": "142 mg/dL",
+        "unit": null,
+        "referenceRange": null,
+        "isAbnormal": false
+      }
+    ],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [
+      "Record analyzed with 3 verified clinical formulary tokens."
+    ],
+    "missingOrUnreadableInfo": [],
+    "generatedAt": "2026-10-24T04:39:48.109Z",
+    "modelId": "medikiosk-constrained-summary-v1",
+    "isMock": true,
+    "rawTextExcerpt": "Fasting Blood Glucose 142 mg/dL 24/10/2026"
+  }
+}

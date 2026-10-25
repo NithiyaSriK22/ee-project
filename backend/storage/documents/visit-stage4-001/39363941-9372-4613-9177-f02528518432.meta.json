@@ -1,0 +1,19 @@
+{
+  "id": "39363941-9372-4613-9177-f02528518432",
+  "visit_id": "visit-stage4-001",
+  "patient_id": "2897ce67-89c4-4043-a384-a6e2aee6da36",
+  "document_type": "PRESCRIPTION",
+  "file_name": "service_crash_test.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 75,
+  "storage_reference": "storage/documents/visit-stage4-001/854df1f2-8ff2-4167-aa0a-16c424ff79ca_1792812929370_service_crash_test.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "OCR optical engine subprocess crashed or connection timed out.",
+  "uploaded_at": "2026-10-24T03:35:29.414Z",
+  "created_at": "2026-10-24T03:35:29.414Z",
+  "updated_at": "2026-10-24T03:35:29.511Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

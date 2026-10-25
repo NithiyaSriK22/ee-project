@@ -95,7 +95,7 @@ export class LocalLlmAdapter implements SummarizationProvider {
 
 export function createDefaultLocalLlmAdapter(): LocalLlmAdapter {
   return new LocalLlmAdapter({
-    baseUrl: process.env.LOCAL_LLM_URL || 'http://localhost:11434/v1',
+    baseUrl: process.env.LOCAL_LLM_BASE_URL || process.env.LOCAL_LLM_URL || 'http://localhost:11434/v1',
     model: process.env.LOCAL_LLM_MODEL || 'llama3-8b-instruct',
     apiKey: process.env.LOCAL_LLM_API_KEY,
     timeoutMs: parseInt(process.env.LOCAL_LLM_TIMEOUT_MS || '30000', 10),

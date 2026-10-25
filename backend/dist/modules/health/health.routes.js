@@ -10,4 +10,6 @@ router.get('/', health_controller_js_1.HealthController.getHealth);
 router.get('/live', health_controller_js_1.HealthController.getLiveness);
 // /api/v1/health/ready
 router.get('/ready', health_controller_js_1.HealthController.getReadiness);
+// /api/v1/health/db
+router.get('/db', health_controller_js_1.HealthController.getDatabaseHealth);
 exports.healthRoutes = router;

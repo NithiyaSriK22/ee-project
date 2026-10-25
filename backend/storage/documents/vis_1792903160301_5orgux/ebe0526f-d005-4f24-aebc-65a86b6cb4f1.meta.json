@@ -1,0 +1,293 @@
+{
+  "id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+  "visit_id": "vis_1792903160301_5orgux",
+  "patient_id": "df583edc-b4d7-41a2-8388-de639428ec42",
+  "document_type": "PRESCRIPTION",
+  "file_name": "hypertension_followup_oct.pdf",
+  "mime_type": "application/pdf",
+  "file_size_bytes": 562,
+  "storage_reference": "storage/documents/vis_1792903160301_5orgux/266c52f0-eaf5-4874-9b9b-ca2815718288_1792903168031_hypertension_followup_oct.pdf",
+  "consent_verified": true,
+  "ocr_status": "COMPLETED",
+  "overall_status": "NEEDS_PHYSICIAN_REVIEW",
+  "ocr_error_message": null,
+  "summary": {
+    "documentId": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+    "fileName": "hypertension_followup_oct.pdf",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "15/10/2026",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Active prescription for Amlodipine 5mg (10mg)",
+      "Laboratory test Serum Creatinine: 1.1 mg/dL",
+      "Serum Creatinine 1.1 mg/dL",
+      "Amlodipine 10mg 1tabletdaily"
+    ],
+    "laboratoryResults": [
+      {
+        "testName": "Serum Creatinine",
+        "value": "1.1 mg/dL",
+        "unit": null,
+        "referenceRange": null,
+        "isAbnormal": false
+      }
+    ],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [
+      {
+        "name": "Amlodipine 5mg",
+        "dosage": "10mg",
+        "frequency": "As indicated on prescription",
+        "duration": null
+      }
+    ],
+    "allergies": [],
+    "clinicalObservations": [
+      "Record analyzed with 7 verified clinical formulary tokens."
+    ],
+    "missingOrUnreadableInfo": [],
+    "generatedAt": "2026-10-25T04:39:33.433Z",
+    "modelId": "llama3.2:1b",
+    "isMock": false,
+    "rawTextExcerpt": "Amlodipine 10mg 1tabletdaily Serum Creatinine 1.1 mg/dL 15/10/2026 Dr. Sundar Rajan MD Date"
+  },
+  "uploaded_at": "2026-10-25T04:39:28.041Z",
+  "created_at": "2026-10-25T04:39:28.041Z",
+  "updated_at": "2026-10-25T04:39:28.108Z",
+  "raw_fields": [
+    {
+      "id": "dba98634-3aaf-46c5-89d4-3834ba9ecd0d",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "field_type": "drug_name",
+      "raw_text": "Amlodipine",
+      "ocr_confidence": 0.88,
+      "source_snippet_ref": "tess_line_1",
+      "bounding_box": {
+        "x": 60,
+        "y": 150,
+        "width": 220,
+        "height": 35
+      },
+      "created_at": "2026-10-25T04:39:28.050Z"
+    },
+    {
+      "id": "0b9fccc0-09b3-4f74-a6ce-9d75d08e12eb",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "field_type": "dosage",
+      "raw_text": "10mg",
+      "ocr_confidence": 0.88,
+      "source_snippet_ref": "tess_dosage_2",
+      "bounding_box": {
+        "x": 290,
+        "y": 190,
+        "width": 100,
+        "height": 35
+      },
+      "created_at": "2026-10-25T04:39:28.050Z"
+    },
+    {
+      "id": "33e6e750-d0ae-422b-89c0-309a807d09de",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "field_type": "dosage",
+      "raw_text": "1tabletdaily",
+      "ocr_confidence": 0.84,
+      "source_snippet_ref": "tess_dosage_freq",
+      "bounding_box": {
+        "x": 290,
+        "y": 190,
+        "width": 100,
+        "height": 30
+      },
+      "created_at": "2026-10-25T04:39:28.050Z"
+    },
+    {
+      "id": "38767df9-7a8b-46a7-a644-f225ad39b481",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "field_type": "lab_test_name",
+      "raw_text": "Serum Creatinine",
+      "ocr_confidence": 0.9,
+      "source_snippet_ref": "tess_lab_test",
+      "bounding_box": {
+        "x": 50,
+        "y": 120,
+        "width": 220,
+        "height": 30
+      },
+      "created_at": "2026-10-25T04:39:28.050Z"
+    },
+    {
+      "id": "3185ed56-4f92-4c63-a260-27bf0a064de3",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "field_type": "lab_value",
+      "raw_text": "1.1 mg/dL",
+      "ocr_confidence": 0.88,
+      "source_snippet_ref": "tess_lab_val",
+      "bounding_box": {
+        "x": 300,
+        "y": 120,
+        "width": 120,
+        "height": 30
+      },
+      "created_at": "2026-10-25T04:39:28.050Z"
+    },
+    {
+      "id": "dc947c8d-cea5-4e10-8942-002b676b652f",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "field_type": "date",
+      "raw_text": "15/10/2026",
+      "ocr_confidence": 0.92,
+      "source_snippet_ref": "tess_date",
+      "bounding_box": {
+        "x": 450,
+        "y": 60,
+        "width": 120,
+        "height": 25
+      },
+      "created_at": "2026-10-25T04:39:28.050Z"
+    },
+    {
+      "id": "f8e99d84-6feb-4e1a-bd55-3b5b5e630563",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "field_type": "physician_name",
+      "raw_text": "Dr. Sundar Rajan MD Date",
+      "ocr_confidence": 0.85,
+      "source_snippet_ref": "tess_physician",
+      "bounding_box": {
+        "x": 380,
+        "y": 460,
+        "width": 200,
+        "height": 30
+      },
+      "created_at": "2026-10-25T04:39:28.050Z"
+    }
+  ],
+  "validated_fields": [
+    {
+      "id": "46b71431-9d36-4eeb-8916-4665be7d5818",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "raw_field_id": "0b9fccc0-09b3-4f74-a6ce-9d75d08e12eb",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "dosage",
+      "is_critical": true,
+      "result": "MISMATCH_FLAGGED",
+      "eval_state": "MISMATCH",
+      "matched_reference_value": null,
+      "match_score": 0.2,
+      "ocr_confidence": 0.88,
+      "explanation": "⚠ Dosage & Frequency: Extracted text \"10mg\" did not match any known reference entry with sufficient confidence (20%). Please verify against original document.",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T04:39:28.078Z",
+      "created_at": "2026-10-25T04:39:28.087Z",
+      "updated_at": "2026-10-25T04:39:28.087Z"
+    },
+    {
+      "id": "89e5b0b8-84be-4328-a436-1b65551bf7c8",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "raw_field_id": "33e6e750-d0ae-422b-89c0-309a807d09de",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "dosage",
+      "is_critical": true,
+      "result": "MISMATCH_FLAGGED",
+      "eval_state": "MISMATCH",
+      "matched_reference_value": null,
+      "match_score": 0.2,
+      "ocr_confidence": 0.84,
+      "explanation": "⚠ Dosage & Frequency: Extracted text \"1tabletdaily\" did not match any known reference entry with sufficient confidence (20%). Please verify against original document.",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T04:39:28.078Z",
+      "created_at": "2026-10-25T04:39:28.090Z",
+      "updated_at": "2026-10-25T04:39:28.090Z"
+    },
+    {
+      "id": "ed430aac-d442-42f4-b6a6-e2ecaba00ddb",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "raw_field_id": "dba98634-3aaf-46c5-89d4-3834ba9ecd0d",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "drug_name",
+      "is_critical": true,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Amlodipine 5mg",
+      "match_score": 1,
+      "ocr_confidence": 0.88,
+      "explanation": "✓ Drug / Medication Name: matched to \"Amlodipine 5mg\" (100% reference match).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T04:39:28.078Z",
+      "created_at": "2026-10-25T04:39:28.093Z",
+      "updated_at": "2026-10-25T04:39:28.093Z"
+    },
+    {
+      "id": "90f4a3ca-4b70-49a4-9983-12717c5c0a6c",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "raw_field_id": "3185ed56-4f92-4c63-a260-27bf0a064de3",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "lab_value",
+      "is_critical": true,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "1.1 mg/dL",
+      "match_score": 1,
+      "ocr_confidence": 0.88,
+      "explanation": "✓ Lab Result Value: verified against reference standards (1.1 mg/dL).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T04:39:28.078Z",
+      "created_at": "2026-10-25T04:39:28.096Z",
+      "updated_at": "2026-10-25T04:39:28.096Z"
+    },
+    {
+      "id": "ebf7c042-fbc5-45f3-9f4d-bcfbddb4acd7",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "raw_field_id": "38767df9-7a8b-46a7-a644-f225ad39b481",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "lab_test_name",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Serum Creatinine",
+      "match_score": 0.9,
+      "ocr_confidence": 0.9,
+      "explanation": "✓ Lab Investigation Name: verified against reference standards (Serum Creatinine).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T04:39:28.078Z",
+      "created_at": "2026-10-25T04:39:28.098Z",
+      "updated_at": "2026-10-25T04:39:28.098Z"
+    },
+    {
+      "id": "67f9abd7-5ecb-42c6-b821-deec95c685ff",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "raw_field_id": "dc947c8d-cea5-4e10-8942-002b676b652f",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "date",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "15/10/2026",
+      "match_score": 1,
+      "ocr_confidence": 0.92,
+      "explanation": "✓ Prescription / Report Date: verified calendar date \"15/10/2026\".",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T04:39:28.078Z",
+      "created_at": "2026-10-25T04:39:28.100Z",
+      "updated_at": "2026-10-25T04:39:28.100Z"
+    },
+    {
+      "id": "dd5a8be5-84d5-4d53-83b5-cc4cb5fb0154",
+      "document_id": "ebe0526f-d005-4f24-aebc-65a86b6cb4f1",
+      "raw_field_id": "f8e99d84-6feb-4e1a-bd55-3b5b5e630563",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "physician_name",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Dr. Sundar Rajan MD Date",
+      "match_score": 0.85,
+      "ocr_confidence": 0.85,
+      "explanation": "✓ Consulting Physician: verified against reference standards (Dr. Sundar Rajan MD Date).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T04:39:28.078Z",
+      "created_at": "2026-10-25T04:39:28.102Z",
+      "updated_at": "2026-10-25T04:39:28.102Z"
+    }
+  ]
+}

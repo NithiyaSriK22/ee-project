@@ -1,4 +1,5 @@
 import { prisma } from '../../database/prisma.js';
+import { logger } from '../../config/logger.js';
 import { TemplateStatus } from '../../types/interview.types.js';
 import { DEFAULT_GENERAL_OPD_QUESTIONS } from './seed-templates.js';
 
@@ -250,27 +251,40 @@ export class InterviewRepository {
     templateVersion: string;
     currentQuestionId?: string;
   }) {
-    return prisma.interviewSession.create({
-      data: {
-        visit_id: data.visitId,
-        patient_id: data.patientId,
-        template_id: data.templateId,
-        template_version: data.templateVersion,
-        current_question_id: data.currentQuestionId,
-        status: 'IN_PROGRESS',
-      },
-      include: {
-        template: {
-          include: {
-            questions: {
-              where: { is_archived: false },
-              orderBy: { order: 'asc' },
+    try {
+      return await prisma.interviewSession.create({
+        data: {
+          visit_id: data.visitId,
+          patient_id: data.patientId,
+          template_id: data.templateId,
+          template_version: data.templateVersion,
+          current_question_id: data.currentQuestionId,
+          status: 'IN_PROGRESS',
+        },
+        include: {
+          template: {
+            include: {
+              questions: {
+                where: { is_archived: false },
+                orderBy: { order: 'asc' },
+              },
             },
           },
+          answers: true,
         },
-        answers: true,
-      },
-    });
+      });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        logger.warn('Duplicate or concurrent interview session creation detected, returning existing session', {
+          visitId: data.visitId,
+        });
+        const existing = await this.findSessionByVisitId(data.visitId);
+        if (existing) {
+          return existing;
+        }
+      }
+      throw error;
+    }
   }
 
   public static async updateSessionStatus(sessionId: string, status: string, completedAt?: Date) {

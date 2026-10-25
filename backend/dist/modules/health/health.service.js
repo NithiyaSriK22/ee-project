@@ -4,8 +4,8 @@ exports.HealthService = void 0;
 const prisma_js_1 = require("../../database/prisma.js");
 const env_config_js_1 = require("../../config/env.config.js");
 class HealthService {
-    static async getDetailedHealth() {
-        const isDbConnected = await (0, prisma_js_1.checkDatabaseHealth)();
+    static async getDetailedHealth(forceRefresh = true) {
+        const isDbConnected = await (0, prisma_js_1.checkDatabaseHealth)(forceRefresh);
         const memory = process.memoryUsage();
         return {
             status: isDbConnected ? 'healthy' : 'degraded',
@@ -27,8 +27,8 @@ class HealthService {
             uptime: Math.floor(process.uptime()),
         };
     }
-    static async getReadiness() {
-        const isDbConnected = await (0, prisma_js_1.checkDatabaseHealth)();
+    static async getReadiness(forceRefresh = true) {
+        const isDbConnected = await (0, prisma_js_1.checkDatabaseHealth)(forceRefresh);
         return {
             ready: isDbConnected,
             database: isDbConnected ? 'connected' : 'disconnected',

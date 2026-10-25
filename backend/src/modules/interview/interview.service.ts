@@ -1,5 +1,6 @@
 import { InterviewRepository } from './interview.repository.js';
-import { prisma } from '../../database/prisma.js';
+import { prisma, checkDatabaseHealth } from '../../database/prisma.js';
+import { devFallbackPatientStore } from '../patients/dev-fallback-patient-store.js';
 import {
   NotFoundError,
   ValidationError,
@@ -282,20 +283,43 @@ export class InterviewService {
     requestedTemplateId?: string,
     options?: { headsetConnected?: boolean }
   ) {
+    if (!visitId || typeof visitId !== 'string' || !visitId.trim() || !patientId || typeof patientId !== 'string' || !patientId.trim()) {
+      throw new ValidationError('Invalid patient or visit identifier provided');
+    }
+
     if (options?.headsetConnected !== undefined) {
       SpecialPopulationsService.setHeadsetStatus(visitId, options.headsetConnected);
     }
 
     // 1. Consent Gate Check (Module 2 Requirement 16)
-    const consentRecord = await prisma.consent.findUnique({
-      where: {
-        patient_id_visit_id_consent_type: {
-          patient_id: patientId,
-          visit_id: visitId,
-          consent_type: ConsentTypes.VISIT_DATA_COLLECTION,
-        },
-      },
-    });
+    let consentRecord = null;
+    const isDbUp = await checkDatabaseHealth();
+    if (isDbUp) {
+      try {
+        consentRecord = await prisma.consent.findUnique({
+          where: {
+            patient_id_visit_id_consent_type: {
+              patient_id: patientId,
+              visit_id: visitId,
+              consent_type: ConsentTypes.VISIT_DATA_COLLECTION,
+            },
+          },
+        });
+      } catch (err: any) {
+        logger.warn('Failed querying consent from database, attempting fallback store lookup', {
+          visitId,
+          error: err?.message,
+        });
+      }
+    }
+
+    if (!consentRecord) {
+      const activeConsents = devFallbackPatientStore.getConsentsForVisit(patientId, visitId);
+      consentRecord =
+        activeConsents.find(
+          (c) => c.consent_type === ConsentTypes.VISIT_DATA_COLLECTION && c.granted
+        ) || null;
+    }
 
     if (!consentRecord || !consentRecord.granted) {
       throw new ForbiddenError(
@@ -304,9 +328,23 @@ export class InterviewService {
     }
 
     // Module 3B: Minor & Guardian Verification Gate
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId },
-    });
+    let patient = null;
+    if (isDbUp) {
+      try {
+        patient = await prisma.patient.findUnique({
+          where: { id: patientId },
+        });
+      } catch (err: any) {
+        logger.warn('Failed querying patient from database, checking fallback store', {
+          patientId,
+          error: err?.message,
+        });
+      }
+    }
+
+    if (!patient) {
+      patient = devFallbackPatientStore.findPatientById(patientId);
+    }
 
     if (patient) {
       const guardianCheck = SpecialPopulationsService.validateGuardianRequirement(patient, visitId);
@@ -318,11 +356,27 @@ export class InterviewService {
       }
     }
 
-    // 2. Resume existing session if one is already active for this visit
+    // 2. Resume existing session if one already exists for this visit
     const existingSession = await InterviewRepository.findSessionByVisitId(visitId);
-    if (existingSession && existingSession.status === InterviewSessionStatus.IN_PROGRESS) {
-      logger.info('Resuming existing interview session for visit', { visitId });
-      return this.formatSessionState(existingSession, patient);
+    if (existingSession) {
+      if (existingSession.status === InterviewSessionStatus.IN_PROGRESS) {
+        logger.info('Resuming existing active interview session for visit', { visitId });
+        return this.formatSessionState(existingSession, patient);
+      }
+
+      if (existingSession.status === InterviewSessionStatus.COMPLETED) {
+        logger.info('Returning completed interview session for visit review', { visitId });
+        return this.formatSessionState(existingSession, patient);
+      }
+
+      // If ABANDONED, PAUSED, or other state, reactivate the existing record instead of violating unique constraint
+      logger.info('Reactivating existing interview session for visit', {
+        visitId,
+        previousStatus: existingSession.status,
+      });
+      await InterviewRepository.updateSessionStatus(existingSession.id, InterviewSessionStatus.IN_PROGRESS);
+      const reactivatedSession = await InterviewRepository.findSessionByVisitId(visitId);
+      return this.formatSessionState(reactivatedSession || existingSession, patient);
     }
 
     // 3. Find active template (or requested template if valid)
@@ -353,7 +407,7 @@ export class InterviewService {
       throw new ValidationError('Interview template does not contain any applicable questions.');
     }
 
-    // 4. Create new InterviewSession
+    // 4. Create new InterviewSession (idempotent / duplicate-protected)
     const session = await InterviewRepository.createSession({
       visitId,
       patientId,

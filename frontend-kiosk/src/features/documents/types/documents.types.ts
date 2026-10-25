@@ -55,6 +55,7 @@ export interface UploadedDocumentItem {
   rawFieldsCount?: number;
   validatedFieldsCount?: number;
   fields?: ValidatedFieldItem[];
+  summary?: any;
 }
 
 export interface DocumentUploadResponse {

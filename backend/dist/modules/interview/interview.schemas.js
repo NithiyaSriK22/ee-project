@@ -102,7 +102,7 @@ exports.submitInterviewAnswerSchema = zod_1.z.object({
         }),
     ]),
     answeredVia: zod_1.z
-        .enum([
+        .preprocess((val) => (typeof val === 'string' ? val.toLowerCase() : val), zod_1.z.enum([
         interview_types_js_1.AnsweredVia.VOICE,
         interview_types_js_1.AnsweredVia.TOUCH,
         interview_types_js_1.AnsweredVia.STAFF_ASSISTED,
@@ -110,7 +110,7 @@ exports.submitInterviewAnswerSchema = zod_1.z.object({
         interview_types_js_1.AnsweredVia.GUARDIAN,
         interview_types_js_1.AnsweredVia.SURROGATE,
         interview_types_js_1.AnsweredVia.PATIENT,
-    ])
+    ]))
         .default(interview_types_js_1.AnsweredVia.TOUCH),
     languageUsed: zod_1.z.string().trim().max(10).default('en'),
     isSkipped: zod_1.z.boolean().default(false),

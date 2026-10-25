@@ -1,0 +1,19 @@
+{
+  "id": "13c5676c-a9ee-4393-a215-01de24b78d57",
+  "visit_id": "visit-stage3-001",
+  "patient_id": "pat-stage3-001",
+  "document_type": "PRESCRIPTION",
+  "file_name": "tamper_sig.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 89,
+  "storage_reference": "storage/documents/visit-stage3-001/399d10d5-cef4-4136-9f60-14dd7893933a_1792797972600_tamper_sig.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document image appears blank or unreadable (file size below threshold).",
+  "uploaded_at": "2026-10-23T23:26:12.606Z",
+  "created_at": "2026-10-23T23:26:12.606Z",
+  "updated_at": "2026-10-23T23:26:12.615Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

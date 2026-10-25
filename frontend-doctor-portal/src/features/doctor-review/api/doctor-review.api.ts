@@ -208,4 +208,31 @@ export const DoctorReviewApi = {
       mimeType?: string;
     };
   },
+
+  // Medical Records & AI Summaries (Patient-Doctor Portal Integration)
+  async getMedicalRecords(visitId: string): Promise<any[]> {
+    const res = await apiClient.get<ApiResponse<any[]>>(`/doctor/visits/${visitId}/medical-records`);
+    return (res.data.data || []) as any[];
+  },
+
+  async getIndividualSummary(documentId: string): Promise<any> {
+    const res = await apiClient.get<ApiResponse<any>>(`/doctor/documents/${documentId}/summary`);
+    return res.data.data;
+  },
+
+  async getCombinedSummary(visitId: string, regenerate = false): Promise<any> {
+    const params = regenerate ? { regenerate: 'true' } : {};
+    const res = await apiClient.get<ApiResponse<any>>(`/doctor/visits/${visitId}/combined-summary`, { params });
+    return res.data.data;
+  },
+
+  async regenerateCombinedSummary(visitId: string): Promise<any> {
+    const res = await apiClient.post<ApiResponse<any>>(`/doctor/visits/${visitId}/combined-summary/regenerate`);
+    return res.data.data;
+  },
+
+  async approveCombinedSummary(visitId: string, notes?: string): Promise<any> {
+    const res = await apiClient.post<ApiResponse<any>>(`/doctor/visits/${visitId}/combined-summary/approve`, { notes });
+    return res.data.data;
+  },
 };

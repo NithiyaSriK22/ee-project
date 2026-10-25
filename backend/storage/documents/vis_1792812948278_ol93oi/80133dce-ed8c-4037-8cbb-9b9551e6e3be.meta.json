@@ -1,0 +1,19 @@
+{
+  "id": "80133dce-ed8c-4037-8cbb-9b9551e6e3be",
+  "visit_id": "vis_1792812948278_ol93oi",
+  "patient_id": "d788cddf-2866-4a05-a31d-d1a10a1a9cb1",
+  "document_type": "PRESCRIPTION",
+  "file_name": "apollo_rx_2026.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 70,
+  "storage_reference": "storage/documents/vis_1792812948278_ol93oi/94cf23a0-6154-47ee-a596-571f5d1fa46e_1792812948594_apollo_rx_2026.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document image appears blank or unreadable (file size below threshold).",
+  "uploaded_at": "2026-10-24T03:35:48.603Z",
+  "created_at": "2026-10-24T03:35:48.603Z",
+  "updated_at": "2026-10-24T03:35:48.623Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

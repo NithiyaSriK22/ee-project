@@ -1,0 +1,20 @@
+{
+  "id": "c549c4bf-2262-4f4a-893e-5435308c8915",
+  "visit_id": "vis_1792828494581_mv333x",
+  "patient_id": "7c5bd386-6102-462b-b67e-20b8c186f3c0",
+  "document_type": "PRESCRIPTION",
+  "file_name": "apollo_rx_2026.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 70,
+  "storage_reference": "storage/documents/vis_1792828494581_mv333x/a390e69a-9aec-4632-be83-aedab7c8b369_1792828495117_apollo_rx_2026.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document could not be reliably digitized. Legibility confidence is below clinical threshold (confidence < 40%). Handwritten prescription could not be automatically digitized.",
+  "summary": null,
+  "uploaded_at": "2026-10-24T07:54:55.124Z",
+  "created_at": "2026-10-24T07:54:55.124Z",
+  "updated_at": "2026-10-24T07:54:55.617Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

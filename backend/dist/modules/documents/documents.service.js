@@ -14,6 +14,7 @@ const redflags_service_js_1 = require("../redflags/redflags.service.js");
 const document_storage_service_js_1 = require("./storage/document-storage.service.js");
 const doctor_review_repository_js_1 = require("../doctor-review/doctor-review.repository.js");
 const doctor_review_types_js_1 = require("../doctor-review/doctor-review.types.js");
+const document_summary_service_js_1 = require("../summary/document-summary.service.js");
 class DocumentsService {
     /**
      * Resolves the storage base directory relative to the backend project root.
@@ -131,6 +132,18 @@ class DocumentsService {
             }).catch((err) => {
                 logger_js_1.logger.warn('Failed to update queue entry on document upload', { visitId, error: String(err) });
             });
+            // 7. Individual Document Summary Generation & Invalidation of Previous Combined Summary
+            let individualSummary = null;
+            try {
+                individualSummary = await document_summary_service_js_1.DocumentSummaryService.summarizeDocument(document.id);
+                await document_summary_service_js_1.DocumentSummaryService.markCombinedSummaryStale(visitId);
+            }
+            catch (sumErr) {
+                logger_js_1.logger.warn('Non-blocking individual document summary generation notice', {
+                    documentId: document.id,
+                    error: String(sumErr),
+                });
+            }
             const refreshedDoc = await documents_repository_js_1.DocumentsRepository.findDocumentById(document.id);
             return {
                 document: refreshedDoc,
@@ -140,6 +153,7 @@ class DocumentsService {
                     errorMessage: ocrResult.errorMessage,
                 },
                 validationSummary,
+                individualSummary,
             };
         }
         catch (unhandledError) {

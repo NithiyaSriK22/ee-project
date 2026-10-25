@@ -1,0 +1,260 @@
+{
+  "id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+  "visit_id": "vis_1792828363197_9gqfg0",
+  "patient_id": "05c8e6de-4c18-413e-9310-55a9953d738f",
+  "document_type": "LAB_REPORT",
+  "file_name": "metformin_lab_followup_june.pdf",
+  "mime_type": "application/pdf",
+  "file_size_bytes": 555,
+  "storage_reference": "storage/documents/vis_1792828363197_9gqfg0/344048d6-ce81-4cb4-9c83-6c0170d2b94e_1792828370350_metformin_lab_followup_june.pdf",
+  "consent_verified": true,
+  "ocr_status": "COMPLETED",
+  "overall_status": "NEEDS_PHYSICIAN_REVIEW",
+  "ocr_error_message": null,
+  "summary": {
+    "documentId": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+    "fileName": "metformin_lab_followup_june.pdf",
+    "documentType": "LAB_REPORT",
+    "documentDate": "18/06/2026",
+    "reportOrTestName": "Diagnostic Laboratory Report",
+    "importantFindings": [
+      "Active prescription for Metformin Hydrochloride 500mg (850mg)",
+      "Laboratory test HbA1c: Normal",
+      "AI: Patient prescribed Metformin 500mg BID for glycemic control",
+      "AI: Fasting Blood Glucose is elevated at 142 mg/dL"
+    ],
+    "laboratoryResults": [
+      {
+        "testName": "HbA1c",
+        "value": "Normal",
+        "unit": null,
+        "referenceRange": null,
+        "isAbnormal": false
+      }
+    ],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [
+      {
+        "name": "Metformin Hydrochloride 500mg",
+        "dosage": "850mg",
+        "frequency": "As indicated on prescription",
+        "duration": null
+      }
+    ],
+    "allergies": [],
+    "clinicalObservations": [
+      "Record analyzed with 6 verified clinical formulary tokens."
+    ],
+    "missingOrUnreadableInfo": [],
+    "generatedAt": "2026-10-24T07:52:50.425Z",
+    "modelId": "llama3.2:1b",
+    "isMock": false,
+    "rawTextExcerpt": "Metformin 850mg 1tabtwicedaily HbA1c 18/06/2026 Dr. Rajesh Kumar MBBS MD Date"
+  },
+  "uploaded_at": "2026-10-24T07:52:50.354Z",
+  "created_at": "2026-10-24T07:52:50.354Z",
+  "updated_at": "2026-10-24T07:52:50.414Z",
+  "raw_fields": [
+    {
+      "id": "a1882055-23e4-4d8c-8283-12ba1231eeef",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "field_type": "drug_name",
+      "raw_text": "Metformin",
+      "ocr_confidence": 0.88,
+      "source_snippet_ref": "tess_line_1",
+      "bounding_box": {
+        "x": 60,
+        "y": 150,
+        "width": 220,
+        "height": 35
+      },
+      "created_at": "2026-10-24T07:52:50.363Z"
+    },
+    {
+      "id": "93075214-3525-4785-ab28-3613fa21d734",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "field_type": "dosage",
+      "raw_text": "850mg",
+      "ocr_confidence": 0.88,
+      "source_snippet_ref": "tess_dosage_2",
+      "bounding_box": {
+        "x": 290,
+        "y": 190,
+        "width": 100,
+        "height": 35
+      },
+      "created_at": "2026-10-24T07:52:50.363Z"
+    },
+    {
+      "id": "9d5b1aa1-91a2-467c-a758-c02f2457cc90",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "field_type": "dosage",
+      "raw_text": "1tabtwicedaily",
+      "ocr_confidence": 0.84,
+      "source_snippet_ref": "tess_dosage_freq",
+      "bounding_box": {
+        "x": 290,
+        "y": 190,
+        "width": 100,
+        "height": 30
+      },
+      "created_at": "2026-10-24T07:52:50.363Z"
+    },
+    {
+      "id": "c57dcd5c-fb6e-4662-8b17-28c3296de998",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "field_type": "lab_test_name",
+      "raw_text": "HbA1c",
+      "ocr_confidence": 0.9,
+      "source_snippet_ref": "tess_lab_test",
+      "bounding_box": {
+        "x": 50,
+        "y": 120,
+        "width": 220,
+        "height": 30
+      },
+      "created_at": "2026-10-24T07:52:50.363Z"
+    },
+    {
+      "id": "6a65fd50-0e57-43c0-843b-2d37fbcbf13d",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "field_type": "date",
+      "raw_text": "18/06/2026",
+      "ocr_confidence": 0.92,
+      "source_snippet_ref": "tess_date",
+      "bounding_box": {
+        "x": 450,
+        "y": 60,
+        "width": 120,
+        "height": 25
+      },
+      "created_at": "2026-10-24T07:52:50.363Z"
+    },
+    {
+      "id": "5b151baf-daae-46eb-ad38-ab265b4d3ba2",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "field_type": "physician_name",
+      "raw_text": "Dr. Rajesh Kumar MBBS MD Date",
+      "ocr_confidence": 0.85,
+      "source_snippet_ref": "tess_physician",
+      "bounding_box": {
+        "x": 380,
+        "y": 460,
+        "width": 200,
+        "height": 30
+      },
+      "created_at": "2026-10-24T07:52:50.363Z"
+    }
+  ],
+  "validated_fields": [
+    {
+      "id": "bbe4e751-0725-433c-80aa-2b57ac49590a",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "raw_field_id": "93075214-3525-4785-ab28-3613fa21d734",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "dosage",
+      "is_critical": true,
+      "result": "MISMATCH_FLAGGED",
+      "eval_state": "MISMATCH",
+      "matched_reference_value": null,
+      "match_score": 0.2,
+      "ocr_confidence": 0.88,
+      "explanation": "⚠ Dosage & Frequency: Extracted text \"850mg\" did not match any known reference entry with sufficient confidence (20%). Please verify against original document.",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T07:52:50.394Z",
+      "created_at": "2026-10-24T07:52:50.397Z",
+      "updated_at": "2026-10-24T07:52:50.397Z"
+    },
+    {
+      "id": "9e947ffc-36d6-432a-a061-46650262f454",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "raw_field_id": "9d5b1aa1-91a2-467c-a758-c02f2457cc90",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "dosage",
+      "is_critical": true,
+      "result": "MISMATCH_FLAGGED",
+      "eval_state": "MISMATCH",
+      "matched_reference_value": null,
+      "match_score": 0.2,
+      "ocr_confidence": 0.84,
+      "explanation": "⚠ Dosage & Frequency: Extracted text \"1tabtwicedaily\" did not match any known reference entry with sufficient confidence (20%). Please verify against original document.",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T07:52:50.394Z",
+      "created_at": "2026-10-24T07:52:50.400Z",
+      "updated_at": "2026-10-24T07:52:50.400Z"
+    },
+    {
+      "id": "40e25786-8751-4bab-bcfb-adc2494e7635",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "raw_field_id": "a1882055-23e4-4d8c-8283-12ba1231eeef",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "drug_name",
+      "is_critical": true,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Metformin Hydrochloride 500mg",
+      "match_score": 1,
+      "ocr_confidence": 0.88,
+      "explanation": "✓ Drug / Medication Name: matched to \"Metformin Hydrochloride 500mg\" (100% reference match).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T07:52:50.394Z",
+      "created_at": "2026-10-24T07:52:50.402Z",
+      "updated_at": "2026-10-24T07:52:50.402Z"
+    },
+    {
+      "id": "f26da097-3833-4081-9f57-e1d23de99e0c",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "raw_field_id": "c57dcd5c-fb6e-4662-8b17-28c3296de998",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "lab_test_name",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "HbA1c",
+      "match_score": 0.9,
+      "ocr_confidence": 0.9,
+      "explanation": "✓ Lab Investigation Name: verified against reference standards (HbA1c).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T07:52:50.394Z",
+      "created_at": "2026-10-24T07:52:50.404Z",
+      "updated_at": "2026-10-24T07:52:50.404Z"
+    },
+    {
+      "id": "d1c601c1-2e2f-46d4-8a51-b2b60e9ecc18",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "raw_field_id": "6a65fd50-0e57-43c0-843b-2d37fbcbf13d",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "date",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "18/06/2026",
+      "match_score": 1,
+      "ocr_confidence": 0.92,
+      "explanation": "✓ Prescription / Report Date: verified calendar date \"18/06/2026\".",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T07:52:50.394Z",
+      "created_at": "2026-10-24T07:52:50.406Z",
+      "updated_at": "2026-10-24T07:52:50.406Z"
+    },
+    {
+      "id": "df639c1b-7521-426b-bdd7-bf086472e4d7",
+      "document_id": "a6c7591e-ff5b-494d-9c0f-6d59e0bb1a34",
+      "raw_field_id": "5b151baf-daae-46eb-ad38-ab265b4d3ba2",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "physician_name",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Dr. Rajesh Kumar MBBS MD Date",
+      "match_score": 0.85,
+      "ocr_confidence": 0.85,
+      "explanation": "✓ Consulting Physician: verified against reference standards (Dr. Rajesh Kumar MBBS MD Date).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-24T07:52:50.394Z",
+      "created_at": "2026-10-24T07:52:50.408Z",
+      "updated_at": "2026-10-24T07:52:50.408Z"
+    }
+  ]
+}

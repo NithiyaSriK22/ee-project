@@ -81,4 +81,12 @@ router.post('/confirmed-records/:id/amend', (0, auth_middleware_js_1.authorizeRo
 // ============================================================================
 router.get('/statements/:statementId/sources', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.getStatementSources);
 router.get('/documents/:documentId/snippet', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.getDocumentSnippet);
+// ============================================================================
+// MEDICAL RECORDS & AI SUMMARIES (Patient-Doctor Portal Integration)
+// ============================================================================
+router.get('/visits/:visitId/medical-records', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.getMedicalRecordsForVisit);
+router.get('/documents/:documentId/summary', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.getIndividualDocumentSummary);
+router.get('/visits/:visitId/combined-summary', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.getCombinedRecordSummary);
+router.post('/visits/:visitId/combined-summary/regenerate', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.regenerateCombinedRecordSummary);
+router.post('/visits/:visitId/combined-summary/approve', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.approveCombinedRecordSummary);
 exports.doctorReviewRoutes = router;

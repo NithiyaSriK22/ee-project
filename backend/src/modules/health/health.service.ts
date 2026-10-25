@@ -16,8 +16,8 @@ export interface HealthStatus {
 }
 
 export class HealthService {
-  public static async getDetailedHealth(): Promise<HealthStatus> {
-    const isDbConnected = await checkDatabaseHealth();
+  public static async getDetailedHealth(forceRefresh = true): Promise<HealthStatus> {
+    const isDbConnected = await checkDatabaseHealth(forceRefresh);
     const memory = process.memoryUsage();
 
     return {
@@ -42,8 +42,8 @@ export class HealthService {
     };
   }
 
-  public static async getReadiness(): Promise<{ ready: boolean; database: string }> {
-    const isDbConnected = await checkDatabaseHealth();
+  public static async getReadiness(forceRefresh = true): Promise<{ ready: boolean; database: string }> {
+    const isDbConnected = await checkDatabaseHealth(forceRefresh);
     return {
       ready: isDbConnected,
       database: isDbConnected ? 'connected' : 'disconnected',

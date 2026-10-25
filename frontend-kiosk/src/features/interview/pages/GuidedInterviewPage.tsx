@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { interviewApi } from '../api/interview.api';
 import {
@@ -47,6 +47,9 @@ export const GuidedInterviewPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showReviewScreen, setShowReviewScreen] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const maxRetries = 3;
 
   // Section Transition State
   const [transitioningSection, setTransitioningSection] = useState<InterviewSection | null>(null);
@@ -85,52 +88,8 @@ export const GuidedInterviewPage: React.FC = () => {
     resetTranscript,
   } = useVoiceInput(currentLanguage);
 
-  // 1. Initialize or Resume Interview Session on Mount
-  useEffect(() => {
-    let isMounted = true;
-
-    const initInterview = async () => {
-      setIsLoading(true);
-      setErrorMessage(null);
-      try {
-        const state = await interviewApi.startInterview();
-        if (!isMounted) return;
-
-        setSessionState(state);
-        // Sync any offline answers if reconnecting
-        if (state.session.visitId) {
-          SyncManager.syncPendingAnswers(state.session.visitId);
-        }
-
-        if (state.session.status === 'COMPLETED') {
-          setIsCompleted(true);
-          setShowReviewScreen(true);
-        } else if (state.currentQuestion) {
-          loadQuestion(state.currentQuestion, state);
-        } else {
-          setShowReviewScreen(true);
-        }
-      } catch (err: any) {
-        if (!isMounted) return;
-        setErrorMessage(
-          err.message || 'Failed to start interview session. Please verify registration and consent.'
-        );
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-
-    initInterview();
-
-    return () => {
-      isMounted = false;
-      stopSpeaking();
-      stopListening();
-    };
-  }, []);
-
   // Helper to load a question and speak translated prompt if not in captions-only mode
-  const loadQuestion = (
+  const loadQuestion = useCallback((
     q: InterviewQuestionItem,
     stateObj: InterviewSessionState
   ) => {
@@ -157,7 +116,75 @@ export const GuidedInterviewPage: React.FC = () => {
       const translated = getQuestionPrompt(q.questionCode, q.promptText);
       speak(translated);
     }
-  };
+  }, [getQuestionPrompt, isCaptionsMode, resetTranscript, speak]);
+
+  // 1. Initialize or Resume Interview Session
+  const initInterview = useCallback(async (isRetryAction = false) => {
+    if (isRetryAction) {
+      setIsRetrying(true);
+    } else {
+      setIsLoading(true);
+    }
+    setErrorMessage(null);
+
+    try {
+      const state = await interviewApi.startInterview();
+      setSessionState(state);
+      setRetryCount(0);
+
+      // Sync any offline answers if reconnecting
+      if (state.session.visitId) {
+        SyncManager.syncPendingAnswers(state.session.visitId);
+      }
+
+      if (state.session.status === 'COMPLETED') {
+        setIsCompleted(true);
+        setShowReviewScreen(true);
+      } else if (state.currentQuestion) {
+        loadQuestion(state.currentQuestion, state);
+      } else {
+        setShowReviewScreen(true);
+      }
+    } catch (err: any) {
+      if (isRetryAction) {
+        setRetryCount((prev) => prev + 1);
+      }
+
+      const rawMsg = err.message || '';
+      let friendlyMsg = rawMsg;
+
+      if (err.status === 401 || rawMsg.toLowerCase().includes('token') || rawMsg.toLowerCase().includes('session')) {
+        friendlyMsg =
+          currentLanguage === 'ta'
+            ? 'உங்கள் வருகை அமர்வு காணப்படவில்லை அல்லது காலாவதியாகிவிட்டது. தயவுசெய்து பதிவு மற்றும் ஒப்புதலை முடிக்கவும்.'
+            : 'Your kiosk session was not found or has expired. Please complete registration and consent first.';
+      } else if (err.status === 403 || rawMsg.toLowerCase().includes('consent')) {
+        friendlyMsg =
+          currentLanguage === 'ta'
+            ? 'நேர்காணலைத் தொடங்க வருகைத் தரவு சேகரிப்பு ஒப்புதல் தேவை. தயவுசெய்து ஒப்புதல் படியை முடிக்கவும்.'
+            : 'Patient consent for visit data collection is required before starting the clinical interview. Please complete the consent step.';
+      } else if (!friendlyMsg) {
+        friendlyMsg =
+          currentLanguage === 'ta'
+            ? 'நேர்காணல் அமர்வைத் தொடங்க முடியவில்லை. தயவுசெய்து பதிவு மற்றும் ஒப்புதலைச் சரிபார்க்கவும்.'
+            : 'Failed to start interview session. Please verify registration and consent.';
+      }
+
+      setErrorMessage(friendlyMsg);
+    } finally {
+      setIsLoading(false);
+      setIsRetrying(false);
+    }
+  }, [currentLanguage, loadQuestion]);
+
+  useEffect(() => {
+    initInterview(false);
+
+    return () => {
+      stopSpeaking();
+      stopListening();
+    };
+  }, [initInterview, stopListening, stopSpeaking]);
 
   // Voice transcript processing with deterministic backend synonym mapping
   useEffect(() => {
@@ -463,22 +490,46 @@ export const GuidedInterviewPage: React.FC = () => {
         <div className="max-w-md w-full bg-slate-900 border border-rose-500/40 rounded-3xl p-8 text-center shadow-2xl space-y-6">
           <AlertCircle className="w-14 h-14 text-rose-400 mx-auto" />
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white">Cannot Begin Interview</h2>
-            <p className="text-sm text-slate-300">{errorMessage}</p>
+            <h2 className="text-2xl font-bold text-white">
+              {currentLanguage === 'ta' ? 'நேர்காணலைத் தொடங்க முடியவில்லை' : 'Cannot Begin Interview'}
+            </h2>
+            <p className="text-sm text-slate-300 leading-relaxed">{errorMessage}</p>
+            {retryCount >= maxRetries && (
+              <p className="text-xs text-amber-400 pt-1 font-medium">
+                {currentLanguage === 'ta'
+                  ? 'அதிகபட்ச முயற்சிகள் முடிவடைந்தது. தயவுசெய்து பதிவு மற்றும் ஒப்புதலுக்குச் செல்லவும் அல்லது ஊழியர்களை அணுகவும்.'
+                  : 'Maximum retry attempts reached. Please proceed to Registration & Consent or contact hospital assistance.'}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-3 pt-2">
             <button
+              id="btn-goto-registration"
               onClick={() => navigate('/register')}
-              className="w-full py-3.5 px-6 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 px-6 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-lg shadow-teal-500/20"
             >
-              <span>Go to Registration & Consent</span>
+              <span>{currentLanguage === 'ta' ? 'பதிவு மற்றும் ஒப்புதலுக்குச் செல்' : 'Go to Registration & Consent'}</span>
             </button>
             <button
-              onClick={() => window.location.reload()}
-              className="w-full py-3 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer"
+              id="btn-retry-interview"
+              onClick={() => initInterview(true)}
+              disabled={isRetrying || retryCount >= maxRetries}
+              className="w-full py-3 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-300 text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span>Retry</span>
+              {isRetrying ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-teal-400" />
+                  <span>{currentLanguage === 'ta' ? 'மீண்டும் முயற்சிக்கிறது...' : 'Retrying...'}</span>
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="w-4 h-4" />
+                  <span>
+                    {currentLanguage === 'ta' ? 'மீண்டும் முயற்சி செய்க' : 'Retry'}
+                    {retryCount > 0 && retryCount < maxRetries ? ` (${retryCount}/${maxRetries})` : ''}
+                  </span>
+                </>
+              )}
             </button>
           </div>
         </div>
