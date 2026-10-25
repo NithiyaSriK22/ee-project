@@ -1,0 +1,45 @@
+{
+  "id": "16167351-49a3-45b4-b4ab-fdd9fe248cce",
+  "visit_id": "visit-audit-test-01",
+  "patient_id": "03ccb5c5-be58-491d-a3e5-5ab96bafdc13",
+  "document_type": "PRESCRIPTION",
+  "file_name": "illegible_handwritten_rx.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 231,
+  "storage_reference": "storage/documents/visit-audit-test-01/73dd5bf8-7323-43d5-a36a-9fa993b89e7e_1792912803998_illegible_handwritten_rx.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Handwritten prescription illegible: OCR confidence below threshold (18% < 35%)",
+  "summary": {
+    "documentId": "16167351-49a3-45b4-b4ab-fdd9fe248cce",
+    "fileName": "illegible_handwritten_rx.png",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "2026-10-25",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Document uploaded and archived for physician inspection."
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [
+      "Document analyzed via deterministic template fallback: Local LLM service was unavailable."
+    ],
+    "missingOrUnreadableInfo": [
+      "Optical character recognition failed to reliably extract full handwritten text.",
+      "Manual clinical verification of the original physical image is required."
+    ],
+    "generatedAt": "2026-10-25T07:20:34.062Z",
+    "modelId": "TEMPLATE_FALLBACK",
+    "isMock": false,
+    "rawTextExcerpt": "[No raw text excerpt available]"
+  },
+  "uploaded_at": "2026-10-25T07:20:04.009Z",
+  "created_at": "2026-10-25T07:20:04.009Z",
+  "updated_at": "2026-10-25T07:20:04.024Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

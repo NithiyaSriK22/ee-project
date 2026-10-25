@@ -129,8 +129,10 @@ export interface StatementEditDTO {
   originalStatementId: string;
   editedText: string;
   previousTextRef?: string | null;
+  section?: string;
   doctorId: string;
-  createdAt: Date | string;
+  editedBy?: string;
+  createdAt?: Date | string;
 }
 
 export interface DoctorAddedStatementDTO {

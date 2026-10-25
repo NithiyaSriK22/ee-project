@@ -47,6 +47,7 @@ export interface StaffUserPayload {
   fullName: string;
   hospitalDepartment?: string | null;
   status: StaffUserStatusType;
+  sessionId?: string;
 }
 
 export interface KioskSessionPayload {

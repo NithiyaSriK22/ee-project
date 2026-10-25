@@ -1,0 +1,20 @@
+{
+  "id": "8585e819-1d2f-46a6-9a2a-dca67a4faff1",
+  "visit_id": "visit-stage3-001",
+  "patient_id": "d40f3c73-c6ce-47db-ac1f-e17f035a58f6",
+  "document_type": "PRESCRIPTION",
+  "file_name": "tamper_test.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 89,
+  "storage_reference": "storage/documents/visit-stage3-001/80aee7d2-0a5e-46b4-aaaf-2ad1ffe2f1dc_1792912988890_tamper_test.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document could not be reliably digitized: Optical engine error.. Handwritten prescription could not be automatically digitized.",
+  "summary": null,
+  "uploaded_at": "2026-10-25T07:23:08.899Z",
+  "created_at": "2026-10-25T07:23:08.899Z",
+  "updated_at": "2026-10-25T07:23:09.864Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

@@ -33,7 +33,11 @@ export class LocalLlmAdapter implements SummarizationProvider {
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      const endpoint = this.baseUrl.endsWith('/v1')
+        ? `${this.baseUrl}/chat/completions`
+        : `${this.baseUrl.replace(/\/+$/, '')}/v1/chat/completions`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,8 +99,8 @@ export class LocalLlmAdapter implements SummarizationProvider {
 
 export function createDefaultLocalLlmAdapter(): LocalLlmAdapter {
   return new LocalLlmAdapter({
-    baseUrl: process.env.LOCAL_LLM_BASE_URL || process.env.LOCAL_LLM_URL || 'http://localhost:11434/v1',
-    model: process.env.LOCAL_LLM_MODEL || 'llama3-8b-instruct',
+    baseUrl: process.env.LOCAL_LLM_BASE_URL || process.env.LOCAL_LLM_URL || 'http://localhost:11434',
+    model: process.env.LOCAL_LLM_MODEL || 'llama3.2:1b',
     apiKey: process.env.LOCAL_LLM_API_KEY,
     timeoutMs: parseInt(process.env.LOCAL_LLM_TIMEOUT_MS || '30000', 10),
   });

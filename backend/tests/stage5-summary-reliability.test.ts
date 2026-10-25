@@ -31,9 +31,11 @@ import { ErrorCode } from '../src/errors/error-codes.js';
 describe('STAGE 5: CLINICAL SUMMARY RELIABILITY & SAFETY CONTROLS', () => {
   const mockDoctor: StaffUserPayload = {
     id: 'c0000000-0000-4000-a000-000000000002',
+    email: 'dr.aravind@hospital.gov.in',
     role: 'DOCTOR',
     fullName: 'Dr. Aravind Swamy',
     hospitalDepartment: 'GENERAL_MEDICINE',
+    status: 'ACTIVE',
     sessionId: 'session-stage5-doc',
   };
 
@@ -735,7 +737,7 @@ describe('STAGE 5: CLINICAL SUMMARY RELIABILITY & SAFETY CONTROLS', () => {
         ruleCode: `RF-CHEST-PAIN-S5-${Date.now()}`,
         name: 'Severe Acute Chest Pain Protocol',
         description: 'Possible acute coronary syndrome requires immediate emergency triage',
-        severityTier: 'TIER_1_IMMEDIATE_STOP',
+        severityTier: 'IMMEDIATE',
         conditionTree: {
           operator: 'AND',
           conditions: [
@@ -748,7 +750,8 @@ describe('STAGE 5: CLINICAL SUMMARY RELIABILITY & SAFETY CONTROLS', () => {
         },
         recommendedStaffAction: 'Route patient immediately to emergency resuscitation bay',
         raiseOnIndeterminate: true,
-      }, 'admin-stage5');
+        createdBy: 'admin-stage5',
+      });
 
       const alerts = await RedFlagsService.evaluateVisit(visitId);
       expect(Array.isArray(alerts)).toBe(true);

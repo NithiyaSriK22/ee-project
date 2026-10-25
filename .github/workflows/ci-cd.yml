@@ -28,20 +28,19 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: |
-          npm ci
-          cd backend && npm ci
-          cd ../frontend-doctor-portal && npm ci
-          cd ../frontend-kiosk && npm ci
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate --schema=backend/prisma/schema.prisma
 
       - name: Type Check Backend
-        run: cd backend && npm run lint
+        run: npm --workspace=backend run lint
 
       - name: Type Check Doctor Portal
-        run: cd frontend-doctor-portal && npm run lint
+        run: npm --workspace=frontend-doctor-portal run lint
 
       - name: Type Check Kiosk App
-        run: cd frontend-kiosk && npm run lint
+        run: npm --workspace=frontend-kiosk run lint
 
   # ---------------------------------------------------------------------------
   # Phase 2: Critical Test Suites & Quality Gate
@@ -50,6 +49,20 @@ jobs:
     name: Critical Test Suites (Clinical Safety & Security)
     needs: lint-and-typecheck
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: medikiosk_user
+          POSTGRES_PASSWORD: medikiosk_password
+          POSTGRES_DB: medikiosk_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -61,30 +74,30 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: |
-          npm ci
-          cd backend && npm ci
+        run: npm ci
 
       - name: Generate Prisma Client
-        run: cd backend && npx prisma generate
+        run: npx prisma generate --schema=backend/prisma/schema.prisma
+
+      - name: Push Schema to Test Database
+        run: npx prisma db push --schema=backend/prisma/schema.prisma --skip-generate
+        env:
+          DATABASE_URL: postgresql://medikiosk_user:medikiosk_password@localhost:5432/medikiosk_db?schema=public
 
       - name: Run Backend Tests (Modules 1 - 10)
-        run: cd backend && npm test
+        run: npm --workspace=backend run test
         env:
           NODE_ENV: test
+          DATABASE_URL: postgresql://medikiosk_user:medikiosk_password@localhost:5432/medikiosk_db?schema=public
           JWT_SECRET: test-super-secret-key-32-bytes-minimum-length
           SESSION_SECRET: test-session-secret-32-bytes-minimum-length
           AUDIT_SIGNING_KEY: test-audit-signing-key-32-bytes-minimum
 
       - name: Run Doctor Portal Frontend Tests
-        run: |
-          cd frontend-doctor-portal && npm ci
-          npm test -- --run
+        run: npm --workspace=frontend-doctor-portal run test
 
       - name: Run Kiosk Frontend Tests
-        run: |
-          cd frontend-kiosk && npm ci
-          npm test -- --run
+        run: npm --workspace=frontend-kiosk run test
 
   # ---------------------------------------------------------------------------
   # Phase 3: Security & Secret Scanning
@@ -105,7 +118,6 @@ jobs:
       - name: Audit Node.js Dependencies for Known CVEs
         run: |
           npm audit --audit-level=high || true
-          cd backend && npm audit --audit-level=high || true
 
   # ---------------------------------------------------------------------------
   # Phase 4: Production Artifact & Container Builds
