@@ -53,7 +53,7 @@ exports.METRIC_CATALOG = {
         version: 1,
     },
     intake_duration_p50: {
-        metricKey: 'intake_duration_p50',
+        metricKey: 'intake_duration_p50', // gitleaks:allow - public metric identifier, false-positive generic-api-key match
         name: 'Median Intake Duration',
         description: 'Median elapsed time in seconds from kiosk intake start to interview completion.',
         category: 'INTAKE',
@@ -65,7 +65,7 @@ exports.METRIC_CATALOG = {
         version: 1,
     },
     intake_duration_p90: {
-        metricKey: 'intake_duration_p90',
+        metricKey: 'intake_duration_p90', // gitleaks:allow - public metric identifier, false-positive generic-api-key match
         name: '90th Percentile Intake Duration',
         description: '90th percentile elapsed time in seconds for patient intake session completion.',
         category: 'INTAKE',

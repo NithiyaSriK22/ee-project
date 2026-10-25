@@ -64,8 +64,19 @@ describe('Module 2 — Token & Password Security Utilities', () => {
   });
 
   it('Should reject tampered or invalid tokens', () => {
-    const fakeToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature';
-    expect(() => TokenUtil.verifyStaffAccessToken(fakeToken)).toThrow();
-    expect(() => TokenUtil.verifyKioskSessionToken(fakeToken)).toThrow();
+    // Dynamically generate authentic token and corrupt signature to test tamper rejection
+    const authenticToken = TokenUtil.generateStaffAccessToken({
+      userId: 'usr_tamper_test',
+      role: 'DOCTOR',
+      sessionId: 'sess_tamper_test',
+    });
+    const tamperedToken = authenticToken.slice(0, -6) + 'xxxxxx';
+    expect(() => TokenUtil.verifyStaffAccessToken(tamperedToken)).toThrow();
+    expect(() => TokenUtil.verifyKioskSessionToken(tamperedToken)).toThrow();
+
+    // Verify rejection of malformed token structure
+    const malformedToken = 'invalid.synthetic.payload';
+    expect(() => TokenUtil.verifyStaffAccessToken(malformedToken)).toThrow();
+    expect(() => TokenUtil.verifyKioskSessionToken(malformedToken)).toThrow();
   });
 });

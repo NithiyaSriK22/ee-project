@@ -1,0 +1,14 @@
+# Gitleaks ignore file for documented false positives and historical synthetic test fixtures
+# Documented justifications:
+# 1-4: 'intake_duration_p50' and 'intake_duration_p90' are public clinical analytics metric identifiers, not secret credentials.
+# 5: Historical synthetic test fixture in token security unit tests (now updated in working tree).
+18798da6a078cb51d6e5914038dd69cc2e9921cf:backend/dist/modules/admin/analytics/metric-catalog.js:generic-api-key:56
+18798da6a078cb51d6e5914038dd69cc2e9921cf:backend/dist/modules/admin/analytics/metric-catalog.js:generic-api-key:68
+18798da6a078cb51d6e5914038dd69cc2e9921cf:backend/src/modules/admin/analytics/metric-catalog.ts:generic-api-key:55
+18798da6a078cb51d6e5914038dd69cc2e9921cf:backend/src/modules/admin/analytics/metric-catalog.ts:generic-api-key:67
+40fc19ad5fb84af311b628071f7af2ab04ba63f7:backend/tests/token-security.test.ts:generic-api-key:67
+backend/dist/modules/admin/analytics/metric-catalog.js:generic-api-key:56
+backend/dist/modules/admin/analytics/metric-catalog.js:generic-api-key:68
+backend/src/modules/admin/analytics/metric-catalog.ts:generic-api-key:55
+backend/src/modules/admin/analytics/metric-catalog.ts:generic-api-key:67
+backend/tests/token-security.test.ts:generic-api-key:67
