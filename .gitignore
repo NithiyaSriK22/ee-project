@@ -7,8 +7,10 @@ node_modules
 /coverage
 
 # Production
-/dist
-/build
+dist/
+**/dist/
+build/
+**/build/
 /.next
 /out
 
@@ -31,12 +33,17 @@ pnpm-debug.log*
 
 # Editor directories and files
 .idea
-.vscode
+.vscode/*
+!.vscode/settings.json
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Storage and uploads
+/backend/storage/documents/*
+!/backend/storage/documents/.gitkeep
 
 # Prisma
 /backend/prisma/migrations/dev.db
