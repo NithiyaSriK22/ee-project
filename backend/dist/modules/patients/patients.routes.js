@@ -20,4 +20,5 @@ exports.consentsRoutes.get('/', patients_controller_js_1.PatientsController.getC
 exports.consentsRoutes.patch('/:type', (0, validate_middleware_js_1.validateRequest)({ body: patients_schemas_js_1.updateConsentSchema }), patients_controller_js_1.PatientsController.updateConsent);
 // Staff Patients Sub-Router (/api/v1/patients)
 exports.patientRoutes = (0, express_1.Router)();
+exports.patientRoutes.get('/', auth_middleware_js_1.authenticateStaff, (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), patients_controller_js_1.PatientsController.listPatients);
 exports.patientRoutes.get('/:id', auth_middleware_js_1.authenticateStaff, (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), patients_controller_js_1.PatientsController.getPatientForStaff);

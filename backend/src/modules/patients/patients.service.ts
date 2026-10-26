@@ -213,4 +213,31 @@ export class PatientsService {
       })),
     };
   }
+
+  public static async listPatients(options: { search?: string; limit?: number; offset?: number }) {
+    const result = await PatientsRepository.listPatients(options);
+    return {
+      total: result.total,
+      limit: result.limit,
+      offset: result.offset,
+      patients: (result.items || []).map((patient: any) => ({
+        id: patient.id,
+        hospitalRegistrationNumber: patient.hospital_registration_number,
+        fullName: patient.full_name,
+        age: patient.age,
+        dateOfBirth: patient.date_of_birth,
+        gender: patient.gender,
+        contactNumber: patient.contact_number,
+        preferredLanguage: patient.preferred_language,
+        createdAt: patient.created_at,
+        recentVisits: ((patient as any).visit_profiles || []).map((v: any) => ({
+          visitId: v.visit_id,
+          isCompanionAssisted: v.is_companion_assisted,
+          companionName: v.companion_name,
+          preferredLanguage: v.preferred_language,
+          createdAt: v.created_at,
+        })),
+      })),
+    };
+  }
 }

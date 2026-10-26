@@ -34,13 +34,17 @@ export class OcrService {
       const isDbUp = await checkDatabaseHealth();
 
       if (!result.success || result.extractedFields.length === 0) {
+        const failureMessage =
+          result.errorMessage ||
+          'Handwritten text could not be reliably extracted. Please review the original document.';
+
         if (isDbUp) {
           try {
             await prisma.uploadedDocument.update({
               where: { id: documentId },
               data: {
                 ocr_status: OcrStatuses.FAILED,
-                ocr_error_message: result.errorMessage || 'OCR extraction produced no usable text.',
+                ocr_error_message: failureMessage,
                 overall_status: 'EXTRACTION_FAILED',
               },
             });
@@ -48,17 +52,24 @@ export class OcrService {
         }
         await DocumentsRepository.updateDocument(documentId, {
           ocr_status: OcrStatuses.FAILED,
-          ocr_error_message: result.errorMessage || 'OCR extraction produced no usable text.',
+          ocr_error_message: failureMessage,
           overall_status: 'EXTRACTION_FAILED',
         });
 
         logger.warn('OCR extraction failed for document', {
           documentId,
-          reason: result.errorMessage,
+          reason: failureMessage,
         });
 
-        return result;
+        return {
+          ...result,
+          errorMessage: failureMessage,
+        };
       }
+
+      const isPartial = result.extractionStatus === 'PARTIALLY_SUCCESSFUL';
+      const determinedOcrStatus = isPartial ? OcrStatuses.PARTIALLY_SUCCESSFUL : OcrStatuses.COMPLETED;
+      const determinedOverallStatus = isPartial ? 'PARTIALLY_VERIFIED' : 'PENDING_VALIDATION';
 
       // Save raw extracted fields into database if accessible
       if (isDbUp) {
@@ -81,8 +92,9 @@ export class OcrService {
           await prisma.uploadedDocument.update({
             where: { id: documentId },
             data: {
-              ocr_status: OcrStatuses.COMPLETED,
-              ocr_error_message: null,
+              ocr_status: determinedOcrStatus,
+              ocr_error_message: isPartial ? result.errorMessage : null,
+              overall_status: determinedOverallStatus,
             },
           });
         } catch (dbErr) {
@@ -92,8 +104,9 @@ export class OcrService {
 
       // Update in-memory fallback
       await DocumentsRepository.updateDocument(documentId, {
-        ocr_status: OcrStatuses.COMPLETED,
-        ocr_error_message: null,
+        ocr_status: determinedOcrStatus,
+        ocr_error_message: isPartial ? result.errorMessage : null,
+        overall_status: determinedOverallStatus,
         raw_fields: result.extractedFields.map((f, idx) => ({
           id: `raw-${documentId}-${idx}`,
           document_id: documentId,
@@ -108,6 +121,7 @@ export class OcrService {
       logger.info('OCR extraction completed and raw fields saved', {
         documentId,
         fieldsCount: result.extractedFields.length,
+        status: determinedOcrStatus,
       });
 
       return result;

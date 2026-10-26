@@ -82,5 +82,17 @@ class PatientsController {
             next(error);
         }
     }
+    static async listPatients(req, res, next) {
+        try {
+            const search = req.query.search ? String(req.query.search) : undefined;
+            const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 20;
+            const offset = req.query.offset ? parseInt(String(req.query.offset), 10) : 0;
+            const result = await patients_service_js_1.PatientsService.listPatients({ search, limit, offset });
+            response_util_js_1.ResponseUtil.success(res, result, 'Patients retrieved successfully');
+        }
+        catch (error) {
+            next(error);
+        }
+    }
 }
 exports.PatientsController = PatientsController;

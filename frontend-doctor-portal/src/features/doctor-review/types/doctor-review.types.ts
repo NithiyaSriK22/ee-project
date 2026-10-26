@@ -58,10 +58,21 @@ export interface VisitQueueEntryDTO {
   hasOpenAlert: boolean;
   readyAt: string | null;
   patientTokenOrName: string;
+  patientName?: string | null;
+  patientRegistrationNumber?: string | null;
   patientAge?: number | null;
   patientGender?: string | null;
+  chiefComplaint?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DashboardStatsDTO {
+  patientsInQueue: number | { count: number; label?: string; subtext?: string; avgIntakeMinutes?: number };
+  pendingReviews: number | { count: number; label?: string; subtext?: string; footer?: string };
+  redFlagAlerts: number | { count: number; label?: string; subtext?: string; footer?: string };
+  confirmedRecords: number | { count: number; label?: string; subtext?: string; footer?: string };
+  avgIntakeMinutes?: number;
 }
 
 export interface MustResolveItem {

@@ -1,0 +1,45 @@
+{
+  "id": "a162acbe-7a28-4273-905d-b74396a4ee56",
+  "visit_id": "visit-stage3-001",
+  "patient_id": "d40f3c73-c6ce-47db-ac1f-e17f035a58f6",
+  "document_type": "PRESCRIPTION",
+  "file_name": "presc_stage3.pdf",
+  "mime_type": "application/pdf",
+  "file_size_bytes": 99,
+  "storage_reference": "storage/documents/visit-stage3-001/531bc926-953d-4820-835f-465de6b67d6c_1792921645913_presc_stage3.pdf",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document could not be reliably digitized. PDF does not contain searchable text or recognizable clinical entities. Please review the original document.",
+  "summary": {
+    "documentId": "a162acbe-7a28-4273-905d-b74396a4ee56",
+    "fileName": "presc_stage3.pdf",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "2026-10-25",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Document uploaded and archived for physician inspection."
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [
+      "Document analyzed via deterministic template fallback: Local LLM service was unavailable."
+    ],
+    "missingOrUnreadableInfo": [
+      "Optical character recognition failed to reliably extract full handwritten text.",
+      "Manual clinical verification of the original physical image is required."
+    ],
+    "generatedAt": "2026-10-25T09:47:56.050Z",
+    "modelId": "TEMPLATE_FALLBACK",
+    "isMock": false,
+    "rawTextExcerpt": "[No raw text excerpt available]"
+  },
+  "uploaded_at": "2026-10-25T09:47:25.918Z",
+  "created_at": "2026-10-25T09:47:25.918Z",
+  "updated_at": "2026-10-25T09:47:25.931Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

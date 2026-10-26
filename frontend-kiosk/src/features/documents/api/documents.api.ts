@@ -8,13 +8,16 @@ import {
 
 export const documentsApi = {
   /**
-   * Uploads and triggers automated OCR extraction & validation gate
+   * Uploads and triggers automated OCR extraction & validation gate, or routes imaging study for physician review
    */
   async uploadDocument(payload: {
     fileBase64: string;
     fileName: string;
     mimeType: string;
     documentType: DocumentType;
+    scanDate?: string | null;
+    scanType?: string | null;
+    doctorNotes?: string | null;
   }): Promise<DocumentUploadResponse> {
     const res = await apiClient.post<ApiResponse<DocumentUploadResponse>>(
       '/kiosk/documents/upload',

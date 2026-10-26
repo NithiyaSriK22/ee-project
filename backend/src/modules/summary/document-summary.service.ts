@@ -3,6 +3,7 @@ import { DocumentsRepository } from '../documents/documents.repository.js';
 import { DocumentStorageService } from '../documents/storage/document-storage.service.js';
 import { logger } from '../../config/logger.js';
 import { SummaryService } from './summary.service.js';
+import { isMedicalImagingDocument } from '../documents/documents.types.js';
 
 export interface IndividualDocumentSummary {
   documentId: string;
@@ -10,6 +11,10 @@ export interface IndividualDocumentSummary {
   documentType: string;
   documentDate: string | null;
   reportOrTestName: string | null;
+  summaryStatus: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
+  extractionStatus: 'SUCCESSFUL' | 'PARTIALLY_SUCCESSFUL' | 'FAILED';
+  clinicalWarning?: string | null;
+  isHandwritten?: boolean;
   importantFindings: string[];
   laboratoryResults: Array<{
     testName: string;
@@ -94,6 +99,73 @@ export class DocumentSummaryService {
       if (cached.documentId === documentId && Array.isArray(cached.importantFindings)) {
         return cached as IndividualDocumentSummary;
       }
+    }
+
+    // Medical Imaging documents (Ultrasound, X-Ray, CT, MRI):
+    // Bypass text OCR and AI hallucination, preserve for visual physician inspection
+    if (isMedicalImagingDocument(document.document_type)) {
+      const scanDateStr = (document as any).scan_date
+        ? new Date((document as any).scan_date).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
+        : null;
+
+      const modalityName = (document as any).scan_type || `${document.document_type.replace(/_/g, ' ')}`;
+      const doctorNotes = (document as any).doctor_notes || null;
+
+      const imagingSummary: IndividualDocumentSummary = {
+        documentId: document.id,
+        fileName: document.file_name,
+        documentType: document.document_type,
+        documentDate: scanDateStr || 'Date unavailable',
+        reportOrTestName: modalityName,
+        summaryStatus: 'AVAILABLE',
+        extractionStatus: 'SUCCESSFUL',
+        clinicalWarning: null,
+        isHandwritten: false,
+        importantFindings: [
+          `Diagnostic imaging scan: ${document.file_name} (${modalityName}).`,
+          'Direct visual inspection by treating physician required. Ordinary text OCR and automated interpretations are bypassed for radiological safety.',
+        ],
+        laboratoryResults: [],
+        abnormalValues: [],
+        diagnoses: [],
+        medications: [],
+        allergies: [],
+        clinicalObservations: [
+          `Modality: ${modalityName}`,
+          scanDateStr ? `Scan Date: ${scanDateStr}` : 'Scan date not specified',
+          doctorNotes ? `Patient Notes: "${doctorNotes}"` : 'No patient notes provided.',
+          'Original high-resolution image preserved for clinical zoom inspection.',
+        ],
+        missingOrUnreadableInfo: [],
+        generatedAt: new Date().toISOString(),
+        modelId: 'IMAGING_PHYSICIAN_GATE',
+        isMock: false,
+        rawTextExcerpt: doctorNotes
+          ? `[Patient Note: ${doctorNotes}]`
+          : '[Medical imaging file - visual inspection required]',
+      };
+
+      const isDbUp = await checkDatabaseHealth();
+      if (isDbUp) {
+        try {
+          await prisma.$executeRawUnsafe(
+            `UPDATE uploaded_documents SET summary = $1::jsonb, updated_at = NOW() WHERE id = $2::uuid`,
+            JSON.stringify(imagingSummary),
+            documentId
+          );
+        } catch {}
+      }
+
+      await DocumentStorageService.saveDocumentMetadata(document.visit_id, {
+        ...document,
+        summary: imagingSummary,
+      });
+
+      return imagingSummary;
     }
 
     const rawFields = (document.raw_fields || []) as any[];
@@ -188,6 +260,71 @@ export class DocumentSummaryService {
       ? 'Inpatient Discharge Summary'
       : `${document.document_type} Report`;
 
+    const isFailed = document.ocr_status === 'FAILED' || document.overall_status === 'EXTRACTION_FAILED';
+
+    if (isFailed) {
+      const failedSummary: IndividualDocumentSummary = {
+        documentId: document.id,
+        fileName: document.file_name,
+        documentType: document.document_type,
+        documentDate: docDate,
+        reportOrTestName: reportName,
+        summaryStatus: 'UNAVAILABLE',
+        extractionStatus: 'FAILED',
+        clinicalWarning: 'Handwritten text could not be reliably extracted. Please review the original document.',
+        isHandwritten: true,
+        importantFindings: [],
+        laboratoryResults: [],
+        abnormalValues: [],
+        diagnoses: [],
+        medications: [],
+        allergies: [],
+        clinicalObservations: [
+          'Automated summarization withheld: Optical character recognition failed to reliably extract clinical text.',
+          'Manual clinical verification of the original physical image is required.',
+        ],
+        missingOrUnreadableInfo: [
+          'Handwritten text could not be reliably extracted. Please review the original document.',
+          'Treating physician must review the original scan directly before clinical decisions.',
+        ],
+        generatedAt: new Date().toISOString(),
+        modelId: 'SAFE_EXTRACTION_GATE',
+        isMock: false,
+        rawTextExcerpt: document.ocr_error_message || '[Handwritten text could not be reliably extracted. Please review the original document.]',
+      };
+
+      const isDbUp = await checkDatabaseHealth();
+      if (isDbUp) {
+        try {
+          await prisma.$executeRawUnsafe(
+            `UPDATE uploaded_documents SET summary = $1::jsonb, updated_at = NOW() WHERE id = $2::uuid`,
+            JSON.stringify(failedSummary),
+            documentId
+          );
+        } catch (err: any) {
+          logger.warn('Failed to update uploaded_documents.summary via SQL', { error: err?.message, documentId });
+        }
+      }
+
+      await DocumentStorageService.saveDocumentMetadata(document.visit_id, {
+        ...document,
+        summary: failedSummary,
+      });
+
+      return failedSummary;
+    }
+
+    const isPartial = document.ocr_status === 'PARTIALLY_SUCCESSFUL' || document.overall_status === 'PARTIALLY_VERIFIED';
+    const summaryStatus = isPartial ? 'PARTIAL' : 'AVAILABLE';
+    const extractionStatus = isPartial ? 'PARTIALLY_SUCCESSFUL' : 'SUCCESSFUL';
+    const clinicalWarning = isPartial
+      ? 'Partial extraction only: Some handwritten notes could not be verified. Refer to original document.'
+      : null;
+
+    if (isPartial) {
+      missingOrUnreadable.push('Partial extraction: Handwritten prescription body could not be fully transcribed.');
+    }
+
     if (clinicalObservations.length === 0 && importantFindings.length > 0) {
       clinicalObservations.push(`Record analyzed with ${validatedFields.length} verified clinical formulary tokens.`);
     }
@@ -196,8 +333,8 @@ export class DocumentSummaryService {
     let isMock = (provider as any).isMock !== false;
     let modelId = (provider as any).modelId || 'medikiosk-clinical-document-v1';
 
-    // If a real AI provider is configured, attempt genuine live inference
-    if (!isMock && typeof provider.generate === 'function') {
+    // If a real AI provider is configured, attempt genuine live inference on verified excerpt
+    if (!isMock && typeof provider.generate === 'function' && importantFindings.length > 0) {
       try {
         const rawExcerpt = rawFields.map((f) => f.raw_text || f.rawText).filter(Boolean).join(' ').slice(0, 800);
         const systemPrompt = 'You are a clinical summarization AI. Analyze the extracted clinical text and respond ONLY with a JSON object with keys: importantFindings (array of strings) and clinicalObservations (array of strings). Do not invent information.';
@@ -216,7 +353,6 @@ export class DocumentSummaryService {
           isMock = false;
           modelId = provider.modelId;
         } else {
-          // Grounding or schema missing
           modelId = provider.modelId;
           isMock = false;
         }
@@ -237,7 +373,11 @@ export class DocumentSummaryService {
       documentType: document.document_type,
       documentDate: docDate,
       reportOrTestName: reportName,
-      importantFindings: importantFindings.length > 0 ? importantFindings : ['Document uploaded and archived for physician inspection.'],
+      summaryStatus,
+      extractionStatus,
+      clinicalWarning,
+      isHandwritten: isPartial,
+      importantFindings: importantFindings.length > 0 ? importantFindings : (isPartial ? ['Partial document header recorded for physician review.'] : ['Document uploaded and archived for physician inspection.']),
       laboratoryResults: labResults,
       abnormalValues,
       diagnoses,
@@ -325,7 +465,7 @@ export class DocumentSummaryService {
         excludedDocs.push({
           documentId: doc.id,
           fileName: doc.file_name,
-          reason: doc.ocr_error_message || 'Handwritten or low-resolution image could not be automatically extracted; requires manual inspection.',
+          reason: doc.ocr_error_message || 'Handwritten text could not be reliably extracted. Please review the original document.',
         });
       } else {
         // Generate or get individual summary for this document
@@ -345,33 +485,40 @@ export class DocumentSummaryService {
             }
           });
 
-          // Consolidate medications
-          docSummary.medications.forEach((med) => {
-            allMedications.push({
-              name: med.name,
-              dosage: med.dosage,
-              sourceDocument: doc.file_name,
+          // Only consolidate medications, labs, and diagnoses for textual clinical documents
+          if (!isMedicalImagingDocument(doc.document_type)) {
+            // Consolidate medications
+            docSummary.medications.forEach((med) => {
+              allMedications.push({
+                name: med.name,
+                dosage: med.dosage,
+                sourceDocument: doc.file_name,
+              });
             });
-          });
 
-          // Consolidate lab results
-          docSummary.laboratoryResults.forEach((lab) => {
-            allLabResults.push({
-              ...lab,
-              date: docSummary.documentDate,
-              sourceDocument: doc.file_name,
+            // Consolidate lab results
+            docSummary.laboratoryResults.forEach((lab) => {
+              allLabResults.push({
+                ...lab,
+                date: docSummary.documentDate,
+                sourceDocument: doc.file_name,
+              });
             });
-          });
 
-          // Consolidate diagnoses
-          docSummary.diagnoses.forEach((d) => {
-            if (!allDiagnoses.includes(d)) allDiagnoses.push(d);
-          });
+            // Consolidate diagnoses
+            docSummary.diagnoses.forEach((d) => {
+              if (!allDiagnoses.includes(d)) allDiagnoses.push(d);
+            });
 
-          // Consolidate allergies
-          docSummary.allergies.forEach((a) => {
-            if (!allAllergies.includes(a)) allAllergies.push(a);
-          });
+            // Consolidate allergies
+            docSummary.allergies.forEach((a) => {
+              if (!allAllergies.includes(a)) allAllergies.push(a);
+            });
+          } else {
+            timelineChanges.push(
+              `Diagnostic Imaging Study: ${doc.file_name} (${(doc as any).scan_type || doc.document_type}) uploaded for physician review.`
+            );
+          }
         } catch (e: any) {
           excludedDocs.push({
             documentId: doc.id,
@@ -454,6 +601,10 @@ export class DocumentSummaryService {
       }
     }
 
+    if (includedDocs.length === 0 && allDocs.length > 0) {
+      timelineChanges.push('Automated summary unavailable: All uploaded documents contain handwritten or unreadable text. Physician must inspect original documents.');
+    }
+
     const combinedSummary: CombinedDocumentSummary = {
       visitId,
       patientId: allDocs[0]?.patient_id || null,
@@ -461,7 +612,7 @@ export class DocumentSummaryService {
       totalDocumentsCount: allDocs.length,
       includedDocuments: includedDocs,
       excludedOrFailedDocuments: excludedDocs,
-      consolidatedFindings: consolidatedFindings.length > 0 ? consolidatedFindings : ['No prior clinical findings extracted.'],
+      consolidatedFindings: consolidatedFindings.length > 0 ? consolidatedFindings : (includedDocs.length === 0 ? [] : ['No prior clinical findings extracted.']),
       importantLabResults: allLabResults,
       timelineChanges,
       potentialInconsistencies,
@@ -482,7 +633,7 @@ export class DocumentSummaryService {
         );
         if (existing && existing.length > 0) {
           await prisma.$executeRawUnsafe(
-            `UPDATE combined_document_summaries 
+            `UPDATE combined_document_summaries
              SET summary_payload = $1::jsonb, total_documents_count = $2, included_document_ids = $3::jsonb, excluded_document_ids = $4::jsonb, is_stale = FALSE, updated_at = NOW()
              WHERE visit_id = $5`,
             JSON.stringify(combinedSummary),
@@ -494,9 +645,9 @@ export class DocumentSummaryService {
           combinedSummary.id = existing[0].id;
         } else {
           const inserted = await prisma.$queryRawUnsafe<any[]>(
-            `INSERT INTO combined_document_summaries 
-             (visit_id, patient_id, summary_payload, total_documents_count, included_document_ids, excluded_document_ids, status, is_stale, generated_at)
-             VALUES ($1, $2::uuid, $3::jsonb, $4, $5::jsonb, $6::jsonb, $7, $8, NOW())
+            `INSERT INTO combined_document_summaries
+             (id, visit_id, patient_id, summary_payload, total_documents_count, included_document_ids, excluded_document_ids, status, is_stale, generated_at, created_at, updated_at)
+             VALUES (gen_random_uuid(), $1, $2::uuid, $3::jsonb, $4, $5::jsonb, $6::jsonb, $7, $8, NOW(), NOW(), NOW())
              RETURNING id`,
             visitId,
             allDocs[0]?.patient_id || null,

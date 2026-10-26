@@ -42,6 +42,57 @@ export class PatientsRepository {
     return devFallbackPatientStore.findPatientByRegistrationNumber(regNumber);
   }
 
+  public static async listPatients(options: { search?: string; limit?: number; offset?: number } = {}) {
+    const isDbUp = await checkDatabaseHealth();
+    const limit = Math.min(Math.max(Number(options.limit) || 20, 1), 100);
+    const offset = Math.max(Number(options.offset) || 0, 0);
+
+    if (isDbUp) {
+      try {
+        const where: any = {};
+        if (options.search && options.search.trim()) {
+          const s = options.search.trim();
+          where.OR = [
+            { full_name: { contains: s, mode: 'insensitive' } },
+            { hospital_registration_number: { contains: s, mode: 'insensitive' } },
+            { contact_number: { contains: s } },
+          ];
+        }
+
+        const [total, patients] = await Promise.all([
+          prisma.patient.count({ where }),
+          prisma.patient.findMany({
+            where,
+            include: {
+              visit_profiles: {
+                orderBy: { created_at: 'desc' },
+                take: 1,
+              },
+            },
+            orderBy: { created_at: 'desc' },
+            take: limit,
+            skip: offset,
+          }),
+        ]);
+
+        return {
+          total,
+          limit,
+          offset,
+          items: patients,
+        };
+      } catch {}
+    }
+
+    const fallback = devFallbackPatientStore.listPatients(options);
+    return {
+      total: fallback.total,
+      limit,
+      offset,
+      items: fallback.patients,
+    };
+  }
+
   public static async findProfileByVisit(patientId: string, visitId: string) {
     const isDbUp = await checkDatabaseHealth();
     if (isDbUp) {

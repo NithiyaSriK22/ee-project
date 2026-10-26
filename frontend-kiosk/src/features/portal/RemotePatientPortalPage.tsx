@@ -43,6 +43,9 @@ export const RemotePatientPortalPage: React.FC = () => {
 
   // Document Upload States
   const [selectedDocType, setSelectedDocType] = useState<DocumentType>(DocumentTypes.PRESCRIPTION);
+  const [scanDate, setScanDate] = useState<string>('');
+  const [scanType, setScanType] = useState<string>('');
+  const [doctorNotes, setDoctorNotes] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<{
     fileBase64: string;
     fileName: string;
@@ -181,10 +184,16 @@ export const RemotePatientPortalPage: React.FC = () => {
         fileName: selectedFile.fileName,
         mimeType: selectedFile.mimeType,
         documentType: selectedDocType,
+        scanDate: scanDate || null,
+        scanType: scanType || null,
+        doctorNotes: doctorNotes || null,
       });
 
       setLatestUploadResult(res);
       setSelectedFile(null);
+      setScanDate('');
+      setScanType('');
+      setDoctorNotes('');
       // Refresh list
       await loadDocuments();
     } catch (err: any) {
@@ -486,6 +495,80 @@ export const RemotePatientPortalPage: React.FC = () => {
             })}
           </div>
         </div>
+
+        {/* Conditional Metadata for Scans & Reports */}
+        {(selectedDocType === DocumentTypes.ULTRASOUND ||
+          selectedDocType === DocumentTypes.XRAY_CT_MRI ||
+          selectedDocType === DocumentTypes.LAB_REPORT ||
+          selectedDocType === DocumentTypes.CLINICAL_NOTES) && (
+          <div className="p-3 bg-teal-50/50 border border-teal-200 rounded-xl space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-teal-900">
+                Details for {DocumentTypeLabels[selectedDocType]?.label}
+              </span>
+              {(selectedDocType === DocumentTypes.ULTRASOUND ||
+                selectedDocType === DocumentTypes.XRAY_CT_MRI) && (
+                <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-md border border-amber-300">
+                  Doctor Visual Inspection
+                </span>
+              )}
+            </div>
+
+            {(selectedDocType === DocumentTypes.ULTRASOUND ||
+              selectedDocType === DocumentTypes.XRAY_CT_MRI) && (
+              <p className="text-[11px] text-teal-800 leading-snug">
+                <strong>Notice:</strong> High-resolution original images are delivered directly to the doctor's review queue. Ordinary text OCR is bypassed to prevent incorrect interpretations.
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                  {selectedDocType === DocumentTypes.LAB_REPORT ? 'Report Date:' : 'Scan Date:'}
+                </label>
+                <input
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  value={scanDate}
+                  onChange={(e) => setScanDate(e.target.value)}
+                  className="w-full text-xs bg-white border border-slate-300 rounded-lg p-1.5 text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                  {selectedDocType === DocumentTypes.LAB_REPORT ? 'Test Name:' : 'Scan Type:'}
+                </label>
+                <input
+                  type="text"
+                  placeholder={
+                    selectedDocType === DocumentTypes.ULTRASOUND
+                      ? 'e.g. Abdominal, Pelvic'
+                      : selectedDocType === DocumentTypes.XRAY_CT_MRI
+                      ? 'e.g. Chest X-Ray, Brain MRI'
+                      : 'e.g. CBC, Lipid Profile'
+                  }
+                  value={scanType}
+                  onChange={(e) => setScanType(e.target.value)}
+                  className="w-full text-xs bg-white border border-slate-300 rounded-lg p-1.5 text-slate-800"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                Optional Notes for Doctor:
+              </label>
+              <input
+                type="text"
+                placeholder="Symptoms, reason for test, or specific doctor notes..."
+                value={doctorNotes}
+                onChange={(e) => setDoctorNotes(e.target.value)}
+                className="w-full text-xs bg-white border border-slate-300 rounded-lg p-1.5 text-slate-800"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Camera / File Selection Buttons */}
         <input

@@ -77,16 +77,18 @@ exports.corsMiddleware = (0, cors_1.default)({
     ],
     exposedHeaders: ['X-Request-ID'],
 });
-// 3. Baseline Rate Limiter (with safety-critical skip for Module 6 emergency help requests)
+// 3. Baseline Rate Limiter (with safety-critical skip for Module 6 emergency help requests and health probes)
 exports.rateLimiterMiddleware = (0, express_rate_limit_1.default)({
     windowMs: env_config_js_1.env.RATE_LIMIT_WINDOW_MS,
-    max: env_config_js_1.env.RATE_LIMIT_MAX_REQUESTS,
+    max: env_config_js_1.env.NODE_ENV === 'development' ? 5000 : env_config_js_1.env.RATE_LIMIT_MAX_REQUESTS,
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-        // Safety requirement: Never block patient emergency help button requests
+        // Safety requirement: Never block patient emergency help button requests or health checks
         return (req.path.includes('/help-request') ||
             req.path.includes('/triage/alerts') ||
+            req.path.includes('/health') ||
+            req.path.includes('/ready') ||
             req.path.endsWith('/status') ||
             req.path.endsWith('/live'));
     },

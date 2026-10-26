@@ -1,0 +1,217 @@
+{
+  "id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+  "visit_id": "vis_1792917817928_w10r8t",
+  "patient_id": "7d81bc0e-f1de-4969-997f-8916ec3423e2",
+  "document_type": "PRESCRIPTION",
+  "file_name": "hypertension_prescription_sept.pdf",
+  "mime_type": "application/pdf",
+  "file_size_bytes": 561,
+  "storage_reference": "storage/documents/vis_1792917817928_w10r8t/51ab859d-e735-4dd9-8e9d-1d84d8ee204b_1792917818162_hypertension_prescription_sept.pdf",
+  "consent_verified": true,
+  "ocr_status": "COMPLETED",
+  "overall_status": "NEEDS_PHYSICIAN_REVIEW",
+  "ocr_error_message": null,
+  "summary": {
+    "documentId": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+    "fileName": "hypertension_prescription_sept.pdf",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "20/09/2026",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Active prescription for Amlodipine 5mg (5mg)",
+      "- Amlodipine 5mg prescription"
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [
+      {
+        "name": "Amlodipine 5mg",
+        "dosage": "5mg",
+        "frequency": "As indicated on prescription",
+        "duration": null
+      }
+    ],
+    "allergies": [],
+    "clinicalObservations": [
+      "Record analyzed with 5 verified clinical formulary tokens."
+    ],
+    "missingOrUnreadableInfo": [],
+    "generatedAt": "2026-10-25T08:44:37.607Z",
+    "modelId": "llama3.2:1b",
+    "isMock": false,
+    "rawTextExcerpt": "Amlodipine 5mg 1tabletdaily 20/09/2026 Dr. Sundar Rajan MD Date"
+  },
+  "uploaded_at": "2026-10-25T08:43:38.174Z",
+  "created_at": "2026-10-25T08:43:38.174Z",
+  "updated_at": "2026-10-25T08:44:07.434Z",
+  "raw_fields": [
+    {
+      "id": "4501c470-7463-4f26-940a-a5ec755226c9",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "field_type": "drug_name",
+      "raw_text": "Amlodipine",
+      "ocr_confidence": 0.88,
+      "source_snippet_ref": "tess_line_1",
+      "bounding_box": {
+        "x": 60,
+        "y": 150,
+        "width": 220,
+        "height": 35
+      },
+      "created_at": "2026-10-25T08:43:38.202Z"
+    },
+    {
+      "id": "87238e0f-8fae-4816-b4c7-c9345d00ad90",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "field_type": "dosage",
+      "raw_text": "5mg",
+      "ocr_confidence": 0.88,
+      "source_snippet_ref": "tess_dosage_2",
+      "bounding_box": {
+        "x": 290,
+        "y": 190,
+        "width": 100,
+        "height": 35
+      },
+      "created_at": "2026-10-25T08:43:38.202Z"
+    },
+    {
+      "id": "abc22f13-644f-44e2-9005-9ba006d31161",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "field_type": "dosage",
+      "raw_text": "1tabletdaily",
+      "ocr_confidence": 0.84,
+      "source_snippet_ref": "tess_dosage_freq",
+      "bounding_box": {
+        "x": 290,
+        "y": 190,
+        "width": 100,
+        "height": 30
+      },
+      "created_at": "2026-10-25T08:43:38.202Z"
+    },
+    {
+      "id": "17eaef50-a21d-4184-b024-99b34c9205bc",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "field_type": "date",
+      "raw_text": "20/09/2026",
+      "ocr_confidence": 0.92,
+      "source_snippet_ref": "tess_date",
+      "bounding_box": {
+        "x": 450,
+        "y": 60,
+        "width": 120,
+        "height": 25
+      },
+      "created_at": "2026-10-25T08:43:38.202Z"
+    },
+    {
+      "id": "465e50a1-c567-4b78-9297-4b360835b654",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "field_type": "physician_name",
+      "raw_text": "Dr. Sundar Rajan MD Date",
+      "ocr_confidence": 0.85,
+      "source_snippet_ref": "tess_physician",
+      "bounding_box": {
+        "x": 380,
+        "y": 460,
+        "width": 200,
+        "height": 30
+      },
+      "created_at": "2026-10-25T08:43:38.202Z"
+    }
+  ],
+  "validated_fields": [
+    {
+      "id": "64f2868c-e759-43b7-b4be-d1c8c5df279b",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "raw_field_id": "87238e0f-8fae-4816-b4c7-c9345d00ad90",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "dosage",
+      "is_critical": true,
+      "result": "MISMATCH_FLAGGED",
+      "eval_state": "MISMATCH",
+      "matched_reference_value": null,
+      "match_score": 0.2,
+      "ocr_confidence": 0.88,
+      "explanation": "⚠ Dosage & Frequency: Extracted text \"5mg\" did not match any known reference entry with sufficient confidence (20%). Please verify against original document.",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T08:43:38.286Z",
+      "created_at": "2026-10-25T08:43:38.296Z",
+      "updated_at": "2026-10-25T08:43:38.296Z"
+    },
+    {
+      "id": "43c3e1d9-66a5-41ba-9147-c176f8388ae6",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "raw_field_id": "abc22f13-644f-44e2-9005-9ba006d31161",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "dosage",
+      "is_critical": true,
+      "result": "MISMATCH_FLAGGED",
+      "eval_state": "MISMATCH",
+      "matched_reference_value": null,
+      "match_score": 0.2,
+      "ocr_confidence": 0.84,
+      "explanation": "⚠ Dosage & Frequency: Extracted text \"1tabletdaily\" did not match any known reference entry with sufficient confidence (20%). Please verify against original document.",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T08:43:38.286Z",
+      "created_at": "2026-10-25T08:43:38.300Z",
+      "updated_at": "2026-10-25T08:43:38.300Z"
+    },
+    {
+      "id": "88bb40cb-435c-4459-9658-b657bcafae21",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "raw_field_id": "4501c470-7463-4f26-940a-a5ec755226c9",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "drug_name",
+      "is_critical": true,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Amlodipine 5mg",
+      "match_score": 1,
+      "ocr_confidence": 0.88,
+      "explanation": "✓ Drug / Medication Name: matched to \"Amlodipine 5mg\" (100% reference match).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T08:43:38.286Z",
+      "created_at": "2026-10-25T08:43:38.303Z",
+      "updated_at": "2026-10-25T08:43:38.303Z"
+    },
+    {
+      "id": "a6012d3d-4078-45fc-aeb4-0ad28d1ec0d7",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "raw_field_id": "17eaef50-a21d-4184-b024-99b34c9205bc",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "date",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "20/09/2026",
+      "match_score": 1,
+      "ocr_confidence": 0.92,
+      "explanation": "✓ Prescription / Report Date: verified calendar date \"20/09/2026\".",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T08:43:38.286Z",
+      "created_at": "2026-10-25T08:43:38.306Z",
+      "updated_at": "2026-10-25T08:43:38.306Z"
+    },
+    {
+      "id": "eec33d02-79fb-40da-9248-d29e965ec020",
+      "document_id": "a9b78617-46c9-4a6a-9ffd-3ac351ec51ab",
+      "raw_field_id": "465e50a1-c567-4b78-9297-4b360835b654",
+      "formulary_version_id": "19ba3d5a-a3bf-42ff-b4f1-825aece909a8",
+      "field_type": "physician_name",
+      "is_critical": false,
+      "result": "VERIFIED",
+      "eval_state": "MATCH",
+      "matched_reference_value": "Dr. Sundar Rajan MD Date",
+      "match_score": 0.85,
+      "ocr_confidence": 0.85,
+      "explanation": "✓ Consulting Physician: verified against reference standards (Dr. Sundar Rajan MD Date).",
+      "formulary_version": "NFI-EML-2026.1",
+      "evaluated_at": "2026-10-25T08:43:38.286Z",
+      "created_at": "2026-10-25T08:43:38.310Z",
+      "updated_at": "2026-10-25T08:43:38.310Z"
+    }
+  ]
+}

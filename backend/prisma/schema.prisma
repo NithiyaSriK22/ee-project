@@ -337,6 +337,10 @@ model UploadedDocument {
   ocr_status        String              @default("PENDING") @db.VarChar(50) // PENDING, COMPLETED, FAILED
   overall_status    String              @default("PENDING_VALIDATION") @db.VarChar(50) // PENDING_VALIDATION, FULLY_VERIFIED, NEEDS_PHYSICIAN_REVIEW, PARTIALLY_VERIFIED, EXTRACTION_FAILED
   ocr_error_message String?             @db.Text
+  scan_date         DateTime?           @db.Timestamptz(6)
+  scan_type         String?             @db.VarChar(100)
+  doctor_notes      String?             @db.Text
+  metadata          Json?
   summary           Json?
   uploaded_at       DateTime            @default(now()) @db.Timestamptz(6)
   created_at        DateTime            @default(now()) @db.Timestamptz(6)

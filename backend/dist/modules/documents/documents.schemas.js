@@ -7,11 +7,20 @@ exports.uploadDocumentSchema = zod_1.z.object({
     documentType: zod_1.z
         .enum([
         documents_types_js_1.DocumentTypes.PRESCRIPTION,
+        documents_types_js_1.DocumentTypes.CLINICAL_NOTES,
         documents_types_js_1.DocumentTypes.LAB_REPORT,
+        documents_types_js_1.DocumentTypes.ULTRASOUND,
+        documents_types_js_1.DocumentTypes.XRAY_CT_MRI,
         documents_types_js_1.DocumentTypes.DISCHARGE_SUMMARY,
+        documents_types_js_1.DocumentTypes.RADIOLOGY_REPORT,
         documents_types_js_1.DocumentTypes.OTHER,
     ])
         .default(documents_types_js_1.DocumentTypes.PRESCRIPTION),
+    scanDate: zod_1.z.string().optional().nullable(),
+    scanType: zod_1.z.string().max(100).optional().nullable(),
+    doctorNotes: zod_1.z.string().max(2000).optional().nullable(),
+    notes: zod_1.z.string().max(2000).optional().nullable(),
+    metadata: zod_1.z.any().optional().nullable(),
 });
 exports.createFormularyVersionSchema = zod_1.z.object({
     versionCode: zod_1.z.string().trim().min(3, 'Version code is required').max(100),

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UNSUPPORTED_NEGATIVE_PATTERNS = exports.DIAGNOSTIC_AND_ADVICE_DENY_PATTERNS = void 0;
+exports.PROMPT_INJECTION_DENY_PATTERNS = exports.UNSUPPORTED_NEGATIVE_PATTERNS = exports.DIAGNOSTIC_AND_ADVICE_DENY_PATTERNS = void 0;
 /**
  * Comprehensive list of forbidden phrases indicating diagnosis, inference,
  * medical advice, prescription, or clinical speculation.
@@ -36,5 +36,18 @@ exports.DIAGNOSTIC_AND_ADVICE_DENY_PATTERNS = [
  */
 exports.UNSUPPORTED_NEGATIVE_PATTERNS = [
     /\b(no|denies|negative\s+for)\s+(known\s+)?(allergies|medications|symptoms|history)\b/i,
-    /\bpatient\s+has\s+no\b/i,
+    /\bpatient\s+(has\s+no|does\s+not\s+have|denies\s+any)\s+(known\s+)?(allergies|medications|adverse)\b/i,
+    /\bno\s+(known\s+)?(drug\s+)?allergies\b/i,
+    /\bno\s+active\s+medications\b/i,
+];
+/**
+ * Prompt injection patterns embedded in patient text or attempts to override AI constraints
+ */
+exports.PROMPT_INJECTION_DENY_PATTERNS = [
+    /\bignore\s+(all\s+)?(previous|prior)\s+instructions\b/i,
+    /\bdisregard\s+(all\s+)?(previous|prior|system)\b/i,
+    /\b(system\s+prompt|developer\s+mode|override\s+instructions)\b/i,
+    /\bstate\s+that\s+(the\s+)?patient\s+(has|takes|is|suffers)\b/i,
+    /\bpretend\s+(to\s+be|that)\b/i,
+    /\byou\s+are\s+now\b/i,
 ];

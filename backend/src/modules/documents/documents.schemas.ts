@@ -5,11 +5,20 @@ export const uploadDocumentSchema = z.object({
   documentType: z
     .enum([
       DocumentTypes.PRESCRIPTION,
+      DocumentTypes.CLINICAL_NOTES,
       DocumentTypes.LAB_REPORT,
+      DocumentTypes.ULTRASOUND,
+      DocumentTypes.XRAY_CT_MRI,
       DocumentTypes.DISCHARGE_SUMMARY,
+      DocumentTypes.RADIOLOGY_REPORT,
       DocumentTypes.OTHER,
     ])
     .default(DocumentTypes.PRESCRIPTION),
+  scanDate: z.string().optional().nullable(),
+  scanType: z.string().max(100).optional().nullable(),
+  doctorNotes: z.string().max(2000).optional().nullable(),
+  notes: z.string().max(2000).optional().nullable(),
+  metadata: z.any().optional().nullable(),
 });
 
 export const createFormularyVersionSchema = z.object({

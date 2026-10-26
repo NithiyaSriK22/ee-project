@@ -1,0 +1,43 @@
+{
+  "id": "1ac1a3db-8dd8-417a-bc11-87882fe992de",
+  "visit_id": "vis_1792930405365_klq9xt",
+  "patient_id": "973e4ca8-1902-4253-9277-633120c9ee66",
+  "document_type": "PRESCRIPTION",
+  "file_name": "apollo_rx_2026.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 70,
+  "storage_reference": "storage/documents/vis_1792930405365_klq9xt/9f5bac01-0aa8-465d-81af-9eaffbe677cb_1792930405861_apollo_rx_2026.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document image appears blank or unreadable (file size below threshold).",
+  "summary": {
+    "documentId": "1ac1a3db-8dd8-417a-bc11-87882fe992de",
+    "fileName": "apollo_rx_2026.png",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "2026-10-25",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Document uploaded and archived for physician inspection."
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [],
+    "missingOrUnreadableInfo": [
+      "Optical character recognition failed to reliably extract full handwritten text.",
+      "Manual clinical verification of the original physical image is required."
+    ],
+    "generatedAt": "2026-10-25T12:13:25.910Z",
+    "modelId": "medikiosk-constrained-summary-v1",
+    "isMock": true,
+    "rawTextExcerpt": "[No raw text excerpt available]"
+  },
+  "uploaded_at": "2026-10-25T12:13:25.867Z",
+  "created_at": "2026-10-25T12:13:25.867Z",
+  "updated_at": "2026-10-25T12:13:25.882Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

@@ -23,6 +23,7 @@ class GroundingValidator {
         }
         // Map conflicts by section
         const conflictSections = new Set(input.conflicts.map((c) => c.section));
+        const allCitedItemIds = new Set();
         for (const section of output.sections) {
             for (const stmt of section.statements) {
                 const text = stmt.text || '';
@@ -35,9 +36,10 @@ class GroundingValidator {
                 }
                 const citedItems = [];
                 for (const cid of citedIds) {
+                    allCitedItemIds.add(cid);
                     const item = inputItemMap.get(cid);
                     if (!item) {
-                        errors.push(`Cited source item '${cid}' does not exist in assembled input`);
+                        errors.push(`Cited source item '${cid}' does not exist in assembled input (cross-patient or invalid reference)`);
                         unsupportedClaimsCount++;
                     }
                     else {
@@ -56,6 +58,14 @@ class GroundingValidator {
                     if (pattern.test(text)) {
                         errors.push(`Statement contains forbidden diagnostic or advice language (${pattern.source}): "${text}"`);
                         diagnosisClaimsCount++;
+                        break;
+                    }
+                }
+                // Check 3B: Prompt injection language in generated statement
+                for (const pattern of deny_patterns_js_1.PROMPT_INJECTION_DENY_PATTERNS) {
+                    if (pattern.test(text)) {
+                        errors.push(`Statement contains forbidden prompt-injection or instruction-override language: "${text}"`);
+                        unsupportedClaimsCount++;
                         break;
                     }
                 }
@@ -83,6 +93,25 @@ class GroundingValidator {
                         unsupportedClaimsCount++;
                     }
                 }
+                // Check 5B: Strict medication-dosage pairing validation
+                // Prevents cross-pairing (e.g. Medicine A 500mg and Medicine B 850mg combined into Medicine A 850mg)
+                const medDosePairs = this.extractMedicationDosePairs(text);
+                for (const pair of medDosePairs) {
+                    const matchingItems = citedItems.filter((i) => {
+                        const itemText = `${i.value || ''} ${i.rawText || ''} ${i.label || ''}`.toLowerCase();
+                        return itemText.includes(pair.medication.toLowerCase());
+                    });
+                    if (matchingItems.length > 0) {
+                        const hasMatchingDosage = matchingItems.some((i) => {
+                            const itemText = `${i.value || ''} ${i.rawText || ''} ${i.label || ''}`.toLowerCase();
+                            return itemText.includes(pair.dosage.toLowerCase());
+                        });
+                        if (!hasMatchingDosage) {
+                            errors.push(`Incorrect medication-dose pairing: '${pair.medication}' paired with '${pair.dosage}' in statement "${text}", but source records for '${pair.medication}' do not contain this dosage.`);
+                            unsupportedClaimsCount++;
+                        }
+                    }
+                }
                 // Check 6: Conflict resolution check
                 if (conflictSections.has(section.section)) {
                     const activeConflict = input.conflicts.find((c) => c.section === section.section);
@@ -100,6 +129,24 @@ class GroundingValidator {
                         }
                     }
                 }
+            }
+        }
+        // Check 7: Completeness check for verified critical medications
+        const verifiedMedItems = input.items.filter((i) => (i.section === 'MEDICATIONS_AND_ALLERGIES' || i.metadata?.fieldType === 'drug_name') &&
+            (i.status === 'VERIFIED' || i.status === 'ANSWERED') &&
+            i.value &&
+            i.value.trim().length > 0);
+        const allStatementText = output.sections
+            .flatMap((s) => s.statements)
+            .map((st) => st.text.toLowerCase())
+            .join(' ');
+        for (const medItem of verifiedMedItems) {
+            const medName = (medItem.value || medItem.label || '').split(/\s+/)[0]?.toLowerCase();
+            const isCited = allCitedItemIds.has(medItem.itemId);
+            const isMentioned = medName && medName.length > 3 && allStatementText.includes(medName);
+            if (!isCited && !isMentioned) {
+                errors.push(`Completeness check: verified medication '${medItem.label}' (${medItem.value}) was omitted from the summary.`);
+                unsupportedClaimsCount++;
             }
         }
         const valid = errors.length === 0 &&
@@ -146,11 +193,55 @@ class GroundingValidator {
         }
         return Array.from(new Set(tokens));
     }
+    /**
+     * Extracts pairs of [MedicationName, Dosage] to prevent cross-pairing
+     */
+    static extractMedicationDosePairs(text) {
+        const pairs = [];
+        const medDoseRegex = /\b([A-Za-z]{3,20})\s+(?:takes\s+|prescribed\s+|at\s+)?(\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml))\b/gi;
+        let match;
+        while ((match = medDoseRegex.exec(text)) !== null) {
+            const med = match[1]?.trim();
+            const dose = match[2]?.trim();
+            if (med && dose && !/^(tablets?|capsules?|drops?|pills?|patient|grade|stage|type|day|days|for|every|dose|total|about|with)$/i.test(med)) {
+                pairs.push({ medication: med, dosage: dose });
+            }
+        }
+        return pairs;
+    }
     static hasExplicitNegativeToken(text) {
-        const clean = text.toLowerCase().replace(/[^a-z0-9 ]/g, ' ');
-        const tokens = clean.split(/\s+/).filter(Boolean);
-        const negativeTokens = ['none', 'no', 'nil', 'denies', 'never', 'nka', 'nkda'];
-        return tokens.some((t) => negativeTokens.includes(t));
+        const lower = text.toLowerCase().trim();
+        // Prompt injection text is untrusted data and can NEVER be treated as an explicit clinical negative
+        if (deny_patterns_js_1.PROMPT_INJECTION_DENY_PATTERNS.some((p) => p.test(lower))) {
+            return false;
+        }
+        const clean = lower.replace(/[^a-z0-9 ]/g, ' ').trim();
+        const exactNegatives = [
+            'none',
+            'nil',
+            'no',
+            'denies',
+            'never',
+            'nka',
+            'nkda',
+            'no allergies',
+            'no known allergies',
+            'no known drug allergies',
+            'denies allergies',
+            'denies drug allergies',
+            'no active medications',
+            'not applicable',
+            'na',
+        ];
+        if (exactNegatives.includes(clean)) {
+            return true;
+        }
+        // Match explicit negative statements without injection keywords
+        if (/\b(no\s+known\s+(drug\s+)?allergies|no\s+allergies|denies\s+(any\s+)?(drug\s+)?allergies|nka|nkda)\b/i.test(lower) &&
+            !/\b(state\s+that|ignore|instruction|override|say\s+that)\b/i.test(lower)) {
+            return true;
+        }
+        return false;
     }
 }
 exports.GroundingValidator = GroundingValidator;

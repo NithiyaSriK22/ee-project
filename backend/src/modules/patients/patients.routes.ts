@@ -26,6 +26,13 @@ consentsRoutes.patch('/:type', validateRequest({ body: updateConsentSchema }), P
 export const patientRoutes = Router();
 
 patientRoutes.get(
+  '/',
+  authenticateStaff,
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  PatientsController.listPatients
+);
+
+patientRoutes.get(
   '/:id',
   authenticateStaff,
   authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),

@@ -1,0 +1,45 @@
+{
+  "id": "c2f2c790-3317-4cfa-a8c6-9359a0894fe5",
+  "visit_id": "visit-stage3-001",
+  "patient_id": "d40f3c73-c6ce-47db-ac1f-e17f035a58f6",
+  "document_type": "PRESCRIPTION",
+  "file_name": "rx_scan.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 89,
+  "storage_reference": "storage/documents/visit-stage3-001/fd5cea43-0d95-4763-91e6-1896b9705eb1_1792916946304_rx_scan.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document could not be reliably digitized: Optical engine error.. Handwritten prescription could not be automatically digitized.",
+  "summary": {
+    "documentId": "c2f2c790-3317-4cfa-a8c6-9359a0894fe5",
+    "fileName": "rx_scan.png",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "2026-10-25",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Document uploaded and archived for physician inspection."
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [
+      "Document analyzed via deterministic template fallback: Local LLM service was unavailable."
+    ],
+    "missingOrUnreadableInfo": [
+      "Optical character recognition failed to reliably extract full handwritten text.",
+      "Manual clinical verification of the original physical image is required."
+    ],
+    "generatedAt": "2026-10-25T08:29:06.645Z",
+    "modelId": "TEMPLATE_FALLBACK",
+    "isMock": false,
+    "rawTextExcerpt": "[No raw text excerpt available]"
+  },
+  "uploaded_at": "2026-10-25T08:29:06.308Z",
+  "created_at": "2026-10-25T08:29:06.308Z",
+  "updated_at": "2026-10-25T08:29:06.626Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

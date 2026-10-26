@@ -9,7 +9,9 @@ import { DocumentsService } from '../src/modules/documents/documents.service.js'
 import { DocumentsRepository } from '../src/modules/documents/documents.repository.js';
 import { DocumentStorageService } from '../src/modules/documents/storage/document-storage.service.js';
 import { OcrService } from '../src/modules/documents/ocr/ocr.service.js';
-import { IOcrProvider } from '../src/modules/documents/ocr/ocr-provider-adapter.js';
+import { IOcrProvider, OcrProviderFactory } from '../src/modules/documents/ocr/ocr-provider-adapter.js';
+import { SummaryService } from '../src/modules/summary/summary.service.js';
+import { mockSummarizationProvider } from '../src/modules/summary/generation/provider-adapters/mock-provider-adapter.js';
 import { prisma, checkDatabaseHealth } from '../src/database/prisma.js';
 
 describe('DOCUMENT STORAGE, SECURE STREAMING & RECOVERY AUDIT SUITE', () => {
@@ -40,7 +42,6 @@ describe('DOCUMENT STORAGE, SECURE STREAMING & RECOVERY AUDIT SUITE', () => {
     fullName: 'Dr. Ananya Sharma',
     hospitalDepartment: 'Department of General Medicine',
   });
-
   // Valid mock prescription image with verifiable content
   const header = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489', 'hex');
   const clinicalText = Buffer.from(
@@ -50,6 +51,9 @@ describe('DOCUMENT STORAGE, SECURE STREAMING & RECOVERY AUDIT SUITE', () => {
   const testFileBuffer = Buffer.concat([header, clinicalText]);
 
   beforeEach(() => {
+    OcrService.setProvider(OcrProviderFactory.getDefaultProvider());
+    SummaryService.setProvider(mockSummarizationProvider);
+
     // Record mandatory document processing consent for visit A and B
     devFallbackPatientStore.recordConsent({
       patientId: patientIdA,
@@ -69,6 +73,9 @@ describe('DOCUMENT STORAGE, SECURE STREAMING & RECOVERY AUDIT SUITE', () => {
   });
 
   afterAll(async () => {
+    OcrService.setProvider(OcrProviderFactory.getDefaultProvider());
+    SummaryService.setProvider(null);
+
     // Clean up created test directories in storage
     try {
       const baseDir = DocumentsService.getStorageBaseDir();
@@ -80,7 +87,7 @@ describe('DOCUMENT STORAGE, SECURE STREAMING & RECOVERY AUDIT SUITE', () => {
       if (fs.existsSync(testDirB)) {
         await fs.promises.rm(testDirB, { recursive: true, force: true });
       }
-    } catch {}
+    } catch { }
   });
 
   // ============================================================================

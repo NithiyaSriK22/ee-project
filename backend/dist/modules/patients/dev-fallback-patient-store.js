@@ -72,6 +72,23 @@ class DevFallbackPatientStore {
             visit_profiles: p.visit_profiles || [],
         };
     }
+    listPatients(options) {
+        const unique = new Map();
+        for (const p of this.patients.values()) {
+            unique.set(p.id, p);
+        }
+        let list = Array.from(unique.values());
+        if (options?.search) {
+            const q = options.search.toLowerCase();
+            list = list.filter((p) => p.full_name.toLowerCase().includes(q) ||
+                p.hospital_registration_number.toLowerCase().includes(q) ||
+                p.contact_number.includes(q));
+        }
+        const total = list.length;
+        const offset = options?.offset || 0;
+        const limit = options?.limit || 20;
+        return { patients: list.slice(offset, offset + limit), total };
+    }
     updatePatientCore(id, data) {
         const patient = this.patients.get(id);
         if (!patient)

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OcrProviderFactory = exports.CorruptedDocOcrProvider = exports.UnavailableOcrProvider = exports.HandwrittenUnreadableOcrProvider = exports.LowConfidenceOcrProvider = exports.TesseractOcrProvider = exports.StandardClinicalOcrProvider = void 0;
+exports.OcrProviderFactory = exports.CorruptedDocOcrProvider = exports.UnavailableOcrProvider = exports.HandwrittenPartialOcrProvider = exports.HandwrittenUnreadableOcrProvider = exports.LowConfidenceOcrProvider = exports.TesseractOcrProvider = exports.StandardClinicalOcrProvider = void 0;
 const tesseract_js_1 = require("tesseract.js");
 const logger_js_1 = require("../../../config/logger.js");
 /**
@@ -25,6 +25,28 @@ class StandardClinicalOcrProvider {
         }
         // Convert buffer snippet to detect if test string / mock raw content exists
         const textSample = buffer.toString('utf-8', 0, Math.min(buffer.length, 2048));
+        // Handle explicit handwritten unreadable test cases
+        if (textSample.includes('HANDWRITTEN_UNREADABLE') ||
+            textSample.includes('ILLEGIBLE_CURSIVE') ||
+            textSample.includes('SYNTHETIC HANDWRITTEN CURSIVE DOCTOR NOTE')) {
+            return {
+                success: false,
+                extractedFields: [],
+                fullText: textSample,
+                pageCount: 1,
+                isLowConfidence: true,
+                isHandwritten: true,
+                handwritingDetected: true,
+                extractionStatus: 'FAILED',
+                errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
+                limitationNotice: 'The local optical character recognition engine does not support reliable cursive handwriting recognition without risk of clinical hallucination.',
+                engineUsed: this.name,
+            };
+        }
+        // Handle handwritten partial test cases
+        if (textSample.includes('HANDWRITTEN_PARTIAL')) {
+            return new HandwrittenPartialOcrProvider().extractText(buffer, _mimeType);
+        }
         // Dynamic field generation based on document contents
         const fields = [];
         // Prescription defaults or detected items
@@ -179,7 +201,11 @@ class TesseractOcrProvider {
         // 4. Handle Optical Character Recognition on Image via Tesseract.js
         let worker = null;
         try {
-            worker = await (0, tesseract_js_1.createWorker)('eng');
+            worker = await (0, tesseract_js_1.createWorker)('eng', 1, {
+                errorHandler: (err) => {
+                    logger_js_1.logger.warn('Tesseract worker error handled', { error: String(err) });
+                },
+            });
             const ret = await worker.recognize(buffer);
             const recognizedText = ret?.data?.text || '';
             const confidence = (ret?.data?.confidence || 0) / 100;
@@ -195,7 +221,11 @@ class TesseractOcrProvider {
                     fullText: recognizedText,
                     pageCount: 1,
                     isLowConfidence: true,
-                    errorMessage: 'Document could not be reliably digitized. Legibility confidence is below clinical threshold (confidence < 40%). Handwritten prescription could not be automatically digitized.',
+                    isHandwritten: true,
+                    handwritingDetected: true,
+                    extractionStatus: 'FAILED',
+                    errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
+                    limitationNotice: 'The local optical engine is trained on printed typography and cannot reliably transcribe cursive handwriting without clinical risk. Legibility confidence is below clinical threshold (confidence < 40%).',
                     engineUsed: this.name,
                 };
             }
@@ -208,15 +238,27 @@ class TesseractOcrProvider {
                     fullText: recognizedText,
                     pageCount: 1,
                     isLowConfidence: true,
-                    errorMessage: 'Document could not be reliably digitized. No verified medication entities could be extracted. Handwritten prescription could not be automatically digitized.',
+                    isHandwritten: true,
+                    handwritingDetected: true,
+                    extractionStatus: 'FAILED',
+                    errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
+                    limitationNotice: 'No verified medication entities could be extracted from handwritten or unstandardized note.',
                     engineUsed: this.name,
                 };
             }
+            const hasMed = extractedFields.some((f) => f.fieldType === 'drug_name');
+            const hasLab = extractedFields.some((f) => f.fieldType === 'lab_test_name' || f.fieldType === 'lab_value');
+            const isPartial = !hasMed && !hasLab && extractedFields.length > 0;
             return {
                 success: true,
                 extractedFields,
                 fullText: recognizedText,
                 pageCount: 1,
+                isHandwritten: isPartial,
+                handwritingDetected: isPartial,
+                extractionStatus: isPartial ? 'PARTIALLY_SUCCESSFUL' : 'SUCCESSFUL',
+                errorMessage: isPartial ? 'Partial extraction only: Handwritten clinical body could not be reliably digitized.' : undefined,
+                limitationNotice: isPartial ? 'Printed clinic header was recognized, but handwritten prescription body was unreadable.' : undefined,
                 engineUsed: this.name,
             };
         }
@@ -229,7 +271,10 @@ class TesseractOcrProvider {
                 extractedFields: [],
                 fullText: '',
                 pageCount: 0,
-                errorMessage: `Document could not be reliably digitized: ${err.message || 'Optical engine error.'}. Handwritten prescription could not be automatically digitized.`,
+                isHandwritten: true,
+                extractionStatus: 'FAILED',
+                errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
+                limitationNotice: `Optical engine error: ${err.message || 'Processing error'}.`,
                 engineUsed: this.name,
             };
         }
@@ -293,11 +338,20 @@ class TesseractOcrProvider {
                 if (drugName) {
                     fields.push({
                         fieldType: 'drug_name',
-                        rawText: dosageVal ? `${drugName} ${dosageVal}` : drugName,
+                        rawText: drugName,
                         confidence: 0.88,
                         sourceSnippetRef: `tess_line_${fields.length + 1}`,
                         boundingBox: { x: 60, y: 150 + fields.length * 40, width: 220, height: 35 },
                     });
+                    if (dosageVal) {
+                        fields.push({
+                            fieldType: 'dosage',
+                            rawText: dosageVal,
+                            confidence: 0.88,
+                            sourceSnippetRef: `tess_dosage_${fields.length + 1}`,
+                            boundingBox: { x: 290, y: 150 + fields.length * 40, width: 100, height: 35 },
+                        });
+                    }
                 }
             }
         }
@@ -402,12 +456,61 @@ class HandwrittenUnreadableOcrProvider {
             fullText: '??? cursive handwriting marks ???',
             pageCount: 1,
             isLowConfidence: true,
-            errorMessage: 'Handwritten prescription could not be automatically digitized. Low OCR legibility score.',
+            isHandwritten: true,
+            handwritingDetected: true,
+            extractionStatus: 'FAILED',
+            errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
+            limitationNotice: 'The local optical character recognition engine does not support reliable cursive handwriting recognition without risk of clinical hallucination. Please review the original document.',
             engineUsed: this.name,
         };
     }
 }
 exports.HandwrittenUnreadableOcrProvider = HandwrittenUnreadableOcrProvider;
+/**
+ * Specialized Mock Provider: Partially Extracted Handwritten Note
+ * Simulates a document with printed clinic header and date, but illegible cursive handwritten Rx body.
+ */
+class HandwrittenPartialOcrProvider {
+    name = 'HandwrittenPartialOcrProvider';
+    async extractText(_buffer, _mimeType) {
+        const fields = [
+            {
+                fieldType: 'institution_name',
+                rawText: 'Government General Hospital OPD',
+                confidence: 0.94,
+                sourceSnippetRef: 'header_clinic',
+                boundingBox: { x: 50, y: 30, width: 280, height: 30 },
+            },
+            {
+                fieldType: 'date',
+                rawText: new Date().toLocaleDateString('en-GB'),
+                confidence: 0.91,
+                sourceSnippetRef: 'header_date',
+                boundingBox: { x: 450, y: 30, width: 110, height: 25 },
+            },
+            {
+                fieldType: 'physician_name',
+                rawText: 'Dr. Ramesh Kumar, MD',
+                confidence: 0.88,
+                sourceSnippetRef: 'footer_dr',
+                boundingBox: { x: 380, y: 480, width: 200, height: 30 },
+            },
+        ];
+        return {
+            success: true,
+            extractedFields: fields,
+            fullText: 'Government General Hospital OPD\nDate: 25/10/2026\n[Handwritten cursive Rx body illegible]\nDr. Ramesh Kumar, MD',
+            pageCount: 1,
+            isHandwritten: true,
+            handwritingDetected: true,
+            extractionStatus: 'PARTIALLY_SUCCESSFUL',
+            errorMessage: 'Partial extraction only: Handwritten clinical body could not be reliably digitized.',
+            limitationNotice: 'Handwritten prescription body was illegible. Only printed clinic header and date could be verified.',
+            engineUsed: this.name,
+        };
+    }
+}
+exports.HandwrittenPartialOcrProvider = HandwrittenPartialOcrProvider;
 /**
  * Specialized Mock Provider: OCR Service Unavailable / Crash
  */
@@ -441,7 +544,7 @@ exports.CorruptedDocOcrProvider = CorruptedDocOcrProvider;
  */
 class OcrProviderFactory {
     static getProvider(type) {
-        const configured = type || process.env.OCR_ENGINE || 'STANDARD';
+        const configured = type || process.env.OCR_PROVIDER || process.env.OCR_ENGINE || 'STANDARD';
         switch (configured.toUpperCase()) {
             case 'TESSERACT':
                 return new TesseractOcrProvider();
@@ -450,6 +553,9 @@ class OcrProviderFactory {
             case 'HANDWRITTEN':
             case 'HANDWRITTEN_UNREADABLE':
                 return new HandwrittenUnreadableOcrProvider();
+            case 'HANDWRITTEN_PARTIAL':
+            case 'PARTIAL':
+                return new HandwrittenPartialOcrProvider();
             case 'UNAVAILABLE':
                 return new UnavailableOcrProvider();
             case 'CORRUPTED':

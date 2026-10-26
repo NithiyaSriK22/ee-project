@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InterviewService = void 0;
 const interview_repository_js_1 = require("./interview.repository.js");
 const prisma_js_1 = require("../../database/prisma.js");
+const dev_fallback_patient_store_js_1 = require("../patients/dev-fallback-patient-store.js");
 const app_error_js_1 = require("../../errors/app-error.js");
 const logger_js_1 = require("../../config/logger.js");
 const auth_types_js_1 = require("../../types/auth.types.js");
@@ -177,26 +178,60 @@ class InterviewService {
     // PATIENT KIOSK INTERVIEW FLOW (SESSION-SCOPED)
     // ============================================================================
     static async startKioskInterview(visitId, patientId, requestedTemplateId, options) {
+        if (!visitId || typeof visitId !== 'string' || !visitId.trim() || !patientId || typeof patientId !== 'string' || !patientId.trim()) {
+            throw new app_error_js_1.ValidationError('Invalid patient or visit identifier provided');
+        }
         if (options?.headsetConnected !== undefined) {
             special_populations_service_js_1.SpecialPopulationsService.setHeadsetStatus(visitId, options.headsetConnected);
         }
         // 1. Consent Gate Check (Module 2 Requirement 16)
-        const consentRecord = await prisma_js_1.prisma.consent.findUnique({
-            where: {
-                patient_id_visit_id_consent_type: {
-                    patient_id: patientId,
-                    visit_id: visitId,
-                    consent_type: auth_types_js_1.ConsentTypes.VISIT_DATA_COLLECTION,
-                },
-            },
-        });
+        let consentRecord = null;
+        const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
+        if (isDbUp) {
+            try {
+                consentRecord = await prisma_js_1.prisma.consent.findUnique({
+                    where: {
+                        patient_id_visit_id_consent_type: {
+                            patient_id: patientId,
+                            visit_id: visitId,
+                            consent_type: auth_types_js_1.ConsentTypes.VISIT_DATA_COLLECTION,
+                        },
+                    },
+                });
+            }
+            catch (err) {
+                logger_js_1.logger.warn('Failed querying consent from database, attempting fallback store lookup', {
+                    visitId,
+                    error: err?.message,
+                });
+            }
+        }
+        if (!consentRecord) {
+            const activeConsents = dev_fallback_patient_store_js_1.devFallbackPatientStore.getConsentsForVisit(patientId, visitId);
+            consentRecord =
+                activeConsents.find((c) => c.consent_type === auth_types_js_1.ConsentTypes.VISIT_DATA_COLLECTION && c.granted) || null;
+        }
         if (!consentRecord || !consentRecord.granted) {
             throw new app_error_js_1.ForbiddenError('Patient consent for visit data collection is required before starting the clinical interview. Please complete the consent step.');
         }
         // Module 3B: Minor & Guardian Verification Gate
-        const patient = await prisma_js_1.prisma.patient.findUnique({
-            where: { id: patientId },
-        });
+        let patient = null;
+        if (isDbUp) {
+            try {
+                patient = await prisma_js_1.prisma.patient.findUnique({
+                    where: { id: patientId },
+                });
+            }
+            catch (err) {
+                logger_js_1.logger.warn('Failed querying patient from database, checking fallback store', {
+                    patientId,
+                    error: err?.message,
+                });
+            }
+        }
+        if (!patient) {
+            patient = dev_fallback_patient_store_js_1.devFallbackPatientStore.findPatientById(patientId);
+        }
         if (patient) {
             const guardianCheck = special_populations_service_js_1.SpecialPopulationsService.validateGuardianRequirement(patient, visitId);
             if (guardianCheck.required && !guardianCheck.verified) {
@@ -204,11 +239,25 @@ class InterviewService {
                     'Patient is a minor. An adult guardian must provide verified consent before clinical intake.');
             }
         }
-        // 2. Resume existing session if one is already active for this visit
+        // 2. Resume existing session if one already exists for this visit
         const existingSession = await interview_repository_js_1.InterviewRepository.findSessionByVisitId(visitId);
-        if (existingSession && existingSession.status === interview_types_js_1.InterviewSessionStatus.IN_PROGRESS) {
-            logger_js_1.logger.info('Resuming existing interview session for visit', { visitId });
-            return this.formatSessionState(existingSession, patient);
+        if (existingSession) {
+            if (existingSession.status === interview_types_js_1.InterviewSessionStatus.IN_PROGRESS) {
+                logger_js_1.logger.info('Resuming existing active interview session for visit', { visitId });
+                return this.formatSessionState(existingSession, patient);
+            }
+            if (existingSession.status === interview_types_js_1.InterviewSessionStatus.COMPLETED) {
+                logger_js_1.logger.info('Returning completed interview session for visit review', { visitId });
+                return this.formatSessionState(existingSession, patient);
+            }
+            // If ABANDONED, PAUSED, or other state, reactivate the existing record instead of violating unique constraint
+            logger_js_1.logger.info('Reactivating existing interview session for visit', {
+                visitId,
+                previousStatus: existingSession.status,
+            });
+            await interview_repository_js_1.InterviewRepository.updateSessionStatus(existingSession.id, interview_types_js_1.InterviewSessionStatus.IN_PROGRESS);
+            const reactivatedSession = await interview_repository_js_1.InterviewRepository.findSessionByVisitId(visitId);
+            return this.formatSessionState(reactivatedSession || existingSession, patient);
         }
         // 3. Find active template (or requested template if valid)
         let template;
@@ -235,7 +284,7 @@ class InterviewService {
         if (!firstQuestion) {
             throw new app_error_js_1.ValidationError('Interview template does not contain any applicable questions.');
         }
-        // 4. Create new InterviewSession
+        // 4. Create new InterviewSession (idempotent / duplicate-protected)
         const session = await interview_repository_js_1.InterviewRepository.createSession({
             visitId,
             patientId,

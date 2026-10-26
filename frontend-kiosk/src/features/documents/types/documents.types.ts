@@ -1,32 +1,59 @@
 export const DocumentTypes = {
   PRESCRIPTION: 'PRESCRIPTION',
+  CLINICAL_NOTES: 'CLINICAL_NOTES',
   LAB_REPORT: 'LAB_REPORT',
-  DISCHARGE_SUMMARY: 'DISCHARGE_SUMMARY',
+  ULTRASOUND: 'ULTRASOUND',
+  XRAY_CT_MRI: 'XRAY_CT_MRI',
   OTHER: 'OTHER',
 } as const;
 
 export type DocumentType = (typeof DocumentTypes)[keyof typeof DocumentTypes];
 
-export const DocumentTypeLabels: Record<DocumentType, { label: string; description: string; icon: string }> = {
+export const DocumentTypeLabels: Record<
+  DocumentType,
+  { label: string; description: string; icon: string; isImaging?: boolean; requiresScanMeta?: boolean }
+> = {
   PRESCRIPTION: {
-    label: 'Doctor Prescription',
-    description: 'Past or current doctor prescription slips with medicines',
+    label: 'Prescription',
+    description: 'Doctor prescription slips, Rx notes, and medication lists',
     icon: 'FileText',
+    isImaging: false,
+    requiresScanMeta: false,
+  },
+  CLINICAL_NOTES: {
+    label: 'Clinical Notes / Medical Records',
+    description: 'Doctor consultation notes, discharge summaries, or clinical history',
+    icon: 'Clipboard',
+    isImaging: false,
+    requiresScanMeta: false,
   },
   LAB_REPORT: {
-    label: 'Lab Diagnostic Report',
-    description: 'Blood test, urine test, or pathology investigation report',
+    label: 'Laboratory Report',
+    description: 'Blood tests, pathology, biochemistry, or urine test reports',
     icon: 'Activity',
+    isImaging: false,
+    requiresScanMeta: true,
   },
-  DISCHARGE_SUMMARY: {
-    label: 'Hospital Discharge Summary',
-    description: 'Summary paper from previous hospital admission or surgery',
-    icon: 'Clipboard',
+  ULTRASOUND: {
+    label: 'Ultrasound / Scan Images',
+    description: 'Sonography, abdominal scans, obstetric scans, or doppler studies',
+    icon: 'Image',
+    isImaging: true,
+    requiresScanMeta: true,
+  },
+  XRAY_CT_MRI: {
+    label: 'X-ray / CT / MRI Images',
+    description: 'Radiology films, chest X-rays, CT scans, and MRI slice images',
+    icon: 'Film',
+    isImaging: true,
+    requiresScanMeta: true,
   },
   OTHER: {
-    label: 'Other Medical Record',
-    description: 'Any other medical document, vaccination card, or slip',
+    label: 'Other Medical Document',
+    description: 'Vaccination certificates, health cards, or other healthcare records',
     icon: 'Files',
+    isImaging: false,
+    requiresScanMeta: false,
   },
 };
 

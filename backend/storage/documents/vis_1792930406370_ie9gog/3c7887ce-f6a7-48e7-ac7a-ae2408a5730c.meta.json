@@ -1,0 +1,43 @@
+{
+  "id": "3c7887ce-f6a7-48e7-ac7a-ae2408a5730c",
+  "visit_id": "vis_1792930406370_ie9gog",
+  "patient_id": "8165ffda-81bf-46f4-9cf4-a61b68e2064d",
+  "document_type": "PRESCRIPTION",
+  "file_name": "faded_old_prescription.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 70,
+  "storage_reference": "storage/documents/vis_1792930406370_ie9gog/5b60e786-55fb-4456-b4bf-612ecb43ddd3_1792930406516_faded_old_prescription.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document is illegible due to heavy ink smudging and low camera lighting.",
+  "summary": {
+    "documentId": "3c7887ce-f6a7-48e7-ac7a-ae2408a5730c",
+    "fileName": "faded_old_prescription.png",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "2026-10-25",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Document uploaded and archived for physician inspection."
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [],
+    "missingOrUnreadableInfo": [
+      "Optical character recognition failed to reliably extract full handwritten text.",
+      "Manual clinical verification of the original physical image is required."
+    ],
+    "generatedAt": "2026-10-25T12:13:26.557Z",
+    "modelId": "medikiosk-constrained-summary-v1",
+    "isMock": true,
+    "rawTextExcerpt": "[No raw text excerpt available]"
+  },
+  "uploaded_at": "2026-10-25T12:13:26.523Z",
+  "created_at": "2026-10-25T12:13:26.523Z",
+  "updated_at": "2026-10-25T12:13:26.537Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

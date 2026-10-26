@@ -1,11 +1,40 @@
 export const DocumentTypes = {
   PRESCRIPTION: 'PRESCRIPTION',
+  CLINICAL_NOTES: 'CLINICAL_NOTES',
   LAB_REPORT: 'LAB_REPORT',
+  ULTRASOUND: 'ULTRASOUND',
+  XRAY_CT_MRI: 'XRAY_CT_MRI',
   DISCHARGE_SUMMARY: 'DISCHARGE_SUMMARY',
+  RADIOLOGY_REPORT: 'RADIOLOGY_REPORT',
   OTHER: 'OTHER',
 } as const;
 
 export type DocumentType = (typeof DocumentTypes)[keyof typeof DocumentTypes];
+
+export const ImagingDocumentTypes = ['ULTRASOUND', 'XRAY_CT_MRI'] as const;
+export type ImagingDocumentType = (typeof ImagingDocumentTypes)[number];
+
+export function isMedicalImagingDocument(docType?: string | null): boolean {
+  if (!docType) return false;
+  const upper = docType.toUpperCase();
+  return (
+    upper === DocumentTypes.ULTRASOUND ||
+    upper === DocumentTypes.XRAY_CT_MRI ||
+    upper === 'RADIOLOGY_IMAGE' ||
+    upper === 'SCAN_IMAGE' ||
+    upper.includes('ULTRASOUND') ||
+    upper.includes('XRAY') ||
+    upper.includes('MRI') ||
+    upper.includes('CT_SCAN')
+  );
+}
+
+export interface DocumentUploadOptions {
+  scanDate?: string | Date | null;
+  scanType?: string | null;
+  doctorNotes?: string | null;
+  metadata?: Record<string, any> | null;
+}
 
 export const FieldTypes = {
   DRUG_NAME: 'drug_name',
@@ -67,8 +96,13 @@ export type DocumentOverallStatus =
 
 export const OcrStatuses = {
   PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
   COMPLETED: 'COMPLETED',
+  SUCCESSFUL: 'COMPLETED',
+  PARTIALLY_SUCCESSFUL: 'PARTIALLY_SUCCESSFUL',
   FAILED: 'FAILED',
+  NOT_APPLICABLE: 'NOT_APPLICABLE',
+  SKIPPED: 'NOT_APPLICABLE',
 } as const;
 
 export type OcrStatus = (typeof OcrStatuses)[keyof typeof OcrStatuses];

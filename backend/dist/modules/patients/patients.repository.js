@@ -44,6 +44,53 @@ class PatientsRepository {
         }
         return dev_fallback_patient_store_js_1.devFallbackPatientStore.findPatientByRegistrationNumber(regNumber);
     }
+    static async listPatients(options = {}) {
+        const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
+        const limit = Math.min(Math.max(Number(options.limit) || 20, 1), 100);
+        const offset = Math.max(Number(options.offset) || 0, 0);
+        if (isDbUp) {
+            try {
+                const where = {};
+                if (options.search && options.search.trim()) {
+                    const s = options.search.trim();
+                    where.OR = [
+                        { full_name: { contains: s, mode: 'insensitive' } },
+                        { hospital_registration_number: { contains: s, mode: 'insensitive' } },
+                        { contact_number: { contains: s } },
+                    ];
+                }
+                const [total, patients] = await Promise.all([
+                    prisma_js_1.prisma.patient.count({ where }),
+                    prisma_js_1.prisma.patient.findMany({
+                        where,
+                        include: {
+                            visit_profiles: {
+                                orderBy: { created_at: 'desc' },
+                                take: 1,
+                            },
+                        },
+                        orderBy: { created_at: 'desc' },
+                        take: limit,
+                        skip: offset,
+                    }),
+                ]);
+                return {
+                    total,
+                    limit,
+                    offset,
+                    items: patients,
+                };
+            }
+            catch { }
+        }
+        const fallback = dev_fallback_patient_store_js_1.devFallbackPatientStore.listPatients(options);
+        return {
+            total: fallback.total,
+            limit,
+            offset,
+            items: fallback.patients,
+        };
+    }
     static async findProfileByVisit(patientId, visitId) {
         const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
         if (isDbUp) {

@@ -19,23 +19,50 @@ class ConflictDetector {
             itemsByKey.set(item.itemKey, existing);
         }
         for (const [itemKey, keyItems] of itemsByKey.entries()) {
-            const interviewItems = keyItems.filter((i) => i.sourceType === 'INTERVIEW');
-            const docItems = keyItems.filter((i) => i.sourceType === 'DOCUMENT');
-            if (interviewItems.length === 0 || docItems.length === 0) {
+            if (keyItems.length < 2) {
                 continue;
             }
-            for (const intItem of interviewItems) {
-                for (const docItem of docItems) {
-                    if (this.isFactualConflict(intItem, docItem)) {
+            for (let i = 0; i < keyItems.length; i++) {
+                for (let j = i + 1; j < keyItems.length; j++) {
+                    const itemA = keyItems[i];
+                    const itemB = keyItems[j];
+                    if (!itemA || !itemB) {
+                        continue;
+                    }
+                    if (this.isFactualConflict(itemA, itemB)) {
+                        const intItem = itemA.sourceType === 'INTERVIEW' ? itemA : itemB.sourceType === 'INTERVIEW' ? itemB : undefined;
+                        const docItem = itemA.sourceType === 'DOCUMENT' ? itemA : itemB.sourceType === 'DOCUMENT' ? itemB : undefined;
+                        const conflictMsg = intItem && docItem
+                            ? `⚠ Conflict: interview and document differ — verify (${intItem.label} vs ${docItem.label})`
+                            : `⚠ Conflict: records differ on '${itemKey}' — verify (${itemA.label}: "${itemA.value}" vs ${itemB.label}: "${itemB.value}")`;
                         conflicts.push({
                             itemKey,
-                            section: intItem.section,
+                            section: itemA.section,
                             interviewItem: intItem,
                             documentItem: docItem,
-                            conflictMessage: `⚠ Conflict: interview and document differ — verify (${intItem.label} vs ${docItem.label})`,
+                            conflictMessage: conflictMsg,
                         });
                     }
                 }
+            }
+        }
+        // Cross-key check: General "no known allergies" vs specific documented allergy
+        const generalNegAllergies = items.filter((i) => i.itemKey === 'allergy_general' && this.isExplicitNegative(i.value || ''));
+        const specificPosAllergies = items.filter((i) => i.itemKey?.startsWith('allergy_') &&
+            i.itemKey !== 'allergy_general' &&
+            !this.isExplicitNegative(i.value || '') &&
+            (i.value || '').trim().length > 0);
+        for (const genItem of generalNegAllergies) {
+            for (const specItem of specificPosAllergies) {
+                const intItem = genItem.sourceType === 'INTERVIEW' ? genItem : specItem.sourceType === 'INTERVIEW' ? specItem : undefined;
+                const docItem = genItem.sourceType === 'DOCUMENT' ? genItem : specItem.sourceType === 'DOCUMENT' ? specItem : undefined;
+                conflicts.push({
+                    itemKey: specItem.itemKey,
+                    section: specItem.section,
+                    interviewItem: intItem,
+                    documentItem: docItem,
+                    conflictMessage: `⚠ Conflict: Patient reported "${genItem.value}" but records document "${specItem.value}" — verify`,
+                });
             }
         }
         return conflicts;
@@ -62,6 +89,14 @@ class ConflictDetector {
                 return true;
             }
             if (isNegativeB && (itemA.status === 'UNREADABLE' || itemA.status === 'MISMATCH_FLAGGED')) {
+                return true;
+            }
+        }
+        // Check if both are medications on same key but differ in dosage
+        if (itemA.itemKey?.startsWith('med_') && itemB.itemKey?.startsWith('med_')) {
+            const numA = (itemA.value || itemA.rawText || '').match(/\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml)\b/i)?.[0];
+            const numB = (itemB.value || itemB.rawText || '').match(/\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml)\b/i)?.[0];
+            if (numA && numB && numA.toLowerCase().replace(/\s+/g, '') !== numB.toLowerCase().replace(/\s+/g, '')) {
                 return true;
             }
         }

@@ -54,14 +54,30 @@ export class DocumentsController {
       }
 
       const documentType = req.body?.documentType || 'PRESCRIPTION';
+      const scanDate = req.body?.scanDate || null;
+      const scanType = req.body?.scanType || null;
+      const doctorNotes = req.body?.doctorNotes || req.body?.notes || null;
+      let metadata = req.body?.metadata || null;
+      if (typeof metadata === 'string') {
+        try {
+          metadata = JSON.parse(metadata);
+        } catch {}
+      }
+
       const result = await DocumentsService.uploadAndProcessDocument(
         visitId,
         patientId,
         fileData,
-        documentType
+        documentType,
+        {
+          scanDate,
+          scanType,
+          doctorNotes,
+          metadata,
+        }
       );
 
-      ResponseUtil.created(res, result, 'Document uploaded, OCR extracted, and validated deterministically');
+      ResponseUtil.created(res, result, 'Document uploaded and routed according to clinical classification');
     } catch (error) {
       next(error);
     }

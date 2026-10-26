@@ -12,11 +12,11 @@ WORKDIR /app
 # Install security updates
 RUN apk update && apk upgrade && apk add --no-cache openssl
 
-COPY package.json package-lock.json ./
+COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install all dependencies (including dev for TypeScript build)
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
 
 # Copy source code and tsconfig
 COPY tsconfig.json ./

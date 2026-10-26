@@ -143,6 +143,27 @@ export class DevFallbackPatientStore {
     };
   }
 
+  public listPatients(options?: { search?: string; limit?: number; offset?: number }) {
+    const unique = new Map<string, InMemPatient>();
+    for (const p of this.patients.values()) {
+      unique.set(p.id, p);
+    }
+    let list = Array.from(unique.values());
+    if (options?.search) {
+      const q = options.search.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.full_name.toLowerCase().includes(q) ||
+          p.hospital_registration_number.toLowerCase().includes(q) ||
+          p.contact_number.includes(q)
+      );
+    }
+    const total = list.length;
+    const offset = options?.offset || 0;
+    const limit = options?.limit || 20;
+    return { patients: list.slice(offset, offset + limit), total };
+  }
+
   public updatePatientCore(
     id: string,
     data: {

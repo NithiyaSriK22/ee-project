@@ -34,6 +34,36 @@ _next) => {
         response_util_js_1.ResponseUtil.error(res, 400, error_codes_js_1.ErrorCode.VALIDATION_ERROR, isSize ? 'File size exceeds maximum permitted limit of 15MB.' : `File upload error: ${err.message}`);
         return;
     }
+    // Handle Prisma Known Request Errors (e.g. unique constraint, not found, foreign key)
+    if (err.name === 'PrismaClientKnownRequestError') {
+        const prismaErr = err;
+        logger_js_1.logger.warn(`Database constraint error: ${prismaErr.code}`, {
+            requestId,
+            code: prismaErr.code,
+            path: req.originalUrl,
+        });
+        if (prismaErr.code === 'P2002') {
+            response_util_js_1.ResponseUtil.error(res, 409, error_codes_js_1.ErrorCode.CONFLICT, 'A conflicting clinical record or session already exists for this visit.');
+            return;
+        }
+        if (prismaErr.code === 'P2025') {
+            response_util_js_1.ResponseUtil.error(res, 404, error_codes_js_1.ErrorCode.NOT_FOUND, 'The requested clinical resource was not found.');
+            return;
+        }
+        if (prismaErr.code === 'P2003') {
+            response_util_js_1.ResponseUtil.error(res, 400, error_codes_js_1.ErrorCode.VALIDATION_ERROR, 'Referenced clinical record does not exist.');
+            return;
+        }
+    }
+    // Handle Prisma Validation Errors (e.g. malformed UUID or parameter type conversion)
+    if (err.name === 'PrismaClientValidationError') {
+        logger_js_1.logger.warn('Database validation error caught in error middleware', {
+            requestId,
+            path: req.originalUrl,
+        });
+        response_util_js_1.ResponseUtil.error(res, 400, error_codes_js_1.ErrorCode.VALIDATION_ERROR, 'Invalid record format or identifier provided.');
+        return;
+    }
     // Unhandled / unexpected internal error
     logger_js_1.logger.error(`Unhandled system error: ${err.message}`, {
         requestId,

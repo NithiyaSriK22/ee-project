@@ -8,9 +8,15 @@ import {
   ValidationError,
   ForbiddenError,
 } from '../../errors/app-error.js';
-import { logger } from '../../config/logger.js';
 import { ConsentTypes } from '../../types/auth.types.js';
-import { DocumentTypes } from './documents.types.js';
+import { logger } from '../../config/logger.js';
+import {
+  DocumentTypes,
+  DocumentUploadOptions,
+  isMedicalImagingDocument,
+  OcrStatuses,
+  DocumentOverallStatuses,
+} from './documents.types.js';
 import { RedFlagsService } from '../redflags/redflags.service.js';
 import { DocumentStorageService } from './storage/document-storage.service.js';
 import { DoctorReviewRepository } from '../doctor-review/doctor-review.repository.js';
@@ -38,11 +44,24 @@ export class DocumentsService {
       mimetype: string;
       size: number;
     },
-    documentType: string = DocumentTypes.PRESCRIPTION
+    documentType: string = DocumentTypes.PRESCRIPTION,
+    options?: DocumentUploadOptions
   ) {
     // 0. Validate identifiers against path traversal
     DocumentStorageService.validateIdentifier(visitId, 'visitId');
     DocumentStorageService.validateIdentifier(patientId, 'patientId');
+
+    // Normalize and validate document type against permitted enum values
+    const upperType = (documentType || DocumentTypes.PRESCRIPTION).toUpperCase().trim();
+    const validatedType = Object.values(DocumentTypes).includes(upperType as any)
+      ? upperType
+      : upperType.includes('ULTRASOUND')
+      ? DocumentTypes.ULTRASOUND
+      : upperType.includes('XRAY') || upperType.includes('MRI') || upperType.includes('CT')
+      ? DocumentTypes.XRAY_CT_MRI
+      : upperType.includes('NOTE') || upperType.includes('CLINICAL')
+      ? DocumentTypes.CLINICAL_NOTES
+      : DocumentTypes.OTHER;
 
     // 1. Consent Gate Check (Module 2 Requirement 6)
     let consentRecord = null;
@@ -117,28 +136,106 @@ export class DocumentsService {
     // 3. Physical Storage Persistence with collision-resistant naming & atomic writes
     const stored = await DocumentStorageService.saveDocumentBuffer(visitId, file);
 
+    const isImaging = isMedicalImagingDocument(validatedType);
+    let parsedScanDate: Date | null = null;
+    if (options?.scanDate) {
+      const d = new Date(options.scanDate);
+      if (!isNaN(d.getTime())) parsedScanDate = d;
+    }
+
     try {
-      // 4. Create Document Record
+      if (isImaging) {
+        // Document-Specific Processing: Ultrasound Scans & Medical Imaging Files
+        // - Stored securely in dedicated storage architecture
+        // - Associated with correct patient and visit
+        // - Marked for physician review without running ordinary text OCR
+        // - AI text summarization bypassed; no clinical interpretation fabricated
+        const document = await DocumentsRepository.createDocument({
+          visitId,
+          patientId,
+          documentType: validatedType,
+          fileName: file.originalname,
+          mimeType: file.mimetype,
+          fileSizeBytes: file.size,
+          storageReference: stored.storageReference,
+          consentVerified: true,
+          ocrStatus: OcrStatuses.NOT_APPLICABLE,
+          overallStatus: DocumentOverallStatuses.NEEDS_PHYSICIAN_REVIEW,
+          ocrErrorMessage: 'Medical imaging scan archived for direct physician visual inspection. Ordinary text OCR bypassed.',
+          scanDate: parsedScanDate,
+          scanType: options?.scanType || null,
+          doctorNotes: options?.doctorNotes || null,
+          metadata: options?.metadata || null,
+        });
+
+        logger.info('Medical imaging document preserved for physician review (ordinary OCR bypassed)', {
+          documentId: document.id,
+          visitId,
+          documentType: validatedType,
+          scanType: options?.scanType,
+          scanDate: parsedScanDate,
+        });
+
+        // Ensure visit enters doctor review queue
+        DoctorReviewRepository.upsertQueueEntry({
+          visitId,
+          department: 'General Medicine',
+          queueStatus: QueueStatuses.READY_FOR_REVIEW,
+          readyAt: new Date(),
+        }).catch((err) => {
+          logger.warn('Failed to update queue entry on imaging upload', { visitId, error: String(err) });
+        });
+
+        // Generate safe non-hallucinated imaging summary record
+        let individualSummary = null;
+        try {
+          individualSummary = await DocumentSummaryService.summarizeDocument(document.id);
+          await DocumentSummaryService.markCombinedSummaryStale(visitId);
+        } catch {}
+
+        const refreshedDoc = await DocumentsRepository.findDocumentById(document.id);
+
+        return {
+          document: refreshedDoc,
+          ocrResult: {
+            success: true,
+            isImaging: true,
+            fieldsExtracted: 0,
+            errorMessage: null,
+            message: 'Medical imaging scan archived for physician visual review. Ordinary text OCR bypassed.',
+          },
+          validationSummary: null,
+          individualSummary,
+        };
+      }
+
+      // 4. Standard Workflow: Prescriptions, Clinical Notes, Lab Reports, Written Radiology Reports
       const document = await DocumentsRepository.createDocument({
         visitId,
         patientId,
-        documentType,
+        documentType: validatedType,
         fileName: file.originalname,
         mimeType: file.mimetype,
         fileSizeBytes: file.size,
         storageReference: stored.storageReference,
         consentVerified: true,
+        ocrStatus: 'PENDING',
+        overallStatus: 'PENDING_VALIDATION',
+        scanDate: parsedScanDate,
+        scanType: options?.scanType || null,
+        doctorNotes: options?.doctorNotes || null,
+        metadata: options?.metadata || null,
       });
 
-      logger.info('Document record created', {
+      logger.info('Document record created for clinical text extraction', {
         documentId: document.id,
         visitId,
-        documentType,
+        documentType: validatedType,
         fileSize: file.size,
         storageReference: stored.storageReference,
       });
 
-      // 5. OCR Extraction
+      // 5. OCR Extraction on textual medical documents
       const ocrResult = await OcrService.processDocument(document.id, file.buffer, file.mimetype);
 
       // 6. Deterministic Validation Gate Evaluation (if OCR succeeded)

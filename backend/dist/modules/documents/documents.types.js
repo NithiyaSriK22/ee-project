@@ -1,13 +1,32 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VALIDATION_THRESHOLDS = exports.FormularyStatus = exports.OcrStatuses = exports.DocumentOverallStatuses = exports.FieldVerificationResults = exports.EvaluationStates = exports.FieldTypeMetadata = exports.FieldTypes = exports.DocumentTypes = void 0;
+exports.VALIDATION_THRESHOLDS = exports.FormularyStatus = exports.OcrStatuses = exports.DocumentOverallStatuses = exports.FieldVerificationResults = exports.EvaluationStates = exports.FieldTypeMetadata = exports.FieldTypes = exports.ImagingDocumentTypes = exports.DocumentTypes = void 0;
+exports.isMedicalImagingDocument = isMedicalImagingDocument;
 exports.updateGovernedValidationThresholds = updateGovernedValidationThresholds;
 exports.DocumentTypes = {
     PRESCRIPTION: 'PRESCRIPTION',
+    CLINICAL_NOTES: 'CLINICAL_NOTES',
     LAB_REPORT: 'LAB_REPORT',
+    ULTRASOUND: 'ULTRASOUND',
+    XRAY_CT_MRI: 'XRAY_CT_MRI',
     DISCHARGE_SUMMARY: 'DISCHARGE_SUMMARY',
+    RADIOLOGY_REPORT: 'RADIOLOGY_REPORT',
     OTHER: 'OTHER',
 };
+exports.ImagingDocumentTypes = ['ULTRASOUND', 'XRAY_CT_MRI'];
+function isMedicalImagingDocument(docType) {
+    if (!docType)
+        return false;
+    const upper = docType.toUpperCase();
+    return (upper === exports.DocumentTypes.ULTRASOUND ||
+        upper === exports.DocumentTypes.XRAY_CT_MRI ||
+        upper === 'RADIOLOGY_IMAGE' ||
+        upper === 'SCAN_IMAGE' ||
+        upper.includes('ULTRASOUND') ||
+        upper.includes('XRAY') ||
+        upper.includes('MRI') ||
+        upper.includes('CT_SCAN'));
+}
 exports.FieldTypes = {
     DRUG_NAME: 'drug_name',
     DOSAGE: 'dosage',
@@ -50,8 +69,13 @@ exports.DocumentOverallStatuses = {
 };
 exports.OcrStatuses = {
     PENDING: 'PENDING',
+    PROCESSING: 'PROCESSING',
     COMPLETED: 'COMPLETED',
+    SUCCESSFUL: 'COMPLETED',
+    PARTIALLY_SUCCESSFUL: 'PARTIALLY_SUCCESSFUL',
     FAILED: 'FAILED',
+    NOT_APPLICABLE: 'NOT_APPLICABLE',
+    SKIPPED: 'NOT_APPLICABLE',
 };
 exports.FormularyStatus = {
     DRAFT: 'DRAFT',

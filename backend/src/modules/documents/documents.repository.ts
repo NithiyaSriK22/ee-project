@@ -41,6 +41,13 @@ export class DocumentsRepository {
     fileSizeBytes: number;
     storageReference: string;
     consentVerified: boolean;
+    ocrStatus?: string;
+    overallStatus?: string;
+    ocrErrorMessage?: string | null;
+    scanDate?: Date | null;
+    scanType?: string | null;
+    doctorNotes?: string | null;
+    metadata?: any;
   }) {
     const isDbUp = await checkDatabaseHealth();
     if (isDbUp) {
@@ -55,8 +62,13 @@ export class DocumentsRepository {
             file_size_bytes: data.fileSizeBytes,
             storage_reference: data.storageReference,
             consent_verified: data.consentVerified,
-            ocr_status: 'PENDING',
-            overall_status: 'PENDING_VALIDATION',
+            ocr_status: data.ocrStatus || 'PENDING',
+            overall_status: data.overallStatus || 'PENDING_VALIDATION',
+            ocr_error_message: data.ocrErrorMessage || null,
+            scan_date: data.scanDate || null,
+            scan_type: data.scanType || null,
+            doctor_notes: data.doctorNotes || null,
+            metadata: data.metadata || undefined,
           },
         });
         memoryDocuments.set(created.id, created);
@@ -82,9 +94,13 @@ export class DocumentsRepository {
       file_size_bytes: data.fileSizeBytes,
       storage_reference: data.storageReference,
       consent_verified: data.consentVerified,
-      ocr_status: 'PENDING',
-      overall_status: 'PENDING_VALIDATION',
-      ocr_error_message: null,
+      ocr_status: data.ocrStatus || 'PENDING',
+      overall_status: data.overallStatus || 'PENDING_VALIDATION',
+      ocr_error_message: data.ocrErrorMessage || null,
+      scan_date: data.scanDate || null,
+      scan_type: data.scanType || null,
+      doctor_notes: data.doctorNotes || null,
+      metadata: data.metadata || null,
       uploaded_at: new Date(),
       created_at: new Date(),
       updated_at: new Date(),

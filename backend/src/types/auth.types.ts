@@ -64,6 +64,7 @@ export interface StaffTokenClaims {
   role: StaffRole;
   fullName: string;
   department?: string | null;
+  hospitalDepartment?: string | null;
   type: 'STAFF_ACCESS';
 }
 

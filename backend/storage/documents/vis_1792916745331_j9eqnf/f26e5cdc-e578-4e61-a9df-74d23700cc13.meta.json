@@ -1,0 +1,45 @@
+{
+  "id": "f26e5cdc-e578-4e61-a9df-74d23700cc13",
+  "visit_id": "vis_1792916745331_j9eqnf",
+  "patient_id": "9b424460-f753-43aa-80eb-0c8a88b96639",
+  "document_type": "PRESCRIPTION",
+  "file_name": "faded_old_prescription.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 70,
+  "storage_reference": "storage/documents/vis_1792916745331_j9eqnf/8f9b0276-7b3c-4ad1-825e-b6ba64f086d0_1792916746058_faded_old_prescription.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document is illegible due to heavy ink smudging and low camera lighting.",
+  "summary": {
+    "documentId": "f26e5cdc-e578-4e61-a9df-74d23700cc13",
+    "fileName": "faded_old_prescription.png",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "2026-10-25",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Document uploaded and archived for physician inspection."
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [
+      "Document analyzed via deterministic template fallback: Local LLM service was unavailable."
+    ],
+    "missingOrUnreadableInfo": [
+      "Optical character recognition failed to reliably extract full handwritten text.",
+      "Manual clinical verification of the original physical image is required."
+    ],
+    "generatedAt": "2026-10-25T08:25:46.268Z",
+    "modelId": "TEMPLATE_FALLBACK",
+    "isMock": false,
+    "rawTextExcerpt": "[No raw text excerpt available]"
+  },
+  "uploaded_at": "2026-10-25T08:25:46.092Z",
+  "created_at": "2026-10-25T08:25:46.092Z",
+  "updated_at": "2026-10-25T08:25:46.154Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

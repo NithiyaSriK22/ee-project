@@ -125,6 +125,32 @@ class TemplateSummaryBuilder {
             for (const item of withheld) {
                 statements.push(this.formatItemStatement(item, stmtOrder++));
             }
+            // Add code-inserted safety notices for any verified medication omitted by model statements
+            if (section === summary_types_js_1.SummarySections.MEDICATIONS_AND_ALLERGIES && modelSec?.statements) {
+                const citedInSec = new Set();
+                for (const st of modelSec.statements) {
+                    for (const cid of st.source_item_ids || []) {
+                        citedInSec.add(cid);
+                    }
+                }
+                const sectionVerifiedItems = assembledInput.items.filter((i) => i.section === section && (i.status === 'VERIFIED' || i.status === 'ANSWERED'));
+                for (const vItem of sectionVerifiedItems) {
+                    if (!citedInSec.has(vItem.itemId)) {
+                        statements.push({
+                            text: `[Omitted from model summary — verify active regimen: ${vItem.label}: ${vItem.value}]`,
+                            origin: 'CODE_TEMPLATE',
+                            order: stmtOrder++,
+                            sources: [
+                                {
+                                    sourceType: vItem.sourceType,
+                                    sourceRef: vItem.sourceRef,
+                                    sourceItemId: vItem.itemId,
+                                },
+                            ],
+                        });
+                    }
+                }
+            }
             // Add conflict markers for this section
             const sectionConflicts = assembledInput.conflicts.filter((c) => c.section === section);
             for (const conflict of sectionConflicts) {

@@ -6,6 +6,7 @@ const doctor_review_controller_js_1 = require("./doctor-review.controller.js");
 const auth_middleware_js_1 = require("../../middleware/auth.middleware.js");
 const validate_middleware_js_1 = require("../../middleware/validate.middleware.js");
 const doctor_review_schemas_js_1 = require("./doctor-review.schemas.js");
+const upload_middleware_js_1 = require("../../middleware/upload.middleware.js");
 const router = (0, express_1.Router)();
 // ============================================================================
 // SIGNED DOCUMENT & SNIPPET IMAGE STREAMING (P1.3)
@@ -19,6 +20,10 @@ router.use(auth_middleware_js_1.authenticateStaff);
 // ============================================================================
 // QUEUE ENDPOINTS
 // ============================================================================
+router.get('/dashboard/stats', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.getDashboardStats);
+router.get('/stats', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.getDashboardStats);
+router.post('/quick-note', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.createQuickNote);
+router.post('/visits/:visitId/documents/upload', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), upload_middleware_js_1.optionalUploadMiddleware, doctor_review_controller_js_1.DoctorReviewController.uploadVisitDocument);
 router.get('/queue', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.getQueue);
 router.post('/queue/:visitId/claim', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'SUPER_ADMIN'), (0, validate_middleware_js_1.validateRequest)({
     params: doctor_review_schemas_js_1.claimVisitSchema.shape.params,

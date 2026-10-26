@@ -10,6 +10,7 @@ import {
   DoctorAddedStatementDTO,
   ConfirmedRecordDTO,
   StatementSourceDetail,
+  DashboardStatsDTO,
 } from '../types/doctor-review.types';
 
 export const DoctorReviewApi = {
@@ -233,6 +234,17 @@ export const DoctorReviewApi = {
 
   async approveCombinedSummary(visitId: string, notes?: string): Promise<any> {
     const res = await apiClient.post<ApiResponse<any>>(`/doctor/visits/${visitId}/combined-summary/approve`, { notes });
+    return res.data.data;
+  },
+
+  async getDashboardStats(department?: string): Promise<DashboardStatsDTO> {
+    const params = department ? { department } : {};
+    const res = await apiClient.get<ApiResponse<DashboardStatsDTO>>('/doctor/dashboard/stats', { params });
+    return res.data.data as DashboardStatsDTO;
+  },
+
+  async createQuickNote(payload: { patientId?: string; visitId?: string; note: string }): Promise<any> {
+    const res = await apiClient.post<ApiResponse<any>>('/doctor/quick-note', payload);
     return res.data.data;
   },
 };

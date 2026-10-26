@@ -1,0 +1,43 @@
+{
+  "id": "9ff92c24-a07d-4af0-8a19-83451c83e4f3",
+  "visit_id": "visit-stage4-001",
+  "patient_id": "2897ce67-89c4-4043-a384-a6e2aee6da36",
+  "document_type": "PRESCRIPTION",
+  "file_name": "original_scan_intact.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 87,
+  "storage_reference": "storage/documents/visit-stage4-001/6799a3e4-fcb2-4ccd-b01a-02c9d1881c75_1792930420921_original_scan_intact.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Handwritten prescription could not be automatically digitized. Low OCR legibility score.",
+  "summary": {
+    "documentId": "9ff92c24-a07d-4af0-8a19-83451c83e4f3",
+    "fileName": "original_scan_intact.png",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "2026-10-25",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Document uploaded and archived for physician inspection."
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [],
+    "missingOrUnreadableInfo": [
+      "Optical character recognition failed to reliably extract full handwritten text.",
+      "Manual clinical verification of the original physical image is required."
+    ],
+    "generatedAt": "2026-10-25T12:13:40.961Z",
+    "modelId": "medikiosk-constrained-summary-v1",
+    "isMock": true,
+    "rawTextExcerpt": "[No raw text excerpt available]"
+  },
+  "uploaded_at": "2026-10-25T12:13:40.929Z",
+  "created_at": "2026-10-25T12:13:40.929Z",
+  "updated_at": "2026-10-25T12:13:40.947Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

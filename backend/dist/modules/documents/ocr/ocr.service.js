@@ -23,13 +23,15 @@ class OcrService {
             const result = await this.provider.extractText(fileBuffer, mimeType);
             const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
             if (!result.success || result.extractedFields.length === 0) {
+                const failureMessage = result.errorMessage ||
+                    'Handwritten text could not be reliably extracted. Please review the original document.';
                 if (isDbUp) {
                     try {
                         await prisma_js_1.prisma.uploadedDocument.update({
                             where: { id: documentId },
                             data: {
                                 ocr_status: documents_types_js_1.OcrStatuses.FAILED,
-                                ocr_error_message: result.errorMessage || 'OCR extraction produced no usable text.',
+                                ocr_error_message: failureMessage,
                                 overall_status: 'EXTRACTION_FAILED',
                             },
                         });
@@ -38,15 +40,21 @@ class OcrService {
                 }
                 await documents_repository_js_1.DocumentsRepository.updateDocument(documentId, {
                     ocr_status: documents_types_js_1.OcrStatuses.FAILED,
-                    ocr_error_message: result.errorMessage || 'OCR extraction produced no usable text.',
+                    ocr_error_message: failureMessage,
                     overall_status: 'EXTRACTION_FAILED',
                 });
                 logger_js_1.logger.warn('OCR extraction failed for document', {
                     documentId,
-                    reason: result.errorMessage,
+                    reason: failureMessage,
                 });
-                return result;
+                return {
+                    ...result,
+                    errorMessage: failureMessage,
+                };
             }
+            const isPartial = result.extractionStatus === 'PARTIALLY_SUCCESSFUL';
+            const determinedOcrStatus = isPartial ? documents_types_js_1.OcrStatuses.PARTIALLY_SUCCESSFUL : documents_types_js_1.OcrStatuses.COMPLETED;
+            const determinedOverallStatus = isPartial ? 'PARTIALLY_VERIFIED' : 'PENDING_VALIDATION';
             // Save raw extracted fields into database if accessible
             if (isDbUp) {
                 try {
@@ -63,8 +71,9 @@ class OcrService {
                     await prisma_js_1.prisma.uploadedDocument.update({
                         where: { id: documentId },
                         data: {
-                            ocr_status: documents_types_js_1.OcrStatuses.COMPLETED,
-                            ocr_error_message: null,
+                            ocr_status: determinedOcrStatus,
+                            ocr_error_message: isPartial ? result.errorMessage : null,
+                            overall_status: determinedOverallStatus,
                         },
                     });
                 }
@@ -74,8 +83,9 @@ class OcrService {
             }
             // Update in-memory fallback
             await documents_repository_js_1.DocumentsRepository.updateDocument(documentId, {
-                ocr_status: documents_types_js_1.OcrStatuses.COMPLETED,
-                ocr_error_message: null,
+                ocr_status: determinedOcrStatus,
+                ocr_error_message: isPartial ? result.errorMessage : null,
+                overall_status: determinedOverallStatus,
                 raw_fields: result.extractedFields.map((f, idx) => ({
                     id: `raw-${documentId}-${idx}`,
                     document_id: documentId,
@@ -89,6 +99,7 @@ class OcrService {
             logger_js_1.logger.info('OCR extraction completed and raw fields saved', {
                 documentId,
                 fieldsCount: result.extractedFields.length,
+                status: determinedOcrStatus,
             });
             return result;
         }

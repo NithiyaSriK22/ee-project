@@ -15,6 +15,7 @@ import {
   confirmReviewSchema,
   amendConfirmedRecordSchema,
 } from './doctor-review.schemas.js';
+import { optionalUploadMiddleware } from '../../middleware/upload.middleware.js';
 
 const router = Router();
 
@@ -43,6 +44,31 @@ router.use(authenticateStaff);
 // ============================================================================
 // QUEUE ENDPOINTS
 // ============================================================================
+router.get(
+  '/dashboard/stats',
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  DoctorReviewController.getDashboardStats
+);
+
+router.get(
+  '/stats',
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  DoctorReviewController.getDashboardStats
+);
+
+router.post(
+  '/quick-note',
+  authorizeRoles('DOCTOR', 'SUPER_ADMIN'),
+  DoctorReviewController.createQuickNote
+);
+
+router.post(
+  '/visits/:visitId/documents/upload',
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  optionalUploadMiddleware,
+  DoctorReviewController.uploadVisitDocument
+);
+
 router.get(
   '/queue',
   authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { TokenUtil } from '../src/utils/token.util.js';
@@ -38,14 +38,34 @@ describe('LIVE REAL AI INFERENCE VERIFICATION (OLLAMA LLAMA3.2:1B)', () => {
   let doc1Id: string;
   let doc2Id: string;
   let initialPatientCount: number;
+  let isOllamaRunning = false;
 
   beforeAll(async () => {
     OcrService.setProvider(OcrProviderFactory.getProvider('TESSERACT'));
     const countRes = await prisma.$queryRawUnsafe<any[]>(`SELECT COUNT(*)::int as count FROM patients`);
     initialPatientCount = countRes[0]?.count ?? 0;
+
+    try {
+      const probe = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) });
+      if (probe.ok) {
+        const data = (await probe.json()) as { models?: Array<{ name?: string }> };
+        isOllamaRunning = !!data?.models?.some((m) => m.name?.includes('llama3.2:1b'));
+      }
+    } catch {
+      isOllamaRunning = false;
+    }
   });
 
-  it('Step 1: Live LocalLlmAdapter Direct Inference with Ollama llama3.2:1b', async () => {
+  afterAll(async () => {
+    SummaryService.setProvider(null);
+    OcrService.setProvider(OcrProviderFactory.getProvider('MOCK'));
+  });
+
+  it('Step 1: Live LocalLlmAdapter Direct Inference with Ollama llama3.2:1b', async (ctx) => {
+    if (!isOllamaRunning) {
+      ctx.skip();
+      return;
+    }
     const adapter = new LocalLlmAdapter({
       baseUrl: 'http://localhost:11434/v1',
       model: 'llama3.2:1b',
@@ -71,7 +91,11 @@ describe('LIVE REAL AI INFERENCE VERIFICATION (OLLAMA LLAMA3.2:1B)', () => {
     expect(parsed.importantFindings.length).toBeGreaterThan(0);
   }, 45000);
 
-  it('Step 2: Upload Synthetic Record #1 -> OCR Extraction -> Genuine AI Summarization -> PostgreSQL Persistence -> Doctor Portal Display', async () => {
+  it('Step 2: Upload Synthetic Record #1 -> OCR Extraction -> Genuine AI Summarization -> PostgreSQL Persistence -> Doctor Portal Display', async (ctx) => {
+    if (!isOllamaRunning) {
+      ctx.skip();
+      return;
+    }
     // 1. Create synthetic patient & visit session
     const regRes = await request(app)
       .post('/api/v1/kiosk/session/start')
@@ -151,7 +175,11 @@ describe('LIVE REAL AI INFERENCE VERIFICATION (OLLAMA LLAMA3.2:1B)', () => {
     expect(recsRes.body.data[0].id).toBe(doc1Id);
   }, 60000);
 
-  it('Step 3: Upload Second Synthetic Record for Same Patient -> Live Combined Multi-Document Summary -> Discrepancy Detection -> Doctor Approval', async () => {
+  it('Step 3: Upload Second Synthetic Record for Same Patient -> Live Combined Multi-Document Summary -> Discrepancy Detection -> Doctor Approval', async (ctx) => {
+    if (!isOllamaRunning) {
+      ctx.skip();
+      return;
+    }
     // 1. Upload synthetic prescription/lab PDF #2 (Amlodipine escalated to 10mg)
     const upRes2 = await request(app)
       .post('/api/v1/kiosk/documents/upload')
@@ -219,6 +247,33 @@ describe('LIVE REAL AI INFERENCE VERIFICATION (OLLAMA LLAMA3.2:1B)', () => {
   }, 60000);
 
   it('Step 4: Safety & Fallback Guarantees (Template Fallback, Mock Tagging, Grounding Safety & Isolation)', async () => {
+    if (!doc1Id) {
+      const regRes = await request(app)
+        .post('/api/v1/kiosk/session/start')
+        .send({
+          fullName: 'Sundaramoorthy K',
+          gender: 'MALE',
+          age: 62,
+          contactNumber: '9840223344',
+          preferredLanguage: 'en',
+          consentGranted: true,
+        });
+      patientId = regRes.body.data.patient.id;
+      visitId = regRes.body.data.session.visitId;
+      sessionToken = regRes.body.data.session.sessionToken;
+
+      const upRes = await request(app)
+        .post('/api/v1/kiosk/documents/upload')
+        .set('Authorization', `Bearer ${sessionToken}`)
+        .send({
+          fileBase64: syntheticPdf1,
+          fileName: 'hypertension_prescription_sept.pdf',
+          mimeType: 'application/pdf',
+          documentType: 'PRESCRIPTION',
+        });
+      doc1Id = upRes.body.data.document.id;
+    }
+
     // 1. Verify Template Fallback when LLM server is offline / connection fails
     const offlineLlmProvider = {
       providerId: 'LOCAL_LLM',

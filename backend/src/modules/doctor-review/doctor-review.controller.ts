@@ -9,7 +9,8 @@ import { AmendmentService } from './confirmation/amendment.service.js';
 import { DoctorReviewRepository } from './doctor-review.repository.js';
 import { TokenUtil } from '../../utils/token.util.js';
 import { DoctorReviewAuditEvents } from './doctor-review.types.js';
-import { ForbiddenError, NotFoundError } from '../../errors/app-error.js';
+import { ForbiddenError, NotFoundError, ValidationError } from '../../errors/app-error.js';
+import { prisma } from '../../database/prisma.js';
 import { DocumentsService } from '../documents/documents.service.js';
 import { DocumentsRepository } from '../documents/documents.repository.js';
 import { DocumentStorageService } from '../documents/storage/document-storage.service.js';
@@ -31,6 +32,46 @@ export class DoctorReviewController {
         success: true,
         data: queue,
         count: queue.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async getDashboardStats(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const department = (req.query.department as string) || req.user?.hospitalDepartment || undefined;
+      const stats = await DoctorReviewRepository.getDashboardStats(department);
+      res.json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async createQuickNote(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const noteText = req.body.noteText || req.body.note;
+      const visitId = req.body.visitId || 'OPD-GENERAL';
+      if (!noteText) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Note text is required' },
+        });
+        return;
+      }
+      const note = await DoctorReviewRepository.createQuickNote({
+        visitId,
+        noteText,
+        doctorId: req.user!.id,
+        doctorName: req.user!.fullName || 'Attending Physician',
+      });
+      res.status(201).json({
+        success: true,
+        data: note,
+        message: 'Quick note saved successfully',
       });
     } catch (error) {
       next(error);
@@ -529,7 +570,7 @@ export class DoctorReviewController {
       const enrichedDocs = await Promise.all(
         docs.map(async (doc) => {
           let summary = (doc as any).summary;
-          if (!summary && doc.ocr_status !== 'FAILED' && doc.overall_status !== 'EXTRACTION_FAILED') {
+          if (!summary) {
             try {
               summary = await DocumentSummaryService.summarizeDocument(doc.id);
             } catch {}
@@ -544,8 +585,16 @@ export class DoctorReviewController {
             fileSizeBytes: doc.file_size_bytes,
             ocrStatus: doc.ocr_status,
             overallStatus: doc.overall_status,
-            ocrErrorMessage: doc.ocr_error_message,
-            uploadedAt: doc.uploaded_at,
+            ocrErrorMessage:
+              doc.ocr_error_message ||
+              (doc.ocr_status === 'FAILED'
+                ? 'Handwritten text could not be reliably extracted. Please review the original document.'
+                : null),
+            uploadedAt: doc.uploaded_at || doc.created_at || null,
+            scanDate: (doc as any).scan_date || null,
+            scanType: (doc as any).scan_type || null,
+            doctorNotes: (doc as any).doctor_notes || null,
+            metadata: (doc as any).metadata || null,
             summary,
           };
         })
@@ -612,6 +661,62 @@ export class DoctorReviewController {
         success: true,
         data: summary,
         message: 'Combined medical records summary approved by physician',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async uploadVisitDocument(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { visitId } = req.params;
+      const patientId = req.body?.patientId;
+      if (!visitId) {
+        throw new ValidationError('Visit ID is required');
+      }
+
+      let fileData: { buffer: Buffer; originalname: string; mimetype: string; size: number };
+      if ((req as any).file) {
+        const f = (req as any).file;
+        if (!f.buffer || f.size === 0) {
+          throw new ValidationError('Uploaded file is empty.');
+        }
+        fileData = {
+          buffer: f.buffer,
+          originalname: f.originalname || 'uploaded_document.bin',
+          mimetype: f.mimetype,
+          size: f.size,
+        };
+      } else if (req.body?.fileBase64 !== undefined) {
+        const buffer = Buffer.from(req.body.fileBase64, 'base64');
+        fileData = {
+          buffer,
+          originalname: req.body.fileName || 'uploaded_doc.jpg',
+          mimetype: req.body.mimeType || 'image/jpeg',
+          size: buffer.length,
+        };
+      } else {
+        throw new ValidationError('No document file payload provided.');
+      }
+
+      let resolvedPatientId = patientId;
+      if (!resolvedPatientId) {
+        const vp = await prisma.patientVisitProfile.findFirst({ where: { visit_id: visitId } });
+        resolvedPatientId = vp?.patient_id || 'default_patient';
+      }
+
+      const documentType = req.body?.documentType || 'PRESCRIPTION';
+      const result = await DocumentsService.uploadAndProcessDocument(
+        visitId,
+        resolvedPatientId,
+        fileData,
+        documentType
+      );
+
+      res.status(201).json({
+        success: true,
+        data: result,
+        message: 'Document uploaded and processed successfully',
       });
     } catch (error) {
       next(error);

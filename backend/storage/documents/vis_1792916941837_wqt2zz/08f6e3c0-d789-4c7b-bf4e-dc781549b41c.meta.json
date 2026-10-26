@@ -1,0 +1,45 @@
+{
+  "id": "08f6e3c0-d789-4c7b-bf4e-dc781549b41c",
+  "visit_id": "vis_1792916941837_wqt2zz",
+  "patient_id": "ee2f7e09-1f34-411b-b4fa-7248572827ac",
+  "document_type": "PRESCRIPTION",
+  "file_name": "apollo_rx_2026.png",
+  "mime_type": "image/png",
+  "file_size_bytes": 70,
+  "storage_reference": "storage/documents/vis_1792916941837_wqt2zz/4d0d6453-3354-49ba-bc24-f3a696bdfc52_1792916942371_apollo_rx_2026.png",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document could not be reliably digitized. Legibility confidence is below clinical threshold (confidence < 40%). Handwritten prescription could not be automatically digitized.",
+  "summary": {
+    "documentId": "08f6e3c0-d789-4c7b-bf4e-dc781549b41c",
+    "fileName": "apollo_rx_2026.png",
+    "documentType": "PRESCRIPTION",
+    "documentDate": "2026-10-25",
+    "reportOrTestName": "Outpatient Prescription Record",
+    "importantFindings": [
+      "Document uploaded and archived for physician inspection."
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [
+      "Document analyzed via deterministic template fallback: Local LLM service was unavailable."
+    ],
+    "missingOrUnreadableInfo": [
+      "Optical character recognition failed to reliably extract full handwritten text.",
+      "Manual clinical verification of the original physical image is required."
+    ],
+    "generatedAt": "2026-10-25T08:29:02.805Z",
+    "modelId": "TEMPLATE_FALLBACK",
+    "isMock": false,
+    "rawTextExcerpt": "[No raw text excerpt available]"
+  },
+  "uploaded_at": "2026-10-25T08:29:02.377Z",
+  "created_at": "2026-10-25T08:29:02.377Z",
+  "updated_at": "2026-10-25T08:29:02.761Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

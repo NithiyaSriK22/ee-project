@@ -1,0 +1,45 @@
+{
+  "id": "6b7cc196-b202-4c92-bd9e-dacfe418dd3c",
+  "visit_id": "vis_1792929499107_ua4qy1",
+  "patient_id": "a441cd10-2cb8-4dfa-a361-f8aa7b2924b7",
+  "document_type": "OTHER",
+  "file_name": "doc 4.jpeg",
+  "mime_type": "image/jpeg",
+  "file_size_bytes": 80078,
+  "storage_reference": "storage/documents/vis_1792929499107_ua4qy1/1033ae92-eb85-4d4c-85cb-e146472df354_1792930725528_doc_4.jpeg",
+  "consent_verified": true,
+  "ocr_status": "FAILED",
+  "overall_status": "EXTRACTION_FAILED",
+  "ocr_error_message": "Document could not be reliably digitized. Legibility confidence is below clinical threshold (confidence < 40%). Handwritten prescription could not be automatically digitized.",
+  "summary": {
+    "documentId": "6b7cc196-b202-4c92-bd9e-dacfe418dd3c",
+    "fileName": "doc 4.jpeg",
+    "documentType": "OTHER",
+    "documentDate": "2026-10-25",
+    "reportOrTestName": "OTHER Report",
+    "importantFindings": [
+      "Document uploaded and archived for physician inspection."
+    ],
+    "laboratoryResults": [],
+    "abnormalValues": [],
+    "diagnoses": [],
+    "medications": [],
+    "allergies": [],
+    "clinicalObservations": [
+      "Document analyzed via deterministic template fallback: Local LLM service was unavailable."
+    ],
+    "missingOrUnreadableInfo": [
+      "Optical character recognition failed to reliably extract full handwritten text.",
+      "Manual clinical verification of the original physical image is required."
+    ],
+    "generatedAt": "2026-10-25T12:18:46.592Z",
+    "modelId": "TEMPLATE_FALLBACK",
+    "isMock": false,
+    "rawTextExcerpt": "[No raw text excerpt available]"
+  },
+  "uploaded_at": "2026-10-25T12:18:45.536Z",
+  "created_at": "2026-10-25T12:18:45.536Z",
+  "updated_at": "2026-10-25T12:18:46.582Z",
+  "raw_fields": [],
+  "validated_fields": []
+}

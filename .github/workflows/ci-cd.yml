@@ -88,6 +88,8 @@ jobs:
         run: npm --workspace=backend run test
         env:
           NODE_ENV: test
+          SUMMARY_PROVIDER: mock
+          OCR_PROVIDER: standard
           DATABASE_URL: postgresql://medikiosk_user:medikiosk_password@localhost:5432/medikiosk_db?schema=public
           JWT_SECRET: test-super-secret-key-32-bytes-minimum-length
           SESSION_SECRET: test-session-secret-32-bytes-minimum-length

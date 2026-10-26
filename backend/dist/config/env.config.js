@@ -34,6 +34,11 @@ const envSchema = zod_1.z.object({
     ALERT_LATENCY_TARGET_MS: zod_1.z.coerce.number().default(5000),
     EMERGENCY_OVERRIDE_ENABLED: zod_1.z.coerce.boolean().default(false),
     IS_SYNTHETIC_DATA: zod_1.z.coerce.boolean().default(true),
+    // Clinical AI & OCR Providers
+    OCR_PROVIDER: zod_1.z.string().default('tesseract'),
+    SUMMARY_PROVIDER: zod_1.z.string().default('local'),
+    LOCAL_LLM_BASE_URL: zod_1.z.string().default('http://localhost:11434/v1'),
+    LOCAL_LLM_MODEL: zod_1.z.string().default('llama3.2:1b'),
 });
 const validateProductionSecrets = (data) => {
     if (data.NODE_ENV === 'production') {

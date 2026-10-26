@@ -82,15 +82,20 @@ export class MockSummarizationProvider implements SummarizationProvider {
       } else if (this.behaviorMode === 'ABSENCE_AS_NEGATIVE') {
         statementText = `Patient has no known allergies and no symptoms.`;
       } else {
-        // NORMAL grounded statement
+        // NORMAL grounded statement - sanitize prompt injection attempts in patient text
+        let cleanValue = item.value || '';
+        if (/\b(ignore|disregard|system prompt|override|developer mode)\b/i.test(cleanValue)) {
+          cleanValue = cleanValue.split(/[.?!;]/)[0]?.trim() || 'Symptoms reported';
+        }
+
         if (item.section === 'CHIEF_COMPLAINT') {
-          statementText = `Reports chief complaint: ${item.value}`;
+          statementText = `Reports chief complaint: ${cleanValue}`;
         } else if (item.section === 'HISTORY_OF_PRESENT_ILLNESS') {
-          statementText = `History notes: ${item.value}`;
+          statementText = `History notes: ${cleanValue}`;
         } else if (item.section === 'MEDICATIONS_AND_ALLERGIES') {
-          statementText = `Current medication recorded: ${item.value}`;
+          statementText = `Current medication recorded: ${cleanValue}`;
         } else {
-          statementText = `${item.label}: ${item.value}`;
+          statementText = `${item.label}: ${cleanValue}`;
         }
       }
 

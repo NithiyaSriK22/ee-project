@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { DoctorLayout } from '../layouts/DoctorLayout';
 import { DoctorDashboardPage } from '../pages/DoctorDashboardPage';
+import { PatientRecordsPage } from '../pages/PatientRecordsPage';
 import { DoctorLoginPage } from '../features/auth/pages/DoctorLoginPage';
 import { ProtectedRoute } from '../features/auth/components/ProtectedRoute';
 import { InterviewTemplateManagerPage, AdminShell } from '../features/admin';
@@ -38,6 +39,7 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route index element={<DoctorDashboardPage />} />
+        <Route path="patients" element={<PatientRecordsPage />} />
         
         {/* Module 5 Clinical Summary Draft Preview (Foundation) */}
         <Route path="visits/:visitId/summary" element={<SummaryPreviewPage />} />

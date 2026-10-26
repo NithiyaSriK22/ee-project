@@ -20,6 +20,7 @@ import {
   RefreshCw,
   X,
   FileCheck,
+  CheckCircle,
   Layers,
   Sparkles,
   ChevronDown,
@@ -34,6 +35,9 @@ interface QueuedFile {
   base64: string;
   previewUrl: string | null;
   documentType: DocumentType;
+  scanDate?: string;
+  scanType?: string;
+  doctorNotes?: string;
 }
 
 export const DocumentScanPage: React.FC = () => {
@@ -53,6 +57,11 @@ export const DocumentScanPage: React.FC = () => {
   // Mode: 'SCAN' (Camera) or 'UPLOAD' (File selection)
   const [activeTab, setActiveTab] = useState<'SCAN' | 'UPLOAD'>('SCAN');
   const [selectedDocType, setSelectedDocType] = useState<DocumentType>(DocumentTypes.PRESCRIPTION);
+
+  // Conditional metadata fields (Module requirements for scans & reports)
+  const [scanDate, setScanDate] = useState<string>('');
+  const [scanType, setScanType] = useState<string>('');
+  const [doctorNotes, setDoctorNotes] = useState<string>('');
 
   // Multi-file upload queue
   const [fileQueue, setFileQueue] = useState<QueuedFile[]>([]);
@@ -102,6 +111,9 @@ export const DocumentScanPage: React.FC = () => {
         base64,
         previewUrl: dataUrl,
         documentType: selectedDocType,
+        scanDate: scanDate || undefined,
+        scanType: scanType || undefined,
+        doctorNotes: doctorNotes || undefined,
       };
       setFileQueue((prev) => [...prev, newFile]);
       retakePhoto();
@@ -139,6 +151,9 @@ export const DocumentScanPage: React.FC = () => {
           base64,
           previewUrl: isPdf ? null : result,
           documentType: selectedDocType,
+          scanDate: scanDate || undefined,
+          scanType: scanType || undefined,
+          doctorNotes: doctorNotes || undefined,
         };
         setFileQueue((prev) => [...prev, queued]);
       };
@@ -151,6 +166,49 @@ export const DocumentScanPage: React.FC = () => {
 
   const handleRemoveFromQueue = (id: string) => {
     setFileQueue((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  // Helper for preset modality suggestions
+  const getScanTypePresets = (docType: DocumentType): string[] => {
+    switch (docType) {
+      case DocumentTypes.ULTRASOUND:
+        return [
+          'Abdominal Ultrasound',
+          'Pelvic Ultrasound',
+          'Obstetric (Pregnancy) Scan',
+          'Doppler Ultrasound',
+          'Thyroid / Neck Ultrasound',
+          'Musculoskeletal (Joint / Soft Tissue)',
+          'KUB (Kidney / Ureter / Bladder)',
+          'Other Ultrasound Study',
+        ];
+      case DocumentTypes.XRAY_CT_MRI:
+        return [
+          'Chest X-Ray (PA View)',
+          'Bone / Extremity X-Ray',
+          'Spine (Cervical / Lumbar) X-Ray',
+          'CT Brain / Head',
+          'CT Abdomen & Pelvis',
+          'HRCT Chest',
+          'MRI Brain',
+          'MRI Spine (Lumbar / Cervical)',
+          'Other Radiology Study',
+        ];
+      case DocumentTypes.LAB_REPORT:
+        return [
+          'Complete Blood Count (CBC)',
+          'Liver Function Test (LFT)',
+          'Kidney Function Test (KFT / RFT)',
+          'Lipid Profile',
+          'HbA1c & Fasting Glucose',
+          'Urine Analysis & Microscopy',
+          'Thyroid Profile (TSH / Free T4)',
+          'Electrolytes Panel',
+          'Other Lab Investigation',
+        ];
+      default:
+        return [];
+    }
   };
 
   // Execute upload of all queued files sequentially
@@ -167,15 +225,28 @@ export const DocumentScanPage: React.FC = () => {
     for (let i = 0; i < fileQueue.length; i++) {
       const item = fileQueue[i];
       setCurrentProcessingIndex(i + 1);
-      setProcessingStatusText(`Uploading "${item.name}" (${i + 1} of ${fileQueue.length})...`);
+      const isImaging =
+        item.documentType === DocumentTypes.ULTRASOUND ||
+        item.documentType === DocumentTypes.XRAY_CT_MRI;
+
+      setProcessingStatusText(
+        isImaging
+          ? `Preserving imaging scan "${item.name}" for physician review (bypassing OCR)...`
+          : `Uploading "${item.name}" (${i + 1} of ${fileQueue.length})...`
+      );
 
       try {
-        setProcessingStatusText(`Running OCR & Validating "${item.name}"...`);
+        if (!isImaging) {
+          setProcessingStatusText(`Running OCR & Validating "${item.name}"...`);
+        }
         const result: DocumentUploadResponse = await documentsApi.uploadDocument({
           fileBase64: item.base64,
           fileName: item.name,
           mimeType: item.type,
           documentType: item.documentType,
+          scanDate: item.scanDate || null,
+          scanType: item.scanType || null,
+          doctorNotes: item.doctorNotes || null,
         });
 
         if (result.ocrResult?.success === false) {
@@ -277,6 +348,99 @@ export const DocumentScanPage: React.FC = () => {
             })}
           </div>
         </div>
+
+        {/* Conditional Clinical Metadata Fields */}
+        {(selectedDocType === DocumentTypes.ULTRASOUND ||
+          selectedDocType === DocumentTypes.XRAY_CT_MRI ||
+          selectedDocType === DocumentTypes.LAB_REPORT ||
+          selectedDocType === DocumentTypes.CLINICAL_NOTES) && (
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-lg">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Additional Details: {DocumentTypeLabels[selectedDocType]?.label}
+              </span>
+              {(selectedDocType === DocumentTypes.ULTRASOUND ||
+                selectedDocType === DocumentTypes.XRAY_CT_MRI) && (
+                <span className="text-[11px] font-semibold text-amber-300 bg-amber-950/60 border border-amber-800/80 px-2.5 py-0.5 rounded-full">
+                  Physician Visual Review
+                </span>
+              )}
+            </div>
+
+            {(selectedDocType === DocumentTypes.ULTRASOUND ||
+              selectedDocType === DocumentTypes.XRAY_CT_MRI) && (
+              <div className="text-xs text-slate-300 bg-teal-950/40 border border-teal-800/60 rounded-xl p-3 leading-relaxed flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-teal-300">Physician Review Protection:</strong> Medical
+                  imaging scans are preserved in original high-resolution for the doctor's visual
+                  examination. Ordinary text OCR is bypassed to prevent diagnostic errors and hallucinated summaries.
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Scan / Investigation Date */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  {selectedDocType === DocumentTypes.LAB_REPORT
+                    ? 'Report / Sample Date:'
+                    : 'Scan / Investigation Date:'}
+                </label>
+                <input
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  value={scanDate}
+                  onChange={(e) => setScanDate(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-teal-400"
+                />
+              </div>
+
+              {/* Scan Type / Modality Preset Picker */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  {selectedDocType === DocumentTypes.LAB_REPORT
+                    ? 'Test / Investigation Name:'
+                    : 'Scan Modality / Examination Type:'}
+                </label>
+                <input
+                  type="text"
+                  placeholder={
+                    selectedDocType === DocumentTypes.ULTRASOUND
+                      ? 'e.g., Abdominal Ultrasound, Doppler...'
+                      : selectedDocType === DocumentTypes.XRAY_CT_MRI
+                      ? 'e.g., Chest X-Ray, Brain MRI...'
+                      : 'e.g., Complete Blood Count, LFT...'
+                  }
+                  value={scanType}
+                  onChange={(e) => setScanType(e.target.value)}
+                  list="scan-presets"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-teal-400"
+                />
+                <datalist id="scan-presets">
+                  {getScanTypePresets(selectedDocType).map((preset) => (
+                    <option key={preset} value={preset} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
+
+            {/* Optional Notes for Doctor */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Optional Notes for the Doctor:
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Mention any symptoms, doctor referrals, reason for scan, or prior findings..."
+                value={doctorNotes}
+                onChange={(e) => setDoctorNotes(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-teal-400 resize-none"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Option A: Camera Scan Viewfinder */}
         {activeTab === 'SCAN' && (
