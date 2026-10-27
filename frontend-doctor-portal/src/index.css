@@ -25,3 +25,39 @@
   background-color: #fff1f2;
   border-left: 3px solid #e11d48;
 }
+
+/* Module 1: Background Layer Keyframes */
+@keyframes waveDrift1 {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(14px, -10px); }
+}
+
+@keyframes waveDrift2 {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-10px, 12px); }
+}
+
+@keyframes plusFloat {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-6px); }
+}
+
+.animate-wave-drift-1 {
+  animation: waveDrift1 14s ease-in-out infinite alternate;
+}
+
+.animate-wave-drift-2 {
+  animation: waveDrift2 18s ease-in-out infinite alternate;
+}
+
+.animate-plus-float {
+  animation: plusFloat 6s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-wave-drift-1,
+  .animate-wave-drift-2,
+  .animate-plus-float {
+    animation: none !important;
+  }
+}
