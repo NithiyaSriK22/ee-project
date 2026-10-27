@@ -51,8 +51,13 @@ export const LoginCard: React.FC = () => {
     setLocalError(null);
     setSsoNotice(null);
 
-    const targetEmail = email.trim() || 'nithiya0sy@gmail.com';
-    const targetPassword = password || 'doctor123';
+    const targetEmail = email.trim();
+    const targetPassword = password;
+
+    if (!targetEmail || !targetPassword) {
+      setLocalError('Please enter both your institutional email address and password.');
+      return;
+    }
 
     try {
       await login({ email: targetEmail, password: targetPassword });
@@ -74,14 +79,19 @@ export const LoginCard: React.FC = () => {
       {/* Center Pulse Line & Cross connecting to Left Border */}
       <CenterPulse />
 
-      {/* Floating Logo Badge with Golden Glow */}
-      <div className="absolute -top-11 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-        <div className="w-[86px] h-[86px] rounded-full bg-cream border-2 border-peach shadow-[0_12px_36px_rgba(245,186,120,0.45)] ring-8 ring-cream/90 flex items-center justify-center p-3">
-          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      {/* Floating Logo Badge: White Circle (~80px) with Soft Peach Ring & Glow */}
+      <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+        <div
+          className="w-20 h-20 rounded-full bg-white flex items-center justify-center p-3"
+          style={{
+            boxShadow: '0 0 0 6px rgba(253, 235, 221, 0.9), 0 8px 24px rgba(245, 186, 120, 0.35)',
+          }}
+        >
+          <svg viewBox="0 0 64 64" fill="none" className="w-12 h-12" xmlns="http://www.w3.org/2000/svg">
             <path
               d="M32 54 C32 54 10 39 10 24 C10 15 17 9 25 9 C29 9 32 11 32 11 C32 11 35 9 39 9 C47 9 54 15 54 24 C54 39 32 54 32 54 Z"
               stroke="#1B2A5E"
-              strokeWidth="3.2"
+              strokeWidth="3.4"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -92,6 +102,7 @@ export const LoginCard: React.FC = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
             />
+            {/* Coral Star Accent */}
             <path
               d="M51 6 Q51 12 57 12 Q51 12 51 18 Q51 12 45 12 Q51 12 51 6 Z"
               fill="#E5484D"
@@ -100,8 +111,8 @@ export const LoginCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Login Card Body */}
-      <div className="relative z-10 bg-cream rounded-[48px] border border-peach shadow-card pt-16 pb-9 px-7 sm:px-11 overflow-hidden">
+      {/* Main Login Card Body: Opaque Gradient from #FFFFFF to #FFF8F0 */}
+      <div className="relative z-10 bg-gradient-to-b from-[#FFFFFF] to-[#FFF8F0] rounded-[48px] border border-peach shadow-card pt-16 pb-9 px-7 sm:px-11 overflow-hidden">
         
         {/* Top-Right Decorative Flowing Wave */}
         <div
@@ -123,13 +134,13 @@ export const LoginCard: React.FC = () => {
           </svg>
         </div>
 
-        {/* Headings */}
+        {/* Headings: font-display, 700, ~44px, navy */}
         <div className="text-center mb-6 relative z-10">
           <span className="sr-only">Physician / Staff Sign In</span>
-          <h2 className="font-display font-bold text-[34px] sm:text-[38px] text-navy tracking-tight leading-tight mt-2">
+          <h2 className="font-display font-bold text-[38px] sm:text-[44px] text-navy tracking-tight leading-tight mt-2">
             Welcome Back
           </h2>
-          <p className="text-xs sm:text-[13px] font-normal text-navysoft font-body mt-1.5 leading-normal">
+          <p className="text-xs sm:text-[14px] font-normal text-navysoft font-body mt-1.5 leading-normal">
             Sign in to access your clinical workspace
           </p>
         </div>
@@ -160,8 +171,9 @@ export const LoginCard: React.FC = () => {
               Institutional Email Address
             </label>
             <div className="flex items-center gap-2.5">
-              <div className="w-11 h-11 rounded-2xl bg-lavender border border-lavender2 flex items-center justify-center text-navy shrink-0 shadow-2xs">
-                <Mail className="w-4 h-4 text-navy" />
+              {/* Round ~44px Lavender Bubble with Indigo Icon */}
+              <div className="w-11 h-11 rounded-full bg-[#EDE6FA] flex items-center justify-center text-[#4B3FA0] shrink-0 shadow-2xs">
+                <Mail className="w-5 h-5 text-[#4B3FA0]" strokeWidth={2.2} />
               </div>
               <input
                 id="institutional-email"
@@ -193,8 +205,9 @@ export const LoginCard: React.FC = () => {
               </button>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="w-11 h-11 rounded-2xl bg-brand text-white flex items-center justify-center shrink-0 shadow-2xs">
-                <Lock className="w-4 h-4 text-white" />
+              {/* Round ~44px Filled Indigo Bubble with White Lock Icon */}
+              <div className="w-11 h-11 rounded-full bg-[#4B3FA0] flex items-center justify-center shrink-0 shadow-2xs">
+                <Lock className="w-5 h-5 text-white stroke-white fill-none" strokeWidth={2.2} />
               </div>
               <div className="relative flex-1">
                 <input
@@ -212,17 +225,17 @@ export const LoginCard: React.FC = () => {
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-navysoft hover:text-navy transition-colors cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Sign In Button */}
+          {/* Sign In Button: Gradient from #8B6FE0 to #F2B8A8, Purple Glow Shadow, Non-faded */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-[52px] mt-3 px-6 bg-gradient-to-r from-brand via-brandlight to-[#E99EA5] hover:opacity-95 active:scale-[0.99] text-white rounded-full text-sm font-semibold tracking-wide transition-all duration-200 flex items-center justify-center gap-2.5 shadow-[0_10px_28px_-4px_rgba(123,92,196,0.38)] disabled:opacity-60 cursor-pointer font-body"
+            className="w-full h-[52px] mt-3 px-6 bg-gradient-to-r from-[#8B6FE0] to-[#F2B8A8] text-white rounded-full text-[15px] font-semibold tracking-wide flex items-center justify-center gap-2.5 shadow-[0_10px_28px_-4px_rgba(139,111,224,0.48)] hover:opacity-95 active:scale-[0.99] transition-all duration-200 disabled:opacity-85 disabled:cursor-wait cursor-pointer font-body opacity-100"
           >
             {isLoading ? (
               <>
