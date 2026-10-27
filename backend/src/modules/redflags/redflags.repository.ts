@@ -240,9 +240,7 @@ export class RedFlagsRepository {
           orderBy: { raised_at: 'desc' },
         });
 
-        if (alerts.length > 0) {
-          return alerts.map(this.mapDbAlertToDto);
-        }
+        return alerts.map(this.mapDbAlertToDto);
       } catch (err) {
         logger.warn('Failed to list alerts from DB, using fallback', { error: String(err) });
       }

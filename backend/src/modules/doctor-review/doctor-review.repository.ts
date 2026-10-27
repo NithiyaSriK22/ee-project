@@ -126,106 +126,123 @@ export class DoctorReviewRepository {
           }
         }
         if (filters?.assignedDoctorId) where.assigned_doctor_id = filters.assignedDoctorId;
-        if (filters?.status) where.queue_status = filters.status;
+        if (filters?.status) {
+          where.queue_status = filters.status;
+        } else {
+          where.queue_status = {
+            in: [QueueStatuses.WAITING, QueueStatuses.READY_FOR_REVIEW, QueueStatuses.IN_CONSULTATION],
+          };
+        }
 
         const rows = await prisma.visitQueueEntry.findMany({
           where,
-          orderBy: [{ has_open_alert: 'desc' }, { ready_at: 'asc' }],
+          orderBy: [{ has_open_alert: 'desc' }, { ready_at: 'desc' }],
         });
 
-        if (rows.length > 0) {
-          const mapped = await Promise.all(
-            rows.map(async (r) => {
-              let patientName = `Token #${r.visit_id.substring(0, 4).toUpperCase()}`;
-              let patientRegNumber: string | null = null;
-              let patientAge: number | null = null;
-              let patientGender: string | null = null;
+        const mapped = await Promise.all(
+          rows.map(async (r) => {
+            let patientName = `Token #${r.visit_id.substring(0, 4).toUpperCase()}`;
+            let patientRegNumber: string | null = null;
+            let patientAge: number | null = null;
+            let patientGender: string | null = null;
+            let patientId: string | null = null;
 
-              try {
-                const profile = await prisma.patientVisitProfile.findFirst({
-                  where: { visit_id: r.visit_id },
-                  include: { patient: true },
-                });
-                if (profile?.patient) {
-                  patientName = profile.patient.full_name;
-                  patientRegNumber = profile.patient.hospital_registration_number;
-                  patientAge = profile.patient.age;
-                  patientGender = profile.patient.gender;
-                }
-              } catch {}
-
-              // Retrieve actual chief complaint from interview answers or clinical summary
-              let chiefComplaint: string | null = null;
-              try {
-                const ccAnswer = await prisma.interviewAnswer.findFirst({
-                  where: {
-                    visit_id: r.visit_id,
-                    question: {
-                      OR: [
-                        { question_code: 'CHIEF_COMPLAINT_PRIMARY' },
-                        { section: 'CHIEF_COMPLAINT' },
-                      ],
-                    },
-                    is_skipped: false,
-                  },
-                  select: { answer_value: true },
-                });
-
-                if (ccAnswer?.answer_value) {
-                  if (typeof ccAnswer.answer_value === 'string') {
-                    chiefComplaint = ccAnswer.answer_value;
-                  } else if (typeof ccAnswer.answer_value === 'object') {
-                    chiefComplaint =
-                      (ccAnswer.answer_value as any).text ||
-                      (ccAnswer.answer_value as any).value ||
-                      String(ccAnswer.answer_value);
-                  }
-                }
-              } catch {}
-
-              if (!chiefComplaint) {
-                try {
-                  const summary = await prisma.clinicalSummary.findFirst({
-                    where: { visit_id: r.visit_id },
-                    include: {
-                      sections: {
-                        where: { section: 'CHIEF_COMPLAINT' },
-                        include: { statements: true },
-                      },
-                    },
-                  });
-                  const stmt = summary?.sections?.[0]?.statements?.[0]?.text;
-                  if (stmt && !stmt.startsWith('[No information') && !stmt.startsWith('[Question skipped')) {
-                    chiefComplaint = stmt;
-                  }
-                } catch {}
+            try {
+              const profile = await prisma.patientVisitProfile.findFirst({
+                where: { visit_id: r.visit_id },
+                include: { patient: true },
+              });
+              if (profile?.patient) {
+                patientId = profile.patient.id;
+                patientName = profile.patient.full_name;
+                patientRegNumber = profile.patient.hospital_registration_number;
+                patientAge = profile.patient.age;
+                patientGender = profile.patient.gender;
               }
+            } catch {}
 
-              const formattedTokenOrName = patientRegNumber
-                ? `${patientName} (${patientRegNumber})`
-                : patientName;
+            // Retrieve actual chief complaint from interview answers or clinical summary
+            let chiefComplaint: string | null = null;
+            try {
+              const ccAnswer = await prisma.interviewAnswer.findFirst({
+                where: {
+                  visit_id: r.visit_id,
+                  question: {
+                    OR: [
+                      { question_code: 'CHIEF_COMPLAINT_PRIMARY' },
+                      { section: 'CHIEF_COMPLAINT' },
+                    ],
+                  },
+                  is_skipped: false,
+                },
+                select: { answer_value: true },
+              });
 
-              return {
-                id: r.id,
-                visitId: r.visit_id,
-                department: r.department,
-                assignedDoctorId: r.assigned_doctor_id,
-                queueStatus: r.queue_status as QueueStatus,
-                hasOpenAlert: r.has_open_alert,
-                readyAt: r.ready_at,
-                patientTokenOrName: formattedTokenOrName,
-                patientName,
-                patientRegistrationNumber: patientRegNumber,
-                patientAge,
-                patientGender,
-                chiefComplaint: chiefComplaint || (r.queue_status === 'COMPLETED' ? 'Consultation completed' : 'General clinical consultation'),
-                createdAt: r.created_at,
-                updatedAt: r.updated_at,
-              };
-            })
-          );
-          return mapped;
-        }
+              if (ccAnswer?.answer_value) {
+                if (typeof ccAnswer.answer_value === 'string') {
+                  chiefComplaint = ccAnswer.answer_value;
+                } else if (typeof ccAnswer.answer_value === 'object') {
+                  chiefComplaint =
+                    (ccAnswer.answer_value as any).text ||
+                    (ccAnswer.answer_value as any).value ||
+                    String(ccAnswer.answer_value);
+                }
+              }
+            } catch {}
+
+            if (!chiefComplaint) {
+              try {
+                const summary = await prisma.clinicalSummary.findFirst({
+                  where: { visit_id: r.visit_id },
+                  include: {
+                    sections: {
+                      where: { section: 'CHIEF_COMPLAINT' },
+                      include: { statements: true },
+                    },
+                  },
+                });
+                const stmt = summary?.sections?.[0]?.statements?.[0]?.text;
+                if (stmt && !stmt.startsWith('[No information') && !stmt.startsWith('[Question skipped')) {
+                  chiefComplaint = stmt;
+                }
+              } catch {}
+            }
+
+            const formattedTokenOrName = patientRegNumber
+              ? `${patientName} (${patientRegNumber})`
+              : patientName;
+
+            return {
+              id: r.id,
+              visitId: r.visit_id,
+              patientId,
+              department: r.department,
+              assignedDoctorId: r.assigned_doctor_id,
+              queueStatus: r.queue_status as QueueStatus,
+              hasOpenAlert: r.has_open_alert,
+              readyAt: r.ready_at,
+              patientTokenOrName: formattedTokenOrName,
+              patientName,
+              patientRegistrationNumber: patientRegNumber,
+              patientAge,
+              patientGender,
+              chiefComplaint: chiefComplaint || (r.queue_status === 'COMPLETED' ? 'Consultation completed' : 'General clinical consultation'),
+              createdAt: r.created_at,
+              updatedAt: r.updated_at,
+            };
+          })
+        );
+
+        // Deduplicate multiple queue entries for the same patient (keep most recent active entry)
+        const seenPatients = new Set<string>();
+        const deduplicated = mapped.filter((entry) => {
+          const key = entry.patientRegistrationNumber || entry.patientId || entry.visitId;
+          if (seenPatients.has(key)) return false;
+          seenPatients.add(key);
+          return true;
+        });
+
+        return deduplicated;
       } catch (err) {
         logger.warn('Database error in listQueue, using fallback', { error: (err as any).message });
       }

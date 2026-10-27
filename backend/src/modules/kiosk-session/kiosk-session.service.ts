@@ -7,6 +7,7 @@ import { FeatureFlagsService, KioskHardeningService } from '../deployment/index.
 import { DoctorReviewRepository } from '../doctor-review/doctor-review.repository.js';
 import { QueueStatuses } from '../doctor-review/doctor-review.types.js';
 import { SpecialPopulationsService } from '../special-populations/special-populations.service.js';
+import { prisma, checkDatabaseHealth } from '../../database/prisma.js';
 
 export class KioskSessionService {
   public static async startSession(data: {
@@ -165,6 +166,27 @@ export class KioskSessionService {
 
     // Register initial entry into the Doctor Review Queue
     try {
+      // Clean up previous WAITING queue entries for this patient so the queue only has 1 active entry
+      const isDbUp = await checkDatabaseHealth();
+      if (isDbUp) {
+        const priorProfiles = await prisma.patientVisitProfile.findMany({
+          where: {
+            patient_id: patientRecord.id,
+            visit_id: { not: visitId },
+          },
+          select: { visit_id: true },
+        });
+        if (priorProfiles.length > 0) {
+          const priorVisitIds = priorProfiles.map((p) => p.visit_id);
+          await prisma.visitQueueEntry.deleteMany({
+            where: {
+              visit_id: { in: priorVisitIds },
+              queue_status: QueueStatuses.WAITING,
+            },
+          });
+        }
+      }
+
       await DoctorReviewRepository.upsertQueueEntry({
         visitId,
         department: 'General Medicine',

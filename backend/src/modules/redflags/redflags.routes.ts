@@ -30,6 +30,7 @@ const optionalKioskAuth = (req: any, _res: any, next: any) => {
 };
 
 kioskAlertsRouter.post('/help-request', optionalKioskAuth, RedFlagsController.requestHelp);
+kioskAlertsRouter.post('/alerts/request-help', optionalKioskAuth, RedFlagsController.requestHelp);
 kioskAlertsRouter.get('/alerts/status', authenticateKioskSession, RedFlagsController.getKioskAlertStatus);
 
 // ==============================================================================

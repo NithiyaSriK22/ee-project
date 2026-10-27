@@ -54,7 +54,7 @@ export const CreateRuleSchema = z.object({
 export const UpdateRuleSchema = CreateRuleSchema.partial();
 
 export const HelpRequestSchema = z.object({
-  kioskDeviceId: z.string().uuid().optional(),
+  kioskDeviceId: z.string().uuid().nullable().optional(),
   kioskLocation: z.string().max(255).optional(),
   reason: z.string().max(255).optional(),
 });
