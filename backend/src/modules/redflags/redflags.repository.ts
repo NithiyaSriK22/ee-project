@@ -1,4 +1,4 @@
-import { prisma } from '../../database/prisma.js';
+import { prisma, checkDatabaseHealth } from '../../database/prisma.js';
 import { logger } from '../../config/logger.js';
 import { devFallbackRedflagsStore } from './dev-fallback-redflags-store.js';
 import { isUuid } from '../../utils/uuid.util.js';
@@ -13,27 +13,8 @@ import {
   RuleStatus,
 } from './redflags.types.js';
 
-let isDbReachable: boolean | null = null;
-let lastDbCheck = 0;
-
 async function checkDatabaseAvailability(): Promise<boolean> {
-  const now = Date.now();
-  if (isDbReachable !== null && now - lastDbCheck < 15000) {
-    return isDbReachable;
-  }
-
-  try {
-    const checkPromise = prisma.$queryRaw`SELECT 1`;
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('DB check timeout')), 300)
-    );
-    await Promise.race([checkPromise, timeoutPromise]);
-    isDbReachable = true;
-  } catch {
-    isDbReachable = false;
-  }
-  lastDbCheck = now;
-  return isDbReachable;
+  return checkDatabaseHealth();
 }
 
 export class RedFlagsRepository {

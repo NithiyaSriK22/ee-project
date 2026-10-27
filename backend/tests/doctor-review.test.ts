@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { TokenUtil } from '../src/utils/token.util.js';
@@ -55,6 +55,64 @@ describe('MODULE 7 — DOCTOR REVIEW & SUMMARY DASHBOARD', () => {
     visitId: 'visit-m7-test-01',
     patientId: 'patient-test-01',
   }).token;
+
+  beforeAll(async () => {
+    try {
+      await prisma.staffUser.upsert({
+        where: { id: 'c0000000-0000-4000-a000-000000000002' },
+        update: {
+          hospital_department: 'Department of General Medicine',
+          role: 'DOCTOR',
+          status: 'ACTIVE',
+        },
+        create: {
+          id: 'c0000000-0000-4000-a000-000000000002',
+          email: 'dr.ananya@hospital.org',
+          password_hash: '$2b$10$TBFy4EjU9N25cbuLVhv.AOIr8KK3VwmQnUGm.Qsu8.e7BaCipZYzq',
+          full_name: 'Dr. Ananya Sharma',
+          role: 'DOCTOR',
+          status: 'ACTIVE',
+          hospital_department: 'Department of General Medicine',
+        },
+      });
+
+      await prisma.staffUser.upsert({
+        where: { id: 'c0000000-0000-4000-a000-000000000001' },
+        update: {
+          hospital_department: 'Department of General Medicine',
+          role: 'DOCTOR',
+          status: 'ACTIVE',
+        },
+        create: {
+          id: 'c0000000-0000-4000-a000-000000000001',
+          email: 'nithiya0sy@gmail.com',
+          password_hash: '$2b$10$TBFy4EjU9N25cbuLVhv.AOIr8KK3VwmQnUGm.Qsu8.e7BaCipZYzq',
+          full_name: 'Dr. Nithiya Sri',
+          role: 'DOCTOR',
+          status: 'ACTIVE',
+          hospital_department: 'Department of General Medicine',
+        },
+      });
+
+      await prisma.staffUser.upsert({
+        where: { id: 'c0000000-0000-4000-a000-000000000005' },
+        update: {
+          hospital_department: 'Cardiology',
+          role: 'DOCTOR',
+          status: 'ACTIVE',
+        },
+        create: {
+          id: 'c0000000-0000-4000-a000-000000000005',
+          email: 'dr.reddy@hospital.org',
+          password_hash: '$2b$10$TBFy4EjU9N25cbuLVhv.AOIr8KK3VwmQnUGm.Qsu8.e7BaCipZYzq',
+          full_name: 'Dr. Suresh Reddy',
+          role: 'DOCTOR',
+          status: 'ACTIVE',
+          hospital_department: 'Cardiology',
+        },
+      });
+    } catch {}
+  });
 
   beforeEach(async () => {
     devFallbackDoctorReviewStore.clearAll();

@@ -5,24 +5,8 @@ exports.checkDatabaseAvailability = checkDatabaseAvailability;
 const prisma_js_1 = require("../../database/prisma.js");
 const dev_fallback_store_js_1 = require("./dev-fallback-store.js");
 const logger_js_1 = require("../../config/logger.js");
-let isDbReachable = null;
-let lastDbCheck = 0;
 async function checkDatabaseAvailability() {
-    const now = Date.now();
-    if (isDbReachable !== null && now - lastDbCheck < 15000) {
-        return isDbReachable;
-    }
-    try {
-        const checkPromise = prisma_js_1.prisma.$queryRaw `SELECT 1`;
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('DB check timeout')), 250));
-        await Promise.race([checkPromise, timeoutPromise]);
-        isDbReachable = true;
-    }
-    catch {
-        isDbReachable = false;
-    }
-    lastDbCheck = now;
-    return isDbReachable;
+    return (0, prisma_js_1.checkDatabaseHealth)();
 }
 class AuthRepository {
     static async findUserByEmail(email) {

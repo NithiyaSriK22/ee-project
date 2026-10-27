@@ -51,7 +51,7 @@ export const authenticateStaff = async (
       email: staffUser.email,
       role: staffUser.role as StaffRole,
       fullName: staffUser.full_name,
-      hospitalDepartment: staffUser.hospital_department,
+      hospitalDepartment: staffUser.hospital_department || (claims as any).hospitalDepartment || (claims as any).department || null,
       status: staffUser.status as any,
     };
 

@@ -41,7 +41,7 @@ const authenticateStaff = async (req, _res, next) => {
             email: staffUser.email,
             role: staffUser.role,
             fullName: staffUser.full_name,
-            hospitalDepartment: staffUser.hospital_department,
+            hospitalDepartment: staffUser.hospital_department || claims.hospitalDepartment || claims.department || null,
             status: staffUser.status,
         };
         next();

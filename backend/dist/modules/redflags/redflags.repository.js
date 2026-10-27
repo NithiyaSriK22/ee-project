@@ -5,24 +5,8 @@ const prisma_js_1 = require("../../database/prisma.js");
 const logger_js_1 = require("../../config/logger.js");
 const dev_fallback_redflags_store_js_1 = require("./dev-fallback-redflags-store.js");
 const uuid_util_js_1 = require("../../utils/uuid.util.js");
-let isDbReachable = null;
-let lastDbCheck = 0;
 async function checkDatabaseAvailability() {
-    const now = Date.now();
-    if (isDbReachable !== null && now - lastDbCheck < 15000) {
-        return isDbReachable;
-    }
-    try {
-        const checkPromise = prisma_js_1.prisma.$queryRaw `SELECT 1`;
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('DB check timeout')), 300));
-        await Promise.race([checkPromise, timeoutPromise]);
-        isDbReachable = true;
-    }
-    catch {
-        isDbReachable = false;
-    }
-    lastDbCheck = now;
-    return isDbReachable;
+    return (0, prisma_js_1.checkDatabaseHealth)();
 }
 class RedFlagsRepository {
     // ============================================================================

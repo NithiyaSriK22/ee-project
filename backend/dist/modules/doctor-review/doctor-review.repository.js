@@ -6,24 +6,8 @@ const prisma_js_1 = require("../../database/prisma.js");
 const logger_js_1 = require("../../config/logger.js");
 const dev_fallback_doctor_review_store_js_1 = require("./dev-fallback-doctor-review-store.js");
 const doctor_review_types_js_1 = require("./doctor-review.types.js");
-let isDbReachable = null;
-let lastDbCheck = 0;
 async function checkDatabaseAvailability() {
-    const now = Date.now();
-    if (isDbReachable !== null && now - lastDbCheck < 15000) {
-        return isDbReachable;
-    }
-    try {
-        const checkPromise = prisma_js_1.prisma.$queryRaw `SELECT 1`;
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('DB check timeout')), 300));
-        await Promise.race([checkPromise, timeoutPromise]);
-        isDbReachable = true;
-    }
-    catch {
-        isDbReachable = false;
-    }
-    lastDbCheck = now;
-    return isDbReachable;
+    return (0, prisma_js_1.checkDatabaseHealth)();
 }
 class DoctorReviewRepository {
     // ============================================================================
@@ -216,8 +200,7 @@ class DoctorReviewRepository {
                             updatedAt: r.updated_at,
                         };
                     }));
-                    // Only return queue entries for patients actually registered in database
-                    return mapped.filter((entry) => entry.patientRegistrationNumber !== null && !entry.patientName?.startsWith('Token #'));
+                    return mapped;
                 }
             }
             catch (err) {
@@ -225,7 +208,7 @@ class DoctorReviewRepository {
             }
         }
         const fallbackList = dev_fallback_doctor_review_store_js_1.devFallbackDoctorReviewStore.listQueue(filters);
-        return fallbackList.filter((entry) => entry.patientRegistrationNumber !== null && !entry.patientTokenOrName?.startsWith('Token #'));
+        return fallbackList;
     }
     /**
      * Calculates live dashboard statistics directly from authoritative PostgreSQL records
@@ -250,17 +233,11 @@ class DoctorReviewRepository {
                         whereQueueDept.department = { contains: cleanDept, mode: 'insensitive' };
                     }
                 }
-                const [waitingCount, readyCount, pendingSummariesCount, redFlagsCount, confirmedRecordsCount] = await Promise.all([
+                const [activeQueueCount, pendingSummariesCount, redFlagsCount, confirmedRecordsCount] = await Promise.all([
                     prisma_js_1.prisma.visitQueueEntry.count({
                         where: {
                             ...whereQueueDept,
-                            queue_status: doctor_review_types_js_1.QueueStatuses.WAITING,
-                        },
-                    }),
-                    prisma_js_1.prisma.visitQueueEntry.count({
-                        where: {
-                            ...whereQueueDept,
-                            queue_status: doctor_review_types_js_1.QueueStatuses.READY_FOR_REVIEW,
+                            queue_status: { in: [doctor_review_types_js_1.QueueStatuses.WAITING, doctor_review_types_js_1.QueueStatuses.READY_FOR_REVIEW, doctor_review_types_js_1.QueueStatuses.IN_CONSULTATION] },
                         },
                     }),
                     prisma_js_1.prisma.clinicalSummary.count({
@@ -279,7 +256,6 @@ class DoctorReviewRepository {
                         },
                     }),
                 ]);
-                const totalQueueWaiting = waitingCount + readyCount;
                 // Compute real average intake time from completed interview sessions
                 let avgIntake = 3.2;
                 try {
@@ -299,13 +275,13 @@ class DoctorReviewRepository {
                 catch { }
                 return {
                     patientsInQueue: {
-                        count: totalQueueWaiting,
+                        count: activeQueueCount,
                         label: 'Patients in Queue',
                         subtext: 'Ready for intake',
                         avgIntakeMinutes: avgIntake > 0 ? avgIntake : 3.2,
                     },
                     pendingReviews: {
-                        count: pendingSummariesCount > 0 ? pendingSummariesCount : readyCount,
+                        count: pendingSummariesCount,
                         label: 'Pending Reviews',
                         subtext: 'Draft summaries',
                         footer: 'Awaiting your confirmation',

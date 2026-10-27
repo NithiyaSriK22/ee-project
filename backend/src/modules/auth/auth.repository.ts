@@ -1,29 +1,10 @@
-import { prisma } from '../../database/prisma.js';
+import { prisma, checkDatabaseHealth } from '../../database/prisma.js';
 import { StaffRole, StaffUserStatusType } from '../../types/auth.types.js';
 import { devFallbackAuthStore } from './dev-fallback-store.js';
 import { logger } from '../../config/logger.js';
 
-let isDbReachable: boolean | null = null;
-let lastDbCheck = 0;
-
 export async function checkDatabaseAvailability(): Promise<boolean> {
-  const now = Date.now();
-  if (isDbReachable !== null && now - lastDbCheck < 15000) {
-    return isDbReachable;
-  }
-
-  try {
-    const checkPromise = prisma.$queryRaw`SELECT 1`;
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('DB check timeout')), 250)
-    );
-    await Promise.race([checkPromise, timeoutPromise]);
-    isDbReachable = true;
-  } catch {
-    isDbReachable = false;
-  }
-  lastDbCheck = now;
-  return isDbReachable;
+  return checkDatabaseHealth();
 }
 
 export class AuthRepository {

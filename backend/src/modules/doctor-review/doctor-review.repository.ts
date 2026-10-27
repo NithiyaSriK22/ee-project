@@ -1,4 +1,4 @@
-import { prisma } from '../../database/prisma.js';
+import { prisma, checkDatabaseHealth } from '../../database/prisma.js';
 import { logger } from '../../config/logger.js';
 import { devFallbackDoctorReviewStore } from './dev-fallback-doctor-review-store.js';
 import {
@@ -18,27 +18,8 @@ import {
 } from './doctor-review.types.js';
 import { InMemDoctorReview } from './dev-fallback-doctor-review-store.js';
 
-let isDbReachable: boolean | null = null;
-let lastDbCheck = 0;
-
 export async function checkDatabaseAvailability(): Promise<boolean> {
-  const now = Date.now();
-  if (isDbReachable !== null && now - lastDbCheck < 15000) {
-    return isDbReachable;
-  }
-
-  try {
-    const checkPromise = prisma.$queryRaw`SELECT 1`;
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('DB check timeout')), 300)
-    );
-    await Promise.race([checkPromise, timeoutPromise]);
-    isDbReachable = true;
-  } catch {
-    isDbReachable = false;
-  }
-  lastDbCheck = now;
-  return isDbReachable;
+  return checkDatabaseHealth();
 }
 
 export class DoctorReviewRepository {
@@ -243,8 +224,7 @@ export class DoctorReviewRepository {
               };
             })
           );
-          // Only return queue entries for patients actually registered in database
-          return mapped.filter((entry) => entry.patientRegistrationNumber !== null && !entry.patientName?.startsWith('Token #'));
+          return mapped;
         }
       } catch (err) {
         logger.warn('Database error in listQueue, using fallback', { error: (err as any).message });
@@ -252,7 +232,7 @@ export class DoctorReviewRepository {
     }
 
     const fallbackList = devFallbackDoctorReviewStore.listQueue(filters);
-    return fallbackList.filter((entry) => entry.patientRegistrationNumber !== null && !entry.patientTokenOrName?.startsWith('Token #'));
+    return fallbackList;
   }
 
   /**
@@ -279,18 +259,12 @@ export class DoctorReviewRepository {
           }
         }
 
-        const [waitingCount, readyCount, pendingSummariesCount, redFlagsCount, confirmedRecordsCount] =
+        const [activeQueueCount, pendingSummariesCount, redFlagsCount, confirmedRecordsCount] =
           await Promise.all([
             prisma.visitQueueEntry.count({
               where: {
                 ...whereQueueDept,
-                queue_status: QueueStatuses.WAITING,
-              },
-            }),
-            prisma.visitQueueEntry.count({
-              where: {
-                ...whereQueueDept,
-                queue_status: QueueStatuses.READY_FOR_REVIEW,
+                queue_status: { in: [QueueStatuses.WAITING, QueueStatuses.READY_FOR_REVIEW, QueueStatuses.IN_CONSULTATION] },
               },
             }),
             prisma.clinicalSummary.count({
@@ -309,8 +283,6 @@ export class DoctorReviewRepository {
               },
             }),
           ]);
-
-        const totalQueueWaiting = waitingCount + readyCount;
 
         // Compute real average intake time from completed interview sessions
         let avgIntake = 3.2;
@@ -331,13 +303,13 @@ export class DoctorReviewRepository {
 
         return {
           patientsInQueue: {
-            count: totalQueueWaiting,
+            count: activeQueueCount,
             label: 'Patients in Queue',
             subtext: 'Ready for intake',
             avgIntakeMinutes: avgIntake > 0 ? avgIntake : 3.2,
           },
           pendingReviews: {
-            count: pendingSummariesCount > 0 ? pendingSummariesCount : readyCount,
+            count: pendingSummariesCount,
             label: 'Pending Reviews',
             subtext: 'Draft summaries',
             footer: 'Awaiting your confirmation',

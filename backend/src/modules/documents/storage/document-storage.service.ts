@@ -135,8 +135,15 @@ export class DocumentStorageService {
 
     const storageBase = path.resolve(this.getStorageBaseDir());
 
-    // If absolute path provided, it must reside strictly within storageBase
-    if (path.isAbsolute(storageReference)) {
+    // If absolute path provided (either POSIX or Windows-style on any platform),
+    // it must reside strictly within storageBase
+    const isWindowsAbs = path.win32.isAbsolute(storageReference) || /^[a-zA-Z]:[\\/]/.test(storageReference) || storageReference.startsWith('\\\\');
+    const isPosixAbs = path.posix.isAbsolute(storageReference);
+
+    if (isWindowsAbs || isPosixAbs || path.isAbsolute(storageReference)) {
+      if (isWindowsAbs && process.platform !== 'win32') {
+        throw new ForbiddenError('Path traversal attempt: target file path is outside storage root');
+      }
       const resolvedAbs = path.resolve(storageReference);
       if (!resolvedAbs.startsWith(storageBase)) {
         throw new ForbiddenError('Path traversal attempt: target file path is outside storage root');

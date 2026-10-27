@@ -113,8 +113,14 @@ class DocumentStorageService {
             throw new app_error_js_1.ForbiddenError('Path traversal token detected in storage reference');
         }
         const storageBase = node_path_1.default.resolve(this.getStorageBaseDir());
-        // If absolute path provided, it must reside strictly within storageBase
-        if (node_path_1.default.isAbsolute(storageReference)) {
+        // If absolute path provided (either POSIX or Windows-style on any platform),
+        // it must reside strictly within storageBase
+        const isWindowsAbs = node_path_1.default.win32.isAbsolute(storageReference) || /^[a-zA-Z]:[\\/]/.test(storageReference) || storageReference.startsWith('\\\\');
+        const isPosixAbs = node_path_1.default.posix.isAbsolute(storageReference);
+        if (isWindowsAbs || isPosixAbs || node_path_1.default.isAbsolute(storageReference)) {
+            if (isWindowsAbs && process.platform !== 'win32') {
+                throw new app_error_js_1.ForbiddenError('Path traversal attempt: target file path is outside storage root');
+            }
             const resolvedAbs = node_path_1.default.resolve(storageReference);
             if (!resolvedAbs.startsWith(storageBase)) {
                 throw new app_error_js_1.ForbiddenError('Path traversal attempt: target file path is outside storage root');
