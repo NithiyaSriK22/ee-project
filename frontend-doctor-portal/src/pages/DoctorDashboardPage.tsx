@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users,
   FileCheck2,
-  AlertTriangle,
   ShieldCheck,
   Play,
   Menu,
@@ -168,8 +167,8 @@ export const DoctorDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Live Statistics 4-Card Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Live Statistics 3-Card Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Card 1: Patients in Queue */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-start gap-4">
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
@@ -213,29 +212,7 @@ export const DoctorDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Red-Flag Alerts */}
-        <div
-          onClick={() => navigate('/redflags')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-start gap-4 cursor-pointer hover:border-rose-300 transition-colors"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-slate-500">Red-Flag Alerts</div>
-            <div className="text-3xl font-black text-slate-900 mt-1">
-              {isLoading ? (
-                <Loader2 className="w-6 h-6 animate-spin text-slate-400 mt-1" />
-              ) : (
-                getStatCount(stats?.redFlagAlerts, 0)
-              )}
-            </div>
-            <div className="text-xs font-bold text-slate-800 mt-1">Active screening</div>
-            <div className="text-[11px] text-rose-600 font-medium mt-0.5">Requires attention</div>
-          </div>
-        </div>
-
-        {/* Card 4: Confirmed Records */}
+        {/* Card 3: Confirmed Records */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-start gap-4">
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
             <ShieldCheck className="w-6 h-6" />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { DoctorLayout } from '../layouts/DoctorLayout';
 import { DoctorDashboardPage } from '../pages/DoctorDashboardPage';
 import { PatientRecordsPage } from '../pages/PatientRecordsPage';
@@ -7,13 +7,6 @@ import { DoctorLoginPage } from '../features/auth/pages/DoctorLoginPage';
 import { ProtectedRoute } from '../features/auth/components/ProtectedRoute';
 import { InterviewTemplateManagerPage, AdminShell } from '../features/admin';
 import { SummaryPreviewPage } from '../features/summary';
-import {
-  TriageQueuePage,
-  RuleListPage,
-  RuleEditorPage,
-  RuleTestRunner,
-  ClinicalReviewPage,
-} from '../features/redflags';
 import {
   ReviewWorkspacePage,
   RawViewPage,
@@ -50,12 +43,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="review/:visitId/raw" element={<RawViewPage />} />
         <Route path="confirmed-records/:id" element={<ConfirmedRecordPage />} />
 
-        {/* Module 6 Emergency Triage Alert Queue & Rule Governance */}
-        <Route path="redflags" element={<TriageQueuePage />} />
-        <Route path="redflags/rules" element={<RuleListPage />} />
-        <Route path="redflags/rules/new" element={<RuleEditorPage />} />
-        <Route path="redflags/rules/:id/tests" element={<RuleTestRunner />} />
-        <Route path="redflags/rules/:id/review" element={<ClinicalReviewPage />} />
+        {/* Emergency Triage & Alerts disabled per configuration */}
+        <Route path="redflags/*" element={<Navigate to="/" replace />} />
+        <Route path="redflags" element={<Navigate to="/" replace />} />
 
         {/* Module 8 Operational Notifications */}
         <Route path="notifications" element={<NotificationListPage />} />

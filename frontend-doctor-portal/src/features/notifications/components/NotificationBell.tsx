@@ -146,13 +146,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onOpenPrefer
             )}
           </div>
 
-          {/* Non-Clinical Safeguard Notice */}
-          <div className="px-3.5 py-2 bg-amber-50/70 border-b border-amber-100 text-[10px] text-amber-900 font-medium">
-            Operational facts only (no clinical PHI). Emergency red-flags are managed in{' '}
-            <Link to="/redflags" onClick={() => setIsOpen(false)} className="font-bold underline text-amber-800">
-              Triage Alerts
-            </Link>
-            .
+          {/* Operational Safeguard Notice */}
+          <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-100 text-[10px] text-slate-600 font-medium">
+            Operational facts only (no clinical PHI).
           </div>
 
           {/* List */}

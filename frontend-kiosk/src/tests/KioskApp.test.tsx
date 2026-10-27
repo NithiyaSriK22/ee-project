@@ -36,10 +36,8 @@ describe('Kiosk Application Foundation', () => {
 
     // Initially in English
     expect(screen.getByText('Guide')).toBeInTheDocument();
-    expect(screen.getByText('I Need Help')).toBeInTheDocument();
     expect(screen.getByText('Accessibility Modes')).toBeInTheDocument();
     expect(screen.queryByText('வழிகாட்டி')).not.toBeInTheDocument();
-    expect(screen.queryByText('உதவி தேவை')).not.toBeInTheDocument();
 
     // Toggle to Tamil
     const tamilButton = screen.getByRole('button', { name: 'தமிழ்' });
@@ -47,10 +45,8 @@ describe('Kiosk Application Foundation', () => {
 
     // Should now show pure Tamil
     expect(screen.getByText('வழிகாட்டி')).toBeInTheDocument();
-    expect(screen.getByText('உதவி தேவை')).toBeInTheDocument();
     expect(screen.getByText('அணுகல்தன்மை முறைகள்')).toBeInTheDocument();
     expect(screen.queryByText('Guide')).not.toBeInTheDocument();
-    expect(screen.queryByText('I Need Help')).not.toBeInTheDocument();
     expect(screen.queryByText('Accessibility Modes')).not.toBeInTheDocument();
   });
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, X, CheckCircle2, ShieldCheck, AlertTriangle, FileText } from 'lucide-react';
+import { Compass, X, CheckCircle2, ShieldCheck, FileText } from 'lucide-react';
 
 interface ClinicalGuidelinesModalProps {
   isOpen: boolean;
@@ -57,18 +57,8 @@ export const ClinicalGuidelinesModal: React.FC<ClinicalGuidelinesModalProps> = (
 
             <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1">
               <div className="flex items-center gap-2 font-bold text-slate-800">
-                <AlertTriangle className="w-4 h-4 text-rose-600" />
-                <span>2. Red-Flag Emergency Triage Safety Net</span>
-              </div>
-              <p className="text-slate-500 pl-6">
-                Red-flag alerts highlight potential emergency symptoms (e.g. chest pain, severe dyspnea, acute neurological deficits). These require immediate physician assessment and triage priority.
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1">
-              <div className="flex items-center gap-2 font-bold text-slate-800">
                 <FileText className="w-4 h-4 text-indigo-600" />
-                <span>3. Prescription & Document OCR Provenance</span>
+                <span>2. Prescription & Document OCR Provenance</span>
               </div>
               <p className="text-slate-500 pl-6">
                 All medications and clinical parameters extracted via OCR maintain direct bounding-box provenance. When OCR confidence is low or handwritten text is ambiguous, refer directly to the raw image snippet.

@@ -11,7 +11,6 @@ import { SupportModal } from '../components/modals/SupportModal';
 import { ClinicalGuidelinesModal } from '../components/modals/ClinicalGuidelinesModal';
 import {
   Users,
-  AlertTriangle,
   FileCheck2,
   FileCode2,
   History,
@@ -273,17 +272,6 @@ export const DoctorLayout: React.FC = () => {
                   <span>Patient Records</span>
                 </Link>
 
-                <Link
-                  to="/redflags"
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all ${
-                    location.pathname.startsWith('/redflags')
-                      ? 'bg-[#d1fae5] text-[#064e3b] font-bold shadow-xs'
-                      : 'text-emerald-100/80 hover:bg-white/10 hover:text-white font-medium'
-                  }`}
-                >
-                  <AlertTriangle className={`w-4 h-4 ${location.pathname.startsWith('/redflags') ? 'text-[#064e3b]' : 'text-emerald-300'}`} />
-                  <span>Red-Flag Alerts</span>
-                </Link>
 
                 {['ADMIN', 'SUPER_ADMIN', 'ANALYST', 'AUDITOR', 'DOCTOR'].includes(user?.role || 'DOCTOR') && (
                   <Link

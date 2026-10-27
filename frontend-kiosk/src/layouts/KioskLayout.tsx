@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { ShieldCheck, BookOpen, Volume2, Clock } from 'lucide-react';
-import { HelpButton, ConnectivityBanner, KioskHelpModal } from '../features/help';
+import { ConnectivityBanner, KioskHelpModal } from '../features/help';
 import { LanguageSelector } from '../features/language/LanguageSelector';
 import { AccessibilityModePicker } from '../features/language/AccessibilityModePicker';
 import { OfflineIndicator } from '../features/offline/OfflineIndicator';
@@ -135,8 +135,6 @@ export const KioskLayout: React.FC = () => {
               <span className="hidden sm:inline">{locale.guideButton}</span>
             </button>
 
-            {/* Emergency Red-Flag Help Button */}
-            <HelpButton />
           </div>
         </div>
       </header>

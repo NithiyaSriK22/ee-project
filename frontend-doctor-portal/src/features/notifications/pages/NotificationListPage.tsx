@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Bell,
   CheckCheck,
@@ -117,17 +117,12 @@ export const NotificationListPage: React.FC = () => {
       </div>
 
       {/* Boundary Callout */}
-      <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl flex items-start gap-3 text-xs text-amber-900">
-        <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3 text-xs text-slate-700">
+        <ShieldAlert className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
         <div>
           <span className="font-bold block mb-0.5">Clinical Boundary Protection</span>
           <span>
-            Operational notifications are strictly administrative. They never contain symptoms, drugs, or diagnoses.
-            Any clinical red-flags or urgent physiological warnings are displayed in the{' '}
-            <Link to="/redflags" className="font-bold underline text-amber-800">
-              Red-Flag Alerts
-            </Link>{' '}
-            triage board.
+            Operational notifications are strictly administrative. They never contain patient symptoms, drugs, or clinical diagnoses.
           </span>
         </div>
       </div>

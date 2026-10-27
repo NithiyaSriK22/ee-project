@@ -173,7 +173,7 @@ describe('Module 7 Doctor Review Frontend Components', () => {
   });
 
   describe('AlertBanner & Safety Disclaimer', () => {
-    it('displays active emergency red-flag alert and safety disclaimer', () => {
+    it('does not render emergency red-flag alert (feature disabled)', () => {
       const alerts: WorkspaceAlertItem[] = [
         {
           id: 'alert_1',
@@ -185,16 +185,15 @@ describe('Module 7 Doctor Review Frontend Components', () => {
         },
       ];
 
-      render(
+      const { container } = render(
         <AlertBanner
           alerts={alerts}
           alertDisclaimer="Clinical judgment takes priority over automated decision support."
         />
       );
 
-      expect(screen.getByText(/IMMEDIATE RED-FLAG ALERT/i)).toBeInTheDocument();
-      expect(screen.getByText(/Unacknowledged/i)).toBeInTheDocument();
-      expect(screen.getByText(/Clinical judgment takes priority/i)).toBeInTheDocument();
+      expect(container.firstChild).toBeNull();
+      expect(screen.queryByText(/IMMEDIATE RED-FLAG ALERT/i)).not.toBeInTheDocument();
     });
   });
 });
