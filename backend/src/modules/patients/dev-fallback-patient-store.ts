@@ -230,6 +230,10 @@ export class DevFallbackPatientStore {
     return profile;
   }
 
+  public getVisitProfile(visitId: string): InMemVisitProfile | null {
+    return this.visitProfiles.get(visitId) || null;
+  }
+
   public findProfileByVisit(patientId: string, visitId: string) {
     const patient = this.patients.get(patientId);
     if (!patient) return null;

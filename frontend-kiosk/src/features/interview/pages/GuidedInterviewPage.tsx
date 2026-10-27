@@ -29,11 +29,15 @@ import {
   RotateCcw,
   Bot,
   FileText,
+  ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
+import { useKioskSession } from '../../registration/hooks/useKioskSession';
 
 export const GuidedInterviewPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentLanguage, getQuestionPrompt, isCaptionsMode } = useLanguage();
+  const { endSession } = useKioskSession();
 
   // Core Session State
   const [sessionState, setSessionState] = useState<InterviewSessionState | null>(null);
@@ -50,6 +54,12 @@ export const GuidedInterviewPage: React.FC = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
   const maxRetries = 3;
+
+  // Guardian Mode Verification State for Minors
+  const [isGuardianNeeded, setIsGuardianNeeded] = useState(false);
+  const [guardianNameInput, setGuardianNameInput] = useState('');
+  const [guardianRelInput, setGuardianRelInput] = useState('Parent');
+  const [isSubmittingGuardian, setIsSubmittingGuardian] = useState(false);
 
   // Section Transition State
   const [transitioningSection, setTransitioningSection] = useState<InterviewSection | null>(null);
@@ -153,7 +163,17 @@ export const GuidedInterviewPage: React.FC = () => {
       const rawMsg = err.message || '';
       let friendlyMsg = rawMsg;
 
-      if (err.status === 401 || rawMsg.toLowerCase().includes('token') || rawMsg.toLowerCase().includes('session')) {
+      const isMinorOrGuardian =
+        rawMsg.toLowerCase().includes('minor') ||
+        rawMsg.toLowerCase().includes('guardian');
+
+      if (isMinorOrGuardian) {
+        setIsGuardianNeeded(true);
+        friendlyMsg =
+          currentLanguage === 'ta'
+            ? 'நோயாளி 18 வயதுக்குட்பட்டவர் (இளையவர்). மருத்துவ நேர்காணலைத் தொடங்க பெற்றோர் அல்லது பாதுகாவலரின் ஒப்புதல் தேவை.'
+            : rawMsg || 'Patient is a minor. An adult guardian must provide verified consent before clinical intake.';
+      } else if (err.status === 401 || rawMsg.toLowerCase().includes('token') || rawMsg.toLowerCase().includes('session')) {
         friendlyMsg =
           currentLanguage === 'ta'
             ? 'உங்கள் வருகை அமர்வு காணப்படவில்லை அல்லது காலாவதியாகிவிட்டது. தயவுசெய்து பதிவு மற்றும் ஒப்புதலை முடிக்கவும்.'
@@ -483,6 +503,36 @@ export const GuidedInterviewPage: React.FC = () => {
     );
   }
 
+  // Handler to verify guardian consent when minor intake is blocked
+  const handleVerifyGuardianConsent = async () => {
+    if (!guardianNameInput.trim()) return;
+    setIsSubmittingGuardian(true);
+    try {
+      await apiClient.post('/kiosk/interview/mode/guardian', {
+        guardianName: guardianNameInput.trim(),
+        guardianRelationship: guardianRelInput,
+        guardianConsentVerified: true,
+        minorAssentObtained: true,
+      });
+      setIsGuardianNeeded(false);
+      setErrorMessage(null);
+      await initInterview(true);
+    } catch (err: any) {
+      setErrorMessage(
+        err.message || 'Failed to record guardian consent. Please ask hospital staff for assistance.'
+      );
+    } finally {
+      setIsSubmittingGuardian(false);
+    }
+  };
+
+  const handleGoToRegistration = async () => {
+    try {
+      await endSession();
+    } catch {}
+    navigate('/register');
+  };
+
   // Render: Error / Blocked State
   if (errorMessage && !sessionState) {
     return (
@@ -502,13 +552,81 @@ export const GuidedInterviewPage: React.FC = () => {
               </p>
             )}
           </div>
+
+          {/* Quick Guardian Consent Verification for Minors */}
+          {isGuardianNeeded && (
+            <div className="p-4 bg-slate-800/80 rounded-2xl border border-indigo-500/40 text-left space-y-3">
+              <div className="flex items-center gap-2 text-indigo-300 text-xs font-bold uppercase tracking-wider">
+                <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                <span>
+                  {currentLanguage === 'ta' ? 'பெற்றோர் / பாதுகாவலர் ஒப்புதல்' : 'Parent / Guardian Consent'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300">
+                {currentLanguage === 'ta'
+                  ? 'நோயாளி 18 வயதுக்குட்பட்டவர். தொடர பெற்றோர் அல்லது பாதுகாவலர் பெயர் வழங்கவும்:'
+                  : 'Patient is under 18. An accompanying parent, legal guardian, or staff attendant must confirm consent:'}
+              </p>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={guardianNameInput}
+                  onChange={(e) => setGuardianNameInput(e.target.value)}
+                  placeholder={
+                    currentLanguage === 'ta'
+                      ? 'பெற்றோர் அல்லது பாதுகாவலர் பெயர்'
+                      : 'Parent or Guardian Full Name'
+                  }
+                  className="w-full py-2.5 px-3 text-sm bg-slate-900 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:outline-hidden focus:border-indigo-500"
+                />
+                <select
+                  value={guardianRelInput}
+                  onChange={(e) => setGuardianRelInput(e.target.value)}
+                  className="w-full py-2.5 px-3 text-sm bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-hidden focus:border-indigo-500"
+                >
+                  <option value="Parent">{currentLanguage === 'ta' ? 'பெற்றோர் (Parent)' : 'Parent'}</option>
+                  <option value="Legal Guardian">
+                    {currentLanguage === 'ta' ? 'சட்டப்பூர்வ பாதுகாவலர் (Legal Guardian)' : 'Legal Guardian'}
+                  </option>
+                  <option value="Hospital Staff">
+                    {currentLanguage === 'ta' ? 'மருத்துவமனை பணியாளர் (Staff Attendant)' : 'Hospital Staff Attendant'}
+                  </option>
+                </select>
+              </div>
+              <button
+                type="button"
+                disabled={!guardianNameInput.trim() || isSubmittingGuardian}
+                onClick={handleVerifyGuardianConsent}
+                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
+              >
+                {isSubmittingGuardian ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{currentLanguage === 'ta' ? 'சரிபார்க்கிறது...' : 'Verifying...'}</span>
+                  </>
+                ) : (
+                  <span>
+                    {currentLanguage === 'ta'
+                      ? 'ஒப்புதலை உறுதிசெய்து நேர்காணலைத் தொடங்கு'
+                      : 'Confirm Consent & Begin Interview →'}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col gap-3 pt-2">
             <button
               id="btn-goto-registration"
-              onClick={() => navigate('/register')}
+              onClick={handleGoToRegistration}
               className="w-full py-3.5 px-6 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-lg shadow-teal-500/20"
             >
-              <span>{currentLanguage === 'ta' ? 'பதிவு மற்றும் ஒப்புதலுக்குச் செல்' : 'Go to Registration & Consent'}</span>
+              <UserCheck className="w-4 h-4" />
+              <span>
+                {currentLanguage === 'ta'
+                  ? 'பதிவு மற்றும் ஒப்புதலுக்குச் செல்'
+                  : 'Start Fresh Registration & Consent'}
+              </span>
             </button>
             <button
               id="btn-retry-interview"

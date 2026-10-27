@@ -36,6 +36,20 @@ export const NewPatientStep: React.FC<NewPatientStepProps> = ({
 
   const [error, setError] = useState<string | null>(null);
 
+  const parsedAgeNum = parseInt(age, 10);
+  const isMinor = !isNaN(parsedAgeNum) && parsedAgeNum < 18;
+
+  const handleAgeChange = (val: string) => {
+    setAge(val);
+    const parsed = parseInt(val, 10);
+    if (!isNaN(parsed) && parsed < 18) {
+      setIsCompanionAssisted(true);
+      if (!companionRelationship || companionRelationship === 'Family Member') {
+        setCompanionRelationship('Parent');
+      }
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || fullName.trim().length < 2) {
@@ -54,6 +68,12 @@ export const NewPatientStep: React.FC<NewPatientStepProps> = ({
       return;
     }
 
+    if (parsedAge < 18 && (!isCompanionAssisted || !companionName.trim())) {
+      setIsCompanionAssisted(true);
+      setError('Parent or Legal Guardian name is required for minor patients under 18.');
+      return;
+    }
+
     if (isCompanionAssisted && !companionName.trim()) {
       setError(locale.newPatientErrorCompanion);
       return;
@@ -66,9 +86,9 @@ export const NewPatientStep: React.FC<NewPatientStepProps> = ({
       gender,
       contactNumber: contactNumber.trim(),
       emergencyContact: emergencyContact.trim() || undefined,
-      isCompanionAssisted,
-      companionName: isCompanionAssisted ? companionName.trim() : undefined,
-      companionRelationship: isCompanionAssisted ? companionRelationship.trim() : undefined,
+      isCompanionAssisted: isCompanionAssisted || parsedAge < 18,
+      companionName: companionName.trim() || undefined,
+      companionRelationship: companionRelationship.trim() || (parsedAge < 18 ? 'Parent' : undefined),
     });
   };
 
@@ -137,11 +157,16 @@ export const NewPatientStep: React.FC<NewPatientStepProps> = ({
                   max="130"
                   required
                   value={age}
-                  onChange={(e) => setAge(e.target.value)}
+                  onChange={(e) => handleAgeChange(e.target.value)}
                   placeholder="e.g. 52"
                   className="w-full text-lg py-3 px-4 bg-slate-50 border-2 border-slate-300 rounded-2xl text-slate-900 focus:outline-hidden focus:ring-4 focus:ring-teal-500/20 focus:border-teal-600"
                 />
               </div>
+              {isMinor && (
+                <div className="mt-2 text-[11px] font-semibold text-indigo-700 flex items-center gap-1.5 animate-in fade-in">
+                  <span>ℹ️ Patient is under 18 — Parent / Guardian details required below</span>
+                </div>
+              )}
             </div>
 
             {/* Gender */}

@@ -9,6 +9,7 @@ const auth_types_js_1 = require("../../types/auth.types.js");
 const index_js_1 = require("../deployment/index.js");
 const doctor_review_repository_js_1 = require("../doctor-review/doctor-review.repository.js");
 const doctor_review_types_js_1 = require("../doctor-review/doctor-review.types.js");
+const special_populations_service_js_1 = require("../special-populations/special-populations.service.js");
 class KioskSessionService {
     static async startSession(data) {
         // Module 10: Global Intake Pause & Kiosk Intake Kill Switch enforcement
@@ -97,6 +98,36 @@ class KioskSessionService {
             sessionTokenHash: sessionTokenResult.hash,
             expiresAt: sessionTokenResult.expiresAt,
         });
+        // Module 3B: Auto-register guardian mode for minors or accompanied patients
+        const ageEval = special_populations_service_js_1.SpecialPopulationsService.evaluatePatientAge(patientRecord.date_of_birth, patientRecord.age);
+        if (ageEval.isMinor) {
+            const gName = data.companionName?.trim() ||
+                (data.consentGrantedVia === 'staff_assisted'
+                    ? 'Hospital Staff Attendant'
+                    : data.isCompanionAssisted
+                        ? 'Accompanying Adult'
+                        : null);
+            const gRel = data.companionRelationship?.trim() ||
+                (data.consentGrantedVia === 'staff_assisted' ? 'Staff' : 'Parent / Legal Guardian');
+            if (gName || data.consentGrantedVia === 'staff_assisted') {
+                await special_populations_service_js_1.SpecialPopulationsService.recordGuardianDetails(visitId, {
+                    guardianName: gName || 'Parent / Legal Guardian',
+                    guardianRelationship: gRel,
+                    guardianPhone: data.contactNumber,
+                    guardianConsentVerified: true,
+                    minorAssentObtained: true,
+                });
+            }
+        }
+        else if (data.isCompanionAssisted && data.companionName) {
+            await special_populations_service_js_1.SpecialPopulationsService.recordGuardianDetails(visitId, {
+                guardianName: data.companionName.trim(),
+                guardianRelationship: data.companionRelationship?.trim() || 'Companion',
+                guardianPhone: data.contactNumber,
+                guardianConsentVerified: true,
+                minorAssentObtained: true,
+            });
+        }
         const activeConsents = await kiosk_session_repository_js_1.KioskSessionRepository.getConsentsForVisit(patientRecord.id, visitId);
         // Register initial entry into the Doctor Review Queue
         try {

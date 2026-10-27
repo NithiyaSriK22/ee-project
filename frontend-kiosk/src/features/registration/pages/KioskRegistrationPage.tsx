@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useKioskSession } from '../hooks/useKioskSession';
 import { StartKioskSessionPayload, SupportedLanguage } from '../types/registration.types';
 import { WelcomeStep } from '../components/WelcomeStep';
@@ -15,6 +15,7 @@ type WizardStep = 'welcome' | 'returning-lookup' | 'new-patient' | 'language' | 
 
 export const KioskRegistrationPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { startSession, endSession, isSessionActive, isLoading, error } = useKioskSession();
   const { currentLanguage, locale, l } = useLanguage();
 
@@ -23,6 +24,20 @@ export const KioskRegistrationPage: React.FC = () => {
     preferredLanguage: currentLanguage as SupportedLanguage,
     isCompanionAssisted: false,
   });
+
+  // Handle explicit reset request (from error screens or query parameters)
+  useEffect(() => {
+    if (location.search.includes('reset') || (location.state as any)?.resetSession) {
+      endSession().then(() => setStep('welcome'));
+    }
+  }, [location, endSession]);
+
+  // Keep step aligned if session ends
+  useEffect(() => {
+    if (!isSessionActive && step === 'review') {
+      setStep('welcome');
+    }
+  }, [isSessionActive, step]);
 
   // Keep form language aligned with active language
   useEffect(() => {

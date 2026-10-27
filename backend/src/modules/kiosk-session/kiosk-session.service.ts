@@ -6,6 +6,7 @@ import { ConsentTypes } from '../../types/auth.types.js';
 import { FeatureFlagsService, KioskHardeningService } from '../deployment/index.js';
 import { DoctorReviewRepository } from '../doctor-review/doctor-review.repository.js';
 import { QueueStatuses } from '../doctor-review/doctor-review.types.js';
+import { SpecialPopulationsService } from '../special-populations/special-populations.service.js';
 
 export class KioskSessionService {
   public static async startSession(data: {
@@ -127,6 +128,38 @@ export class KioskSessionService {
       sessionTokenHash: sessionTokenResult.hash,
       expiresAt: sessionTokenResult.expiresAt,
     });
+
+    // Module 3B: Auto-register guardian mode for minors or accompanied patients
+    const ageEval = SpecialPopulationsService.evaluatePatientAge(patientRecord.date_of_birth, patientRecord.age);
+    if (ageEval.isMinor) {
+      const gName =
+        data.companionName?.trim() ||
+        (data.consentGrantedVia === 'staff_assisted'
+          ? 'Hospital Staff Attendant'
+          : data.isCompanionAssisted
+          ? 'Accompanying Adult'
+          : null);
+      const gRel =
+        data.companionRelationship?.trim() ||
+        (data.consentGrantedVia === 'staff_assisted' ? 'Staff' : 'Parent / Legal Guardian');
+      if (gName || data.consentGrantedVia === 'staff_assisted') {
+        await SpecialPopulationsService.recordGuardianDetails(visitId, {
+          guardianName: gName || 'Parent / Legal Guardian',
+          guardianRelationship: gRel,
+          guardianPhone: data.contactNumber,
+          guardianConsentVerified: true,
+          minorAssentObtained: true,
+        });
+      }
+    } else if (data.isCompanionAssisted && data.companionName) {
+      await SpecialPopulationsService.recordGuardianDetails(visitId, {
+        guardianName: data.companionName.trim(),
+        guardianRelationship: data.companionRelationship?.trim() || 'Companion',
+        guardianPhone: data.contactNumber,
+        guardianConsentVerified: true,
+        minorAssentObtained: true,
+      });
+    }
 
     const activeConsents = await KioskSessionRepository.getConsentsForVisit(patientRecord.id, visitId);
 

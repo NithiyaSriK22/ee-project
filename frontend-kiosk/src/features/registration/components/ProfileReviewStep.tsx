@@ -154,9 +154,10 @@ export const ProfileReviewStep: React.FC<ProfileReviewStepProps> = ({
           type="button"
           onClick={onEndSession}
           className="py-4 px-6 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-bold rounded-2xl text-base transition-colors flex items-center justify-center gap-2 cursor-pointer border border-slate-200"
+          title="End session and return to welcome to register a new patient"
         >
           <LogOut className="w-4 h-4" />
-          <span>{locale.readyEndSessionButton}</span>
+          <span>{currentLanguage === 'ta' ? 'புதிய பதிவு / வெளியேறு' : 'New Registration / Exit'}</span>
         </button>
 
         {onProceedToDocuments && (

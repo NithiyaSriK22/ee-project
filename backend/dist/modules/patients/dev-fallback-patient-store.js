@@ -138,6 +138,9 @@ class DevFallbackPatientStore {
         }
         return profile;
     }
+    getVisitProfile(visitId) {
+        return this.visitProfiles.get(visitId) || null;
+    }
     findProfileByVisit(patientId, visitId) {
         const patient = this.patients.get(patientId);
         if (!patient)

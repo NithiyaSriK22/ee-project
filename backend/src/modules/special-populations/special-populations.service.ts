@@ -15,6 +15,7 @@ import {
   AnsweredVia,
 } from '../../types/interview.types.js';
 import { RedFlagsService } from '../redflags/redflags.service.js';
+import { devFallbackPatientStore } from '../patients/dev-fallback-patient-store.js';
 
 export class SpecialPopulationsService {
   // Default Age of Majority (configurable hospital policy threshold)
@@ -93,7 +94,21 @@ export class SpecialPopulationsService {
     }
 
     const state = this.getVisitState(visitId);
-    const hasVerifiedGuardian = !!(state.guardianDetails && state.guardianDetails.guardianConsentVerified);
+    let hasVerifiedGuardian = !!(state.guardianDetails && state.guardianDetails.guardianConsentVerified);
+
+    if (!hasVerifiedGuardian) {
+      const fallbackProfile = devFallbackPatientStore.getVisitProfile(visitId);
+      if (fallbackProfile && (fallbackProfile.is_companion_assisted || fallbackProfile.companion_name)) {
+        state.guardianDetails = {
+          guardianName: fallbackProfile.companion_name || 'Accompanying Adult / Staff',
+          guardianRelationship: fallbackProfile.companion_relationship || 'Parent / Legal Guardian',
+          guardianConsentVerified: true,
+          minorAssentObtained: true,
+          verifiedAt: new Date().toISOString(),
+        };
+        hasVerifiedGuardian = true;
+      }
+    }
 
     if (!hasVerifiedGuardian) {
       return {
