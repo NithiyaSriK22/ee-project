@@ -3,11 +3,11 @@ import React from 'react';
 export const CentralGlowingCross: React.FC = () => {
   return (
     <div
-      className="absolute -left-[290px] top-[145px] w-[320px] h-[220px] pointer-events-none z-20 hidden lg:block"
+      className="absolute -left-[290px] top-[72px] w-[320px] h-[240px] pointer-events-none z-20 hidden lg:block"
       aria-hidden="true"
     >
       <svg
-        viewBox="0 0 320 220"
+        viewBox="0 0 320 240"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full overflow-visible"
@@ -48,9 +48,10 @@ export const CentralGlowingCross: React.FC = () => {
           {/* Golden Orb Radial Glow */}
           <radialGradient id="goldenOrbGlow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="25%" stopColor="#FFF4D4" stopOpacity="0.95" />
-            <stop offset="60%" stopColor="#F9C788" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#EAA376" stopOpacity="0" />
+            <stop offset="25%" stopColor="#FFF4D0" stopOpacity="1" />
+            <stop offset="55%" stopColor="#F6BA76" stopOpacity="0.85" />
+            <stop offset="80%" stopColor="#E59A52" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#E59A52" stopOpacity="0" />
           </radialGradient>
         </defs>
 
@@ -84,7 +85,7 @@ export const CentralGlowingCross: React.FC = () => {
           />
         </g>
 
-        {/* 2. Glowing ECG Horizon Laser Line (Shoots through cross directly to the card edge at x=290) */}
+        {/* 2. Glowing ECG Horizon Laser Line (Shoots through cross directly to the card edge at x=290, y=110) */}
         {/* Neon Glow underlayer */}
         <path
           d="M 0 110 L 40 110 L 60 110 L 72 75 L 86 145 L 102 50 L 118 128 L 130 110 L 150 110 L 290 110"
@@ -105,9 +106,9 @@ export const CentralGlowingCross: React.FC = () => {
           strokeLinejoin="round"
         />
 
-        {/* 3. Golden / Peach Glowing Connector Orb (Hits the Login Card border at x=290, y=110) */}
-        <circle cx="290" cy="110" r="18" fill="url(#goldenOrbGlow)" />
-        <circle cx="290" cy="110" r="7" fill="#FFE8C4" />
+        {/* 3. Golden Glowing Connector Orb (Hits the Login Card border at x=290, y=110 - exact match to reference!) */}
+        <circle cx="290" cy="110" r="20" fill="url(#goldenOrbGlow)" />
+        <circle cx="290" cy="110" r="7.5" fill="#FFECC8" />
         <circle cx="290" cy="110" r="3.5" fill="#FFFFFF" />
       </svg>
     </div>

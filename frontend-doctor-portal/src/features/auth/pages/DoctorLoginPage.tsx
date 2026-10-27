@@ -5,7 +5,6 @@ import { DoctorLoginBackground } from '../components/DoctorLoginBackground';
 import { ThunaiBrandLogo } from '../../../components/ui/ThunaiLogo';
 import { FeatureCards } from '../components/FeatureCards';
 import { DoctorLoginCard } from '../components/DoctorLoginCard';
-import { KeyRound } from 'lucide-react';
 
 export const DoctorLoginPage: React.FC = () => {
   const { isAuthenticated, user, login } = useAuth();
@@ -28,6 +27,16 @@ export const DoctorLoginPage: React.FC = () => {
       // captured in auth state
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        setShowDevPresets((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div className="relative min-h-screen w-full bg-[#FFF9F0] text-slate-800 antialiased overflow-x-hidden selection:bg-[#7763C8] selection:text-white flex flex-col justify-between">
@@ -92,44 +101,38 @@ export const DoctorLoginPage: React.FC = () => {
 
       </div>
 
-      {/* Floating Developer Quick-Test Access (Discreet bottom-right pill outside design canvas) */}
-      <div className="fixed bottom-4 right-4 z-50">
-        <button
-          type="button"
-          onClick={() => setShowDevPresets(!showDevPresets)}
-          className="bg-white/80 backdrop-blur-md border border-[#E3DAD1] text-[#523DA8] hover:text-[#142B68] text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
-          title="Quick Test Doctor Credentials"
-        >
-          <KeyRound className="w-3.5 h-3.5 text-[#7763C8]" />
-          <span>Demo Staff</span>
-        </button>
-
-        {showDevPresets && (
-          <div className="absolute bottom-10 right-0 mb-2 w-56 bg-[#FFFDF9] rounded-2xl shadow-xl border border-[#ECE2D8] p-3 text-xs space-y-2 animate-in fade-in slide-in-from-bottom-2">
-            <div className="text-[11px] font-bold text-[#142B68] pb-1 border-b border-[#F0E6DC]">
-              1-Click Test Sign-In
-            </div>
+      {/* Hidden Dev Preset Drawer (Press Shift+D to reveal) */}
+      {showDevPresets && (
+        <div className="fixed bottom-4 right-4 z-50 w-56 bg-[#FFFDF9] rounded-2xl shadow-xl border border-[#ECE2D8] p-3 text-xs space-y-2 animate-in fade-in slide-in-from-bottom-2">
+          <div className="flex items-center justify-between pb-1 border-b border-[#F0E6DC]">
+            <span className="text-[11px] font-bold text-[#142B68]">1-Click Test Sign-In</span>
             <button
-              onClick={() => handleQuickLogin('nithiya0sy@gmail.com')}
-              className="w-full text-left px-2.5 py-1.5 rounded-lg bg-[#EDE6F8] hover:bg-[#E3D7F6] text-[#523DA8] font-medium text-[11px] transition-colors"
+              onClick={() => setShowDevPresets(false)}
+              className="text-slate-400 hover:text-slate-600 text-xs font-bold"
             >
-              👩‍⚕️ Dr. Nithiya Sri (Doctor)
-            </button>
-            <button
-              onClick={() => handleQuickLogin('dr.ananya@hospital.org')}
-              className="w-full text-left px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-[11px] transition-colors"
-            >
-              👩‍⚕️ Dr. Ananya Sharma
-            </button>
-            <button
-              onClick={() => handleQuickLogin('admin@thunai.hospital')}
-              className="w-full text-left px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-[11px] transition-colors"
-            >
-              🛡️ System Administrator
+              ✕
             </button>
           </div>
-        )}
-      </div>
+          <button
+            onClick={() => handleQuickLogin('nithiya0sy@gmail.com')}
+            className="w-full text-left px-2.5 py-1.5 rounded-lg bg-[#EDE6F8] hover:bg-[#E3D7F6] text-[#523DA8] font-medium text-[11px] transition-colors"
+          >
+            👩‍⚕️ Dr. Nithiya Sri (Doctor)
+          </button>
+          <button
+            onClick={() => handleQuickLogin('dr.ananya@hospital.org')}
+            className="w-full text-left px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-[11px] transition-colors"
+          >
+            👩‍⚕️ Dr. Ananya Sharma
+          </button>
+          <button
+            onClick={() => handleQuickLogin('admin@thunai.hospital')}
+            className="w-full text-left px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-[11px] transition-colors"
+          >
+            🛡️ System Administrator
+          </button>
+        </div>
+      )}
     </div>
   );
 };
