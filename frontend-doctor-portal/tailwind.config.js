@@ -8,10 +8,21 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        display: ['"Playfair Display"', 'serif'],
+        body: ['"Plus Jakarta Sans"', 'sans-serif'],
         serif: ['"Playfair Display"', 'Georgia', 'serif'],
         sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
+        cream: '#FFF8F0',
+        peach: '#FDEBDD',
+        navy: '#1B2A5E',
+        navysoft: '#3A4A7A',
+        brand: '#7B5CC4',
+        brandlight: '#A68BE0',
+        lavender: '#EDE6FA',
+        lavender2: '#D9CCF5',
+        accent: '#E5484D',
         thunai: {
           ivory: '#FFF9F0',
           cream: '#FFFBF5',
@@ -46,6 +57,7 @@ export default {
         },
       },
       boxShadow: {
+        card: '0 10px 40px rgba(123,92,196,0.15)',
         'thunai-card': '0 25px 70px -15px rgba(119, 99, 200, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.8) inset',
         'thunai-button': '0 10px 25px -5px rgba(119, 99, 200, 0.35)',
         'thunai-badge': '0 10px 30px -5px rgba(119, 99, 200, 0.18)',
