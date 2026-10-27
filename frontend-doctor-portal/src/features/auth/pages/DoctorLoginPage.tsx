@@ -1,14 +1,10 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LoginForm } from '../components/LoginForm';
-import { HospitalCross } from '../../../components/ui/HospitalCross';
-import {
-  ShieldCheck,
-  Building2,
-  Lock,
-  Activity,
-} from 'lucide-react';
+import { DoctorLoginBackground } from '../components/DoctorLoginBackground';
+import { ThunaiBrandLogo } from '../../../components/ui/ThunaiLogo';
+import { FeatureCards } from '../components/FeatureCards';
+import { DoctorLoginCard } from '../components/DoctorLoginCard';
 
 export const DoctorLoginPage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -24,81 +20,67 @@ export const DoctorLoginPage: React.FC = () => {
   }, [isAuthenticated, user, navigate, from]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-white to-emerald-50/30 flex flex-col justify-between p-4 sm:p-6 antialiased text-slate-800 relative selection:bg-teal-700 selection:text-white">
-      {/* Decorative Subtle Ambient Glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-teal-100/30 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-100/25 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+    <div className="relative min-h-screen w-full bg-[#FFF9F0] text-slate-800 antialiased overflow-x-hidden selection:bg-[#7763C8] selection:text-white flex flex-col justify-between">
+      {/* 1. Full Medical Graphic Background (Organic Lavender Waves, ECG, DNA, Plus Symbols, Dot Grids) */}
+      <DoctorLoginBackground />
 
-      {/* Top Clinical Header */}
-      <header className="max-w-6xl w-full mx-auto flex items-center justify-between py-2 relative z-10">
-        <div className="flex items-center gap-3">
-          {/* Healthcare Cross Emblem */}
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-800 text-white shadow-lg shadow-teal-900/20 border border-teal-700 ring-2 ring-teal-100">
-            <HospitalCross className="h-6 w-6" fill="white" />
+      {/* 2. Main Content Container */}
+      <div className="relative z-10 w-full max-w-[1480px] mx-auto px-6 sm:px-10 lg:px-14 py-6 sm:py-8 lg:py-10 flex-1 flex flex-col justify-between">
+        
+        {/* Top Header / Branding Row */}
+        <header className="w-full flex items-center justify-between mb-6 lg:mb-8">
+          <div className="flex items-center gap-3">
+            <ThunaiBrandLogo size={48} />
+            <span className="sr-only">Staff Portal</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-extrabold text-slate-900 tracking-tight">THUNAI</span>
-              <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-bold text-teal-800 border border-teal-200">
-                Hospital Staff Portal
-              </span>
-            </div>
-            <p className="text-xs font-medium text-slate-500">Government Hospital OPD Pre-Consultation Network</p>
+          
+          {/* Top-Right Tagline visible on smaller screens when SVG background may be cropped */}
+          <div className="hidden md:flex lg:hidden items-center gap-2 text-xs font-serif italic text-[#3D366A]">
+            <span>Smarter Care. Healthier Tomorrow.</span>
           </div>
-        </div>
+        </header>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-teal-900 bg-white border border-teal-200 px-3.5 py-2 rounded-xl shadow-xs">
-          <Building2 className="w-4 h-4 text-teal-700" />
-          <span>General OPD Hospital Node</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1" />
-        </div>
-      </header>
+        {/* Center Split Grid: Left Content (56%) & Right Login Card (44%) */}
+        <main className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center my-auto py-2">
+          
+          {/* LEFT SECTION (col-span-7) */}
+          <section className="lg:col-span-7 flex flex-col justify-center max-w-[620px] lg:pr-6">
+            
+            {/* Three-Line Promotional Heading */}
+            <h1 className="font-serif font-black text-4xl sm:text-5xl lg:text-[54px] xl:text-[58px] tracking-tight leading-[1.12] mb-5">
+              <span className="block text-[#142B68]">Smarter Care.</span>
+              <span className="block text-[#142B68]">Better Decisions.</span>
+              <span className="block text-[#7763C8]">Improved Health.</span>
+            </h1>
 
-      {/* Main Authentication Card */}
-      <main className="max-w-md w-full mx-auto my-auto py-8 relative z-10">
-        <div className="bg-white text-slate-900 rounded-3xl shadow-xl shadow-teal-950/5 border border-stone-200 p-8 sm:p-9 relative overflow-hidden">
-          {/* Top Medical Teal Highlight Bar */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-800 via-emerald-600 to-teal-700" />
-
-          <div className="text-center mb-6 pt-1">
-            {/* Iconic Hospital Symbol inside circular badge */}
-            <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-800 flex items-center justify-center mx-auto mb-3.5 border border-teal-200 shadow-xs ring-4 ring-teal-50/80">
-              <HospitalCross className="w-9 h-9" fill="#0f766e" />
-            </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Physician / Staff Sign In</h1>
-            <p className="text-xs text-slate-500 mt-1 font-medium">
-              Authorized clinical personnel credentials required
+            {/* Supporting Description Paragraph */}
+            <p className="text-sm sm:text-[15px] font-normal text-[#495066] leading-relaxed max-w-[480px] mb-8">
+              THUNAI empowers healthcare professionals with AI-driven analysis of medical documents, helping you deliver precise and timely care.
             </p>
-          </div>
 
-          <LoginForm />
+            {/* Four Compact Feature Cards in 2x2 Grid */}
+            <FeatureCards />
+          </section>
 
-          <div className="mt-6 pt-5 border-t border-slate-100 text-center">
-            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 font-medium">
-              <Lock className="w-3.5 h-3.5 text-teal-700" />
-              <span>Role-governed 256-bit encrypted clinical session</span>
-            </div>
-          </div>
-        </div>
+          {/* RIGHT SECTION (col-span-5): Login Card */}
+          <section className="lg:col-span-5 flex items-center justify-center lg:justify-end w-full pt-4 lg:pt-0">
+            <DoctorLoginCard />
+          </section>
+        </main>
 
-        <div className="mt-6 text-center text-xs text-slate-500 font-medium">
-          <p>
-            Emergency & OPD Clinical Access • Government Hospital Network
-          </p>
-        </div>
-      </main>
+        {/* Bottom Left Footer */}
+        <footer className="w-full pt-8 pb-2 text-[11px] sm:text-xs text-[#525970] font-normal flex flex-wrap items-center gap-2.5">
+          <span>© 2026 THUNAI. All rights reserved.</span>
+          <span className="text-[#A297C8]" aria-hidden="true">|</span>
+          <span className="inline-flex items-center gap-1.5 text-[#5146A8] font-medium">
+            <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 text-[#7763C8]">
+              <path d="M8 0 Q8 8 16 8 Q8 8 8 16 Q8 8 0 8 Q8 8 8 0 Z" />
+            </svg>
+            <span>Powered by AI</span>
+          </span>
+        </footer>
 
-      {/* Footer */}
-      <footer className="max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 border-t border-stone-200 pt-4 gap-2 relative z-10">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-teal-700" />
-          <span className="font-medium text-slate-700">THUNAI Healthcare Platform — Clinical Safety Architecture</span>
-        </div>
-        <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500">
-          <Activity className="w-3.5 h-3.5 text-emerald-600" />
-          <span>THUNAI Clinical Portal • Active</span>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 };
