@@ -36,7 +36,7 @@ export const DoctorLoginPage: React.FC = () => {
         {/* Split Columns: Left (~55%) and Right (~40%) */}
         <main className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center my-auto py-6 lg:py-0">
           {/* Left Column (~55%) */}
-          <section className="lg:col-span-7 flex flex-col justify-center max-w-[580px] lg:pr-4">
+          <section className="lg:col-span-7 flex flex-col justify-center max-w-[620px] lg:pr-4">
             <HeroSection />
             <FeatureCards />
           </section>

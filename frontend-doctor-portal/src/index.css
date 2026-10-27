@@ -62,6 +62,41 @@
   animation: plusFloat 6s ease-in-out infinite alternate;
 }
 
+/* CenterPulse 3s Pulse Animations */
+@keyframes orbPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 8px rgba(246, 186, 118, 0.65));
+  }
+  50% {
+    transform: scale(1.22);
+    filter: drop-shadow(0 0 20px rgba(246, 186, 118, 0.95));
+  }
+}
+
+@keyframes bluePulseGlow {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.03);
+  }
+}
+
+.animate-orb-pulse {
+  animation: orbPulse 3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.animate-blue-pulse {
+  animation: bluePulseGlow 3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-wave-drift-1,
   .animate-wave-drift-2,
