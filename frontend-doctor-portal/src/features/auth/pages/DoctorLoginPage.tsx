@@ -1,15 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { DoctorLoginBackground } from '../components/DoctorLoginBackground';
 import { ThunaiBrandLogo } from '../../../components/ui/ThunaiLogo';
 import { FeatureCards } from '../components/FeatureCards';
 import { DoctorLoginCard } from '../components/DoctorLoginCard';
+import { KeyRound } from 'lucide-react';
 
 export const DoctorLoginPage: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [showDevPresets, setShowDevPresets] = useState(false);
 
   const from = (location.state as any)?.from?.pathname || '/';
 
@@ -19,32 +21,40 @@ export const DoctorLoginPage: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate, from]);
 
+  const handleQuickLogin = async (email: string) => {
+    try {
+      await login({ email, password: 'doctor123' });
+    } catch {
+      // captured in auth state
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full bg-[#FFF9F0] text-slate-800 antialiased overflow-x-hidden selection:bg-[#7763C8] selection:text-white flex flex-col justify-between">
-      {/* 1. Full Medical Graphic Background (Organic Lavender Waves, ECG, DNA, Plus Symbols, Dot Grids) */}
+      {/* 1. Full Medical Graphic Background Canvas (Waves, DNA, Floating Plus, Dot Grids, Top-Right Tagline) */}
       <DoctorLoginBackground />
 
-      {/* 2. Main Content Container */}
-      <div className="relative z-10 w-full max-w-[1480px] mx-auto px-6 sm:px-10 lg:px-14 py-6 sm:py-8 lg:py-10 flex-1 flex flex-col justify-between">
+      {/* 2. Main Page Content Container */}
+      <div className="relative z-10 w-full max-w-[1536px] mx-auto min-h-screen flex flex-col justify-between px-8 sm:px-12 lg:px-16 py-6 sm:py-8 lg:py-10">
         
         {/* Top Header / Branding Row */}
-        <header className="w-full flex items-center justify-between mb-6 lg:mb-8">
+        <header className="w-full flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <ThunaiBrandLogo size={48} />
+            <ThunaiBrandLogo size={46} />
             <span className="sr-only">Staff Portal</span>
           </div>
-          
-          {/* Top-Right Tagline visible on smaller screens when SVG background may be cropped */}
-          <div className="hidden md:flex lg:hidden items-center gap-2 text-xs font-serif italic text-[#3D366A]">
+
+          {/* Top-Right Tagline visible on smaller screens when background SVG might scale */}
+          <div className="hidden sm:flex lg:hidden items-center gap-2 text-xs font-serif italic text-[#3D366A]">
             <span>Smarter Care. Healthier Tomorrow.</span>
           </div>
         </header>
 
-        {/* Center Split Grid: Left Content (56%) & Right Login Card (44%) */}
-        <main className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center my-auto py-2">
+        {/* Center Main Split: Left Content (Col 7) & Right Login Card (Col 5) */}
+        <main className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center my-auto py-6 lg:py-0">
           
-          {/* LEFT SECTION (col-span-7) */}
-          <section className="lg:col-span-7 flex flex-col justify-center max-w-[620px] lg:pr-6">
+          {/* LEFT SECTION (Col 7) */}
+          <section className="lg:col-span-7 flex flex-col justify-center max-w-[580px] lg:pr-4">
             
             {/* Three-Line Promotional Heading */}
             <h1 className="font-serif font-black text-4xl sm:text-5xl lg:text-[54px] xl:text-[58px] tracking-tight leading-[1.12] mb-5">
@@ -54,7 +64,7 @@ export const DoctorLoginPage: React.FC = () => {
             </h1>
 
             {/* Supporting Description Paragraph */}
-            <p className="text-sm sm:text-[15px] font-normal text-[#495066] leading-relaxed max-w-[480px] mb-8">
+            <p className="text-sm sm:text-[15px] font-normal text-[#495066] leading-relaxed max-w-[470px] mb-8">
               THUNAI empowers healthcare professionals with AI-driven analysis of medical documents, helping you deliver precise and timely care.
             </p>
 
@@ -62,14 +72,14 @@ export const DoctorLoginPage: React.FC = () => {
             <FeatureCards />
           </section>
 
-          {/* RIGHT SECTION (col-span-5): Login Card */}
-          <section className="lg:col-span-5 flex items-center justify-center lg:justify-end w-full pt-4 lg:pt-0">
+          {/* RIGHT SECTION (Col 5): Large Rounded Login Card with Anchored Central Glowing Cross */}
+          <section className="lg:col-span-5 flex items-center justify-center lg:justify-end w-full relative">
             <DoctorLoginCard />
           </section>
         </main>
 
         {/* Bottom Left Footer */}
-        <footer className="w-full pt-8 pb-2 text-[11px] sm:text-xs text-[#525970] font-normal flex flex-wrap items-center gap-2.5">
+        <footer className="w-full pt-6 pb-2 text-[11px] sm:text-xs text-[#525970] font-normal flex flex-wrap items-center gap-2.5">
           <span>© 2026 THUNAI. All rights reserved.</span>
           <span className="text-[#A297C8]" aria-hidden="true">|</span>
           <span className="inline-flex items-center gap-1.5 text-[#5146A8] font-medium">
@@ -80,6 +90,45 @@ export const DoctorLoginPage: React.FC = () => {
           </span>
         </footer>
 
+      </div>
+
+      {/* Floating Developer Quick-Test Access (Discreet bottom-right pill outside design canvas) */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <button
+          type="button"
+          onClick={() => setShowDevPresets(!showDevPresets)}
+          className="bg-white/80 backdrop-blur-md border border-[#E3DAD1] text-[#523DA8] hover:text-[#142B68] text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
+          title="Quick Test Doctor Credentials"
+        >
+          <KeyRound className="w-3.5 h-3.5 text-[#7763C8]" />
+          <span>Demo Staff</span>
+        </button>
+
+        {showDevPresets && (
+          <div className="absolute bottom-10 right-0 mb-2 w-56 bg-[#FFFDF9] rounded-2xl shadow-xl border border-[#ECE2D8] p-3 text-xs space-y-2 animate-in fade-in slide-in-from-bottom-2">
+            <div className="text-[11px] font-bold text-[#142B68] pb-1 border-b border-[#F0E6DC]">
+              1-Click Test Sign-In
+            </div>
+            <button
+              onClick={() => handleQuickLogin('nithiya0sy@gmail.com')}
+              className="w-full text-left px-2.5 py-1.5 rounded-lg bg-[#EDE6F8] hover:bg-[#E3D7F6] text-[#523DA8] font-medium text-[11px] transition-colors"
+            >
+              👩‍⚕️ Dr. Nithiya Sri (Doctor)
+            </button>
+            <button
+              onClick={() => handleQuickLogin('dr.ananya@hospital.org')}
+              className="w-full text-left px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-[11px] transition-colors"
+            >
+              👩‍⚕️ Dr. Ananya Sharma
+            </button>
+            <button
+              onClick={() => handleQuickLogin('admin@thunai.hospital')}
+              className="w-full text-left px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-[11px] transition-colors"
+            >
+              🛡️ System Administrator
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

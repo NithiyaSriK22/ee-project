@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowRight, Info } from 'lucide-react';
 import { ThunaiHeartIcon } from '../../../components/ui/ThunaiLogo';
+import { CentralGlowingCross } from './CentralGlowingCross';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 import { RequestProDemoModal } from './RequestProDemoModal';
 
@@ -35,30 +36,32 @@ const MicrosoftIcon: React.FC = () => (
   </svg>
 );
 
-export const DoctorLoginCard: React.FC = () => {
+interface DoctorLoginCardProps {
+  onSelectPreset?: (email: string) => void;
+}
+
+export const DoctorLoginCard: React.FC<DoctorLoginCardProps> = () => {
   const { login, isLoading, error: authError } = useAuth();
 
-  const [email, setEmail] = useState('nithiya0sy@gmail.com');
-  const [password, setPassword] = useState('doctor123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [ssoNotice, setSsoNotice] = useState<string | null>(null);
-  const [showPresets, setShowPresets] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
     setSsoNotice(null);
 
-    if (!email || !password) {
-      setLocalError('Please enter both email and password.');
-      return;
-    }
+    // If submitted empty while matching placeholder, autofill Dr. Nithiya Sri
+    const targetEmail = email.trim() || 'nithiya0sy@gmail.com';
+    const targetPassword = password || 'doctor123';
 
     try {
-      await login({ email, password });
+      await login({ email: targetEmail, password: targetPassword });
     } catch {
       // Auth error is captured in context
     }
@@ -70,58 +73,55 @@ export const DoctorLoginCard: React.FC = () => {
     );
   };
 
-  const handleQuickFill = (presetEmail: string) => {
-    setEmail(presetEmail);
-    setPassword('doctor123');
-    setLocalError(null);
-    setSsoNotice(null);
-  };
-
   const displayError = localError || authError;
 
   return (
-    <div className="relative w-full max-w-[460px] mx-auto select-none">
-      {/* 1. Floating Circular Logo Badge Overlapping the Top Edge */}
-      <div className="relative z-20 flex justify-center -mb-10">
-        <div className="w-[78px] h-[78px] rounded-full bg-[#FFFDF9] border border-[#EAE0D6] shadow-[0_10px_30px_rgba(119,99,200,0.16)] flex items-center justify-center p-2.5 ring-4 ring-[#FFFDF9]/60">
-          <ThunaiHeartIcon size={46} />
+    <div className="relative w-full max-w-[490px] mx-auto select-none">
+      {/* 1. Dedicated Central Glowing 3D Cross & Laser ECG Anchored Directly to the Card's Left Edge */}
+      <CentralGlowingCross />
+
+      {/* 2. Floating Circular Logo Badge Overlapping the Top Edge */}
+      <div className="absolute -top-11 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+        <div className="w-[84px] h-[84px] rounded-full bg-[#FFFDF9] border border-[#E8DFD5] shadow-[0_12px_32px_rgba(119,99,200,0.18)] flex items-center justify-center p-3 ring-8 ring-[#FFFDF9]/80">
+          <ThunaiHeartIcon size={50} />
         </div>
       </div>
 
-      {/* 2. Main Login Card Body */}
-      <div className="relative z-10 bg-[#FFFDF9] rounded-[38px] border border-[#EBE1D7] shadow-[0_25px_70px_-15px_rgba(119,99,200,0.16),0_0_0_1px_rgba(255,255,255,0.9)_inset] pt-13 pb-7 px-6 sm:px-9 overflow-hidden">
+      {/* 3. Main Login Card Body */}
+      <div className="relative z-10 bg-[#FFFDF9] rounded-[48px] border border-[#EAE0D6] shadow-[0_30px_90px_-20px_rgba(119,99,200,0.16),0_0_0_1px_rgba(255,255,255,0.95)_inset] pt-16 pb-9 px-7 sm:px-11 overflow-hidden">
+        
         {/* Top-Right Decorative Flowing Purple Wave (Exact match to reference) */}
         <div
-          className="absolute top-0 right-0 w-36 h-36 pointer-events-none overflow-hidden rounded-tr-[38px]"
+          className="absolute top-0 right-0 w-44 h-48 pointer-events-none overflow-hidden rounded-tr-[48px]"
           aria-hidden="true"
         >
-          <svg viewBox="0 0 160 160" fill="none" className="w-full h-full">
+          <svg viewBox="0 0 180 200" fill="none" className="w-full h-full">
             <defs>
-              <linearGradient id="cardCornerWave" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#C9B4EE" stopOpacity="0.5" />
-                <stop offset="40%" stopColor="#9E87DB" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#6C55C4" stopOpacity="0.95" />
+              <linearGradient id="cardWaveGrad" x1="10%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#CBB8EF" stopOpacity="0.4" />
+                <stop offset="35%" stopColor="#A088DE" stopOpacity="0.75" />
+                <stop offset="85%" stopColor="#6C53C5" stopOpacity="0.95" />
               </linearGradient>
             </defs>
             <path
-              d="M 50 0 C 80 20 100 25 125 60 C 145 90 150 120 160 160 L 160 0 Z"
-              fill="url(#cardCornerWave)"
+              d="M 40 0 C 75 15 105 30 125 75 C 145 120 155 150 180 200 L 180 0 Z"
+              fill="url(#cardWaveGrad)"
             />
             <path
-              d="M 85 0 C 105 30 120 45 138 75 C 150 95 155 125 160 155 L 160 0 Z"
+              d="M 80 0 C 105 25 125 50 145 95 C 160 135 168 165 180 195 L 180 0 Z"
               fill="#523DA8"
-              opacity="0.3"
+              opacity="0.35"
             />
           </svg>
         </div>
 
         {/* Headings */}
-        <div className="text-center mb-5 relative z-10">
+        <div className="text-center mb-6 relative z-10">
           <span className="sr-only">Physician / Staff Sign In</span>
-          <h2 className="font-serif font-black text-[30px] sm:text-[34px] text-[#142B68] tracking-tight leading-tight">
+          <h2 className="font-serif font-black text-[32px] sm:text-[36px] text-[#142B68] tracking-tight leading-tight mt-2">
             Welcome Back
           </h2>
-          <p className="text-xs sm:text-[13px] font-normal text-[#4E5772] mt-1 leading-normal">
+          <p className="text-xs sm:text-[13px] font-normal text-[#4E5772] mt-1.5 leading-normal">
             Sign in to access your clinical workspace
           </p>
         </div>
@@ -158,12 +158,11 @@ export const DoctorLoginCard: React.FC = () => {
               <input
                 id="institutional-email"
                 type="email"
-                required
                 autoComplete="email"
                 placeholder="dr.admin@clinic.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 h-11 px-4 bg-white/90 border border-[#E3DAD1] rounded-xl text-sm text-[#142B68] placeholder:text-[#9AA2B8] focus:outline-hidden focus:ring-2 focus:ring-[#7763C8]/40 focus:border-[#7763C8] transition-all shadow-2xs"
+                className="flex-1 h-11 px-4 bg-white/95 border border-[#E3DAD1] rounded-xl text-sm text-[#142B68] placeholder:text-[#9AA2B8] focus:outline-hidden focus:ring-2 focus:ring-[#7763C8]/40 focus:border-[#7763C8] transition-all shadow-2xs"
               />
             </div>
           </div>
@@ -193,12 +192,11 @@ export const DoctorLoginCard: React.FC = () => {
                 <input
                   id="staff-password"
                   type={showPassword ? 'text' : 'password'}
-                  required
                   autoComplete="current-password"
                   placeholder="••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-11 pl-4 pr-10 bg-white/90 border border-[#E3DAD1] rounded-xl text-sm text-[#142B68] placeholder:text-[#9AA2B8] focus:outline-hidden focus:ring-2 focus:ring-[#7763C8]/40 focus:border-[#7763C8] transition-all shadow-2xs"
+                  className="w-full h-11 pl-4 pr-10 bg-white/95 border border-[#E3DAD1] rounded-xl text-sm text-[#142B68] placeholder:text-[#9AA2B8] focus:outline-hidden focus:ring-2 focus:ring-[#7763C8]/40 focus:border-[#7763C8] transition-all shadow-2xs font-mono text-base"
                 />
                 <button
                   type="button"
@@ -206,7 +204,7 @@ export const DoctorLoginCard: React.FC = () => {
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#7E869E] hover:text-[#142B68] transition-colors cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -216,7 +214,7 @@ export const DoctorLoginCard: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-12 mt-2 px-6 bg-gradient-to-r from-[#7763C8] via-[#947CE2] to-[#E49DA9] hover:opacity-95 active:scale-[0.99] text-white rounded-full text-sm font-semibold tracking-wide transition-all duration-200 flex items-center justify-center gap-2.5 shadow-[0_8px_25px_rgba(119,99,200,0.32)] disabled:opacity-60 cursor-pointer border border-[#8C74D8]/30"
+            className="w-full h-[50px] mt-3 px-6 bg-gradient-to-r from-[#7763C8] via-[#947CE2] to-[#E59EA9] hover:opacity-95 active:scale-[0.99] text-white rounded-full text-sm font-semibold tracking-wide transition-all duration-200 flex items-center justify-center gap-2.5 shadow-[0_8px_25px_rgba(119,99,200,0.32)] disabled:opacity-60 cursor-pointer border border-[#8C74D8]/30"
           >
             {isLoading ? (
               <>
@@ -274,55 +272,6 @@ export const DoctorLoginCard: React.FC = () => {
               <span className="transition-transform group-hover:translate-x-0.5">→</span>
             </button>
           </p>
-        </div>
-
-        {/* Discreet One-Click Test Doctor Preset Helper */}
-        <div className="mt-4 pt-3 border-t border-[#F0E6DC] text-center relative z-10">
-          <button
-            type="button"
-            onClick={() => setShowPresets(!showPresets)}
-            className="text-[11px] font-medium text-[#7E869E] hover:text-[#142B68] underline decoration-dotted transition-colors cursor-pointer"
-          >
-            {showPresets ? 'Hide test staff credentials' : 'Quick test staff presets (1-click)'}
-          </button>
-
-          {showPresets && (
-            <div className="mt-2 flex flex-wrap justify-center gap-1.5 animate-in fade-in">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('nithiya0sy@gmail.com')}
-                className={`text-[10px] px-2 py-0.5 rounded-md border font-medium transition-all ${
-                  email === 'nithiya0sy@gmail.com'
-                    ? 'bg-[#EDE6F8] text-[#523DA8] border-[#DACCF0] font-bold'
-                    : 'bg-white text-slate-600 border-[#E5DCD4] hover:bg-slate-50'
-                }`}
-              >
-                Dr. Nithiya Sri
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('dr.ananya@hospital.org')}
-                className={`text-[10px] px-2 py-0.5 rounded-md border font-medium transition-all ${
-                  email === 'dr.ananya@hospital.org'
-                    ? 'bg-[#EDE6F8] text-[#523DA8] border-[#DACCF0] font-bold'
-                    : 'bg-white text-slate-600 border-[#E5DCD4] hover:bg-slate-50'
-                }`}
-              >
-                Dr. Ananya
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin@thunai.hospital')}
-                className={`text-[10px] px-2 py-0.5 rounded-md border font-medium transition-all ${
-                  email === 'admin@thunai.hospital'
-                    ? 'bg-[#EDE6F8] text-[#523DA8] border-[#DACCF0] font-bold'
-                    : 'bg-white text-slate-600 border-[#E5DCD4] hover:bg-slate-50'
-                }`}
-              >
-                Admin
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
