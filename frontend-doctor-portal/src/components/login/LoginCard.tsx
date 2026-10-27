@@ -126,7 +126,7 @@ export const LoginCard: React.FC = () => {
         {/* Headings */}
         <div className="text-center mb-6 relative z-10">
           <span className="sr-only">Physician / Staff Sign In</span>
-          <h2 className="font-display font-black text-[33px] sm:text-[37px] text-navy tracking-tight leading-tight mt-2">
+          <h2 className="font-display font-bold text-[34px] sm:text-[38px] text-navy tracking-tight leading-tight mt-2">
             Welcome Back
           </h2>
           <p className="text-xs sm:text-[13px] font-normal text-navysoft font-body mt-1.5 leading-normal">
