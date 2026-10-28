@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 
 interface DurationInputProps {
@@ -24,11 +24,18 @@ const quickPresets = [
 ];
 
 export const DurationInput: React.FC<DurationInputProps> = ({ value, onChange }) => {
-  const initialCount = typeof value === 'object' ? value?.count || 1 : 1;
-  const initialUnit = typeof value === 'object' ? value?.unit || 'days' : 'days';
+  const initialCount = typeof value === 'object' && value !== null ? value?.count || 1 : 1;
+  const initialUnit = typeof value === 'object' && value !== null ? value?.unit || 'days' : 'days';
 
   const [count, setCount] = useState<number>(initialCount);
   const [unit, setUnit] = useState<string>(initialUnit);
+
+  useEffect(() => {
+    const nextCount = typeof value === 'object' && value !== null ? value?.count || 1 : 1;
+    const nextUnit = typeof value === 'object' && value !== null ? value?.unit || 'days' : 'days';
+    setCount(nextCount);
+    setUnit(nextUnit);
+  }, [value]);
 
   const handleUpdate = (newCount: number, newUnit: string) => {
     setCount(newCount);

@@ -151,7 +151,7 @@ export const HomePage: React.FC = () => {
             {currentLanguage === 'ta' ? 'சரிபார்க்கப்பட்ட கட்டமைப்பு' : 'Verified Intake Architecture'}
           </span>
           <span className="inline-flex items-center gap-1">
-            <Stethoscope className="w-3.5 h-3.5 text-teal-600" /> THUNAI Platform
+            <Stethoscope className="w-3.5 h-3.5 text-teal-600" /> MEDBRIEF Platform
           </span>
         </div>
       </div>

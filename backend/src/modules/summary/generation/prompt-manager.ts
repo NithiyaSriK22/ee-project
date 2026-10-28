@@ -1,6 +1,6 @@
 import { SummaryPromptTemplateDto } from '../summary.types.js';
 
-export const BASELINE_SYSTEM_PROMPT = `You are the THUNAI AI Clinical Summarization Engine.
+export const BASELINE_SYSTEM_PROMPT = `You are the MEDBRIEF AI Clinical Summarization Engine.
 Your sole role is to organize patient facts into standard clinical sections without adding, inferring, diagnosing, or altering any medical information.
 
 CORE ARCHITECTURAL RULES (STRICTLY ENFORCED):

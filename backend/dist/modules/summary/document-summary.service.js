@@ -149,8 +149,7 @@ class DocumentSummaryService {
         }
         // Check for unreadable / failed items
         if (document.ocr_status === 'FAILED' || document.overall_status === 'EXTRACTION_FAILED') {
-            missingOrUnreadable.push('Optical character recognition failed to reliably extract full handwritten text.');
-            missingOrUnreadable.push('Manual clinical verification of the original physical image is required.');
+            missingOrUnreadable.push('Digital text could not be extracted. Manual clinical verification of the original document is required.');
         }
         else if (drugFields.length === 0 && diagFields.length === 0 && labFields.length === 0) {
             missingOrUnreadable.push('No recognized clinical medication, lab, or diagnostic entities found in digitized text.');
@@ -175,8 +174,8 @@ class DocumentSummaryService {
                 reportOrTestName: reportName,
                 summaryStatus: 'UNAVAILABLE',
                 extractionStatus: 'FAILED',
-                clinicalWarning: 'Handwritten text could not be reliably extracted. Please review the original document.',
-                isHandwritten: true,
+                clinicalWarning: 'Digital text could not be extracted. Please review the original document.',
+                isHandwritten: false,
                 importantFindings: [],
                 laboratoryResults: [],
                 abnormalValues: [],
@@ -184,17 +183,17 @@ class DocumentSummaryService {
                 medications: [],
                 allergies: [],
                 clinicalObservations: [
-                    'Automated summarization withheld: Optical character recognition failed to reliably extract clinical text.',
-                    'Manual clinical verification of the original physical image is required.',
+                    'Automated summarization withheld: Digital text could not be extracted from document.',
+                    'Manual clinical verification of the original document is required.',
                 ],
                 missingOrUnreadableInfo: [
-                    'Handwritten text could not be reliably extracted. Please review the original document.',
-                    'Treating physician must review the original scan directly before clinical decisions.',
+                    'Digital text could not be extracted. Please upload a text-based PDF or review the original document.',
+                    'Treating physician must review the original document directly before clinical decisions.',
                 ],
                 generatedAt: new Date().toISOString(),
                 modelId: 'SAFE_EXTRACTION_GATE',
                 isMock: false,
-                rawTextExcerpt: document.ocr_error_message || '[Handwritten text could not be reliably extracted. Please review the original document.]',
+                rawTextExcerpt: document.ocr_error_message || '[Digital text could not be extracted. Please review the original document.]',
             };
             const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
             if (isDbUp) {
@@ -345,7 +344,7 @@ class DocumentSummaryService {
                 excludedDocs.push({
                     documentId: doc.id,
                     fileName: doc.file_name,
-                    reason: doc.ocr_error_message || 'Handwritten text could not be reliably extracted. Please review the original document.',
+                    reason: doc.ocr_error_message || 'Digital text could not be extracted. Please review the original document.',
                 });
             }
             else {

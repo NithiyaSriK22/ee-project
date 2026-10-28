@@ -19,6 +19,7 @@ const documents_service_js_1 = require("../documents/documents.service.js");
 const documents_repository_js_1 = require("../documents/documents.repository.js");
 const document_storage_service_js_1 = require("../documents/storage/document-storage.service.js");
 const document_summary_service_js_1 = require("../summary/document-summary.service.js");
+const doctor_assignment_service_js_1 = require("./assignment/doctor-assignment.service.js");
 class DoctorReviewController {
     // ============================================================================
     // QUEUE ENDPOINTS
@@ -28,11 +29,40 @@ class DoctorReviewController {
             const queue = await queue_service_js_1.QueueService.getQueue(req.user, {
                 department: req.query.department,
                 status: req.query.status,
+                scope: req.query.scope,
+                assignedDoctorId: req.query.assignedDoctorId,
             });
             res.json({
                 success: true,
                 data: queue,
                 count: queue.length,
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    static async reassignVisit(req, res, next) {
+        try {
+            const { visitId } = req.params;
+            if (!visitId) {
+                throw new app_error_js_1.ValidationError('Visit ID is required');
+            }
+            const targetDoctorId = req.body.newDoctorId || req.body.doctorId;
+            if (!targetDoctorId) {
+                throw new app_error_js_1.ValidationError('A target doctor ID is required for assignment');
+            }
+            const result = await doctor_assignment_service_js_1.DoctorAssignmentService.reassignDoctor({
+                visitId,
+                newDoctorId: targetDoctorId,
+                reason: req.body.reason || 'Physician reassignment requested by clinical staff',
+                actorId: req.user.id,
+                actorRole: req.user.role,
+            });
+            res.json({
+                success: true,
+                data: result,
+                message: 'Visit doctor assignment updated successfully',
             });
         }
         catch (error) {
@@ -534,7 +564,7 @@ class DoctorReviewController {
                     overallStatus: doc.overall_status,
                     ocrErrorMessage: doc.ocr_error_message ||
                         (doc.ocr_status === 'FAILED'
-                            ? 'Handwritten text could not be reliably extracted. Please review the original document.'
+                            ? 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.'
                             : null),
                     uploadedAt: doc.uploaded_at || doc.created_at || null,
                     scanDate: doc.scan_date || null,

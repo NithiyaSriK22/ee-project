@@ -9,6 +9,7 @@ import { HospitalCross } from '../components/ui/HospitalCross';
 import { NotificationPreferencesModal } from '../features/notifications';
 import { SupportModal } from '../components/modals/SupportModal';
 import { ClinicalGuidelinesModal } from '../components/modals/ClinicalGuidelinesModal';
+import { DoctorProfileModal } from '../components/modals/DoctorProfileModal';
 import {
   Users,
   FileCheck2,
@@ -26,6 +27,7 @@ import {
   ChevronDown,
   CheckCircle2,
   FileText,
+  User,
 } from 'lucide-react';
 
 export const DoctorLayout: React.FC = () => {
@@ -35,6 +37,7 @@ export const DoctorLayout: React.FC = () => {
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isGuidelinesOpen, setIsGuidelinesOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -95,10 +98,10 @@ export const DoctorLayout: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-black text-slate-900 tracking-tight">THUNAI</span>
+                <span className="text-lg font-black text-slate-900 tracking-tight">MEDBRIEF</span>
               </div>
               <p className="text-[11px] font-bold text-emerald-700 tracking-wide -mt-0.5">
-                Doctor Review Portal
+                Doctor Portal
               </p>
             </div>
           </Link>
@@ -170,13 +173,24 @@ export const DoctorLayout: React.FC = () => {
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="px-4 py-2.5 border-b border-slate-100">
                   <p className="font-bold text-slate-900">{doctorName}</p>
-                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">{user?.email || 'doctor@thunai-health.internal'}</p>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">{user?.email || 'doctor@medbrief-health.internal'}</p>
                   <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-50 text-emerald-800 font-semibold rounded text-[10px] border border-emerald-200">
                     {user?.role || 'DOCTOR'}
                   </span>
                 </div>
 
                 <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      setIsProfileModalOpen(true);
+                    }}
+                    className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer font-medium"
+                  >
+                    <User className="w-4 h-4 text-emerald-600" />
+                    <span>View Doctor Profile</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       setIsProfileMenuOpen(false);
@@ -395,7 +409,7 @@ export const DoctorLayout: React.FC = () => {
       {/* Footer Matching Reference Screenshot */}
       <footer className="bg-white border-t border-slate-200 py-3 px-6 text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
         <div className="flex items-center gap-2">
-          <span>THUNAI © 2025</span>
+          <span>MEDBRIEF © 2026</span>
           <span>|</span>
           <span className="flex items-center gap-1.5 font-medium text-slate-600">
             OPD Clinical Case Review & Confirmation System
@@ -420,6 +434,11 @@ export const DoctorLayout: React.FC = () => {
       <ClinicalGuidelinesModal
         isOpen={isGuidelinesOpen}
         onClose={() => setIsGuidelinesOpen(false)}
+      />
+      <DoctorProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={user}
       />
     </div>
   );

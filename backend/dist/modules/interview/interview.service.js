@@ -12,6 +12,7 @@ const redflags_service_js_1 = require("../redflags/redflags.service.js");
 const special_populations_service_js_1 = require("../special-populations/special-populations.service.js");
 const doctor_review_repository_js_1 = require("../doctor-review/doctor-review.repository.js");
 const doctor_review_types_js_1 = require("../doctor-review/doctor-review.types.js");
+const doctor_assignment_service_js_1 = require("../doctor-review/assignment/doctor-assignment.service.js");
 class InterviewService {
     // ============================================================================
     // ADMIN TEMPLATE & QUESTION MANAGEMENT
@@ -420,10 +421,43 @@ class InterviewService {
             throw new app_error_js_1.NotFoundError('Interview session not found for this visit');
         }
         const updated = await interview_repository_js_1.InterviewRepository.updateSessionStatus(session.id, interview_types_js_1.InterviewSessionStatus.COMPLETED, new Date());
-        // Advance doctor queue entry status to READY_FOR_REVIEW
+        // Advance doctor queue entry status to READY_FOR_REVIEW while preserving assigned doctor and department
+        let targetDept = 'General Medicine';
+        let targetDocId = null;
+        try {
+            const existingEntry = await doctor_review_repository_js_1.DoctorReviewRepository.getQueueEntry(visitId);
+            if (existingEntry) {
+                targetDept = existingEntry.department || 'General Medicine';
+                targetDocId = existingEntry.assignedDoctorId || null;
+            }
+            if (!targetDocId) {
+                // Re-evaluate chief complaint from answers if available
+                const ccAnswer = (session.answers || []).find((a) => a.question?.question_code === 'CHIEF_COMPLAINT_PRIMARY' ||
+                    a.question?.section === 'CHIEF_COMPLAINT');
+                let complaintText;
+                if (ccAnswer?.answer_value) {
+                    complaintText = typeof ccAnswer.answer_value === 'string'
+                        ? ccAnswer.answer_value
+                        : ccAnswer.answer_value.text || ccAnswer.answer_value.value;
+                }
+                if (complaintText) {
+                    const assignment = await doctor_assignment_service_js_1.DoctorAssignmentService.assignDoctorForVisit({
+                        visitId,
+                        presentingProblem: complaintText,
+                        actorRole: 'SYSTEM',
+                    });
+                    targetDept = assignment.department;
+                    targetDocId = assignment.doctorId;
+                }
+            }
+        }
+        catch (evalErr) {
+            logger_js_1.logger.warn('Failed re-evaluating doctor assignment on interview completion', { visitId, error: String(evalErr) });
+        }
         doctor_review_repository_js_1.DoctorReviewRepository.upsertQueueEntry({
             visitId,
-            department: 'General Medicine',
+            department: targetDept,
+            assignedDoctorId: targetDocId,
             queueStatus: doctor_review_types_js_1.QueueStatuses.READY_FOR_REVIEW,
             readyAt: new Date(),
         }).catch((err) => {
@@ -519,19 +553,19 @@ class InterviewService {
         }
         switch (question.question_type) {
             case interview_types_js_1.QuestionTypes.YES_NO:
-                if (typeof value === 'string') {
-                    const upper = value.trim().toUpperCase();
+            case interview_types_js_1.QuestionTypes.YES_NO_WITH_DETAIL: {
+                const rawVal = typeof value === 'object' && value !== null ? value.value : value;
+                if (typeof rawVal === 'string') {
+                    const upper = rawVal.trim().toUpperCase();
                     if (upper !== 'YES' && upper !== 'NO') {
                         throw new app_error_js_1.ValidationError('YES_NO answer must be YES or NO.');
                     }
                 }
-                else if (typeof value !== 'boolean') {
+                else if (typeof rawVal !== 'boolean') {
                     throw new app_error_js_1.ValidationError('YES_NO questions require a boolean or string ("YES"/"NO") answer.');
                 }
                 break;
-            case interview_types_js_1.QuestionTypes.YES_NO_WITH_DETAIL:
-                // May be string/boolean or object { value: "YES", detail: "..." }
-                break;
+            }
             case interview_types_js_1.QuestionTypes.NUMERIC:
                 const num = Number(typeof value === 'object' ? value.value : value);
                 if (isNaN(num)) {

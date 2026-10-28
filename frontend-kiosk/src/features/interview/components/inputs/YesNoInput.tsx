@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, X } from 'lucide-react';
 import { useLanguage } from '../../../language/useLanguage';
 
@@ -11,16 +11,22 @@ interface YesNoInputProps {
 export const YesNoInput: React.FC<YesNoInputProps> = ({
   value,
   onChange,
-  withDetail = false,
+  withDetail = true,
 }) => {
   const { currentLanguage } = useLanguage();
-  const selectedVal = typeof value === 'object' ? value?.value : value;
-  const initialDetail = typeof value === 'object' ? value?.detail || '' : '';
+  const selectedVal = typeof value === 'object' && value !== null ? value?.value : value;
+  const initialDetail = typeof value === 'object' && value !== null ? value?.detail || '' : '';
   const [detail, setDetail] = useState(initialDetail);
+
+  // Synchronize internal detail state whenever incoming value changes (e.g. next question or answer cleared)
+  useEffect(() => {
+    const nextDetail = typeof value === 'object' && value !== null ? value?.detail || '' : '';
+    setDetail(nextDetail);
+  }, [value]);
 
   const handleSelect = (choice: 'YES' | 'NO') => {
     if (withDetail) {
-      onChange({ value: choice, detail: choice === 'YES' ? detail : '' });
+      onChange({ value: choice, detail });
     } else {
       onChange(choice);
     }
@@ -82,8 +88,8 @@ export const YesNoInput: React.FC<YesNoInputProps> = ({
         </button>
       </div>
 
-      {/* Optional details input if YES selected in withDetail mode */}
-      {withDetail && selectedVal === 'YES' && (
+      {/* Optional brief details input once an option is selected in withDetail mode */}
+      {withDetail && (selectedVal === 'YES' || selectedVal === 'NO') && (
         <div className="w-full max-w-xl animate-fadeIn">
           <label className="block text-sm font-medium text-slate-300 mb-2">
             {currentLanguage === 'ta'
@@ -97,7 +103,9 @@ export const YesNoInput: React.FC<YesNoInputProps> = ({
             placeholder={
               currentLanguage === 'ta'
                 ? 'எ.கா: மாத்திரை பெயர், வலி ஏற்பட்ட நேரம்'
-                : 'e.g. tablet name, when it started'
+                : selectedVal === 'YES'
+                ? 'e.g. tablet name, when it started, or brief note'
+                : 'e.g. stopped recently, or brief note'
             }
             className="w-full p-4 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 text-base"
           />

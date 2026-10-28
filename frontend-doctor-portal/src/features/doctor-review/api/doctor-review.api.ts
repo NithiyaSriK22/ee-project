@@ -15,10 +15,29 @@ import {
 
 export const DoctorReviewApi = {
   // Queue operations
-  async getQueue(department?: string): Promise<VisitQueueEntryDTO[]> {
-    const params = department ? { department } : {};
+  async getQueue(
+    options?:
+      | { department?: string; scope?: 'my_queue' | 'unassigned' | 'all'; assignedDoctorId?: string }
+      | string
+  ): Promise<VisitQueueEntryDTO[]> {
+    let params: Record<string, any> = {};
+    if (typeof options === 'string') {
+      params = { department: options };
+    } else if (options) {
+      params = { ...options };
+    }
     const res = await apiClient.get<ApiResponse<VisitQueueEntryDTO[]>>('/doctor/queue', { params });
     return (res.data.data || []) as VisitQueueEntryDTO[];
+  },
+
+  async reassignVisit(visitId: string, payload: { newDoctorId: string; reason?: string }): Promise<any> {
+    const res = await apiClient.post<ApiResponse<any>>(`/doctor/queue/${visitId}/reassign`, payload);
+    return res.data.data;
+  },
+
+  async getDoctors(): Promise<Array<{ id: string; fullName?: string; doctor_name?: string; department_name?: string; specialization?: string }>> {
+    const res = await apiClient.get<ApiResponse<any[]>>('/doctor/doctors');
+    return (res.data.data || []);
   },
 
   async claimVisit(visitId: string, outOfQueueReason?: string): Promise<ReviewClaimDTO> {

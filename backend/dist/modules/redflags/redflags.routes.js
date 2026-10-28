@@ -26,6 +26,7 @@ const optionalKioskAuth = (req, _res, next) => {
     next();
 };
 exports.kioskAlertsRouter.post('/help-request', optionalKioskAuth, redflags_controller_js_1.RedFlagsController.requestHelp);
+exports.kioskAlertsRouter.post('/alerts/request-help', optionalKioskAuth, redflags_controller_js_1.RedFlagsController.requestHelp);
 exports.kioskAlertsRouter.get('/alerts/status', auth_middleware_js_1.authenticateKioskSession, redflags_controller_js_1.RedFlagsController.getKioskAlertStatus);
 // ==============================================================================
 // 2. STAFF TRIAGE QUEUE ROUTES (/api/v1/triage/alerts)

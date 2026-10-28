@@ -222,7 +222,7 @@ export class PdfExportService {
   </main>
 
   <footer class="record-footer">
-    <div>THUNAI Clinical Documentation Platform — Tamper-evident verified record</div>
+    <div>MEDBRIEF Clinical Documentation Platform — Tamper-evident verified record</div>
     <div>Exported by ${this.escapeHtml(requestingUser.fullName)} | ${new Date().toISOString()}</div>
   </footer>
 </body>

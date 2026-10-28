@@ -39,6 +39,10 @@ export const startKioskSessionSchema = z
     // Initial consents if granted upfront
     consentGranted: z.boolean().default(true),
     consentGrantedVia: z.enum(['patient', 'companion', 'staff_assisted']).default('patient'),
+
+    // Presenting problem and department
+    presentingComplaint: z.string().trim().max(1000).optional(),
+    department: z.string().trim().max(100).optional(),
   })
   .refine(
     (data) => {

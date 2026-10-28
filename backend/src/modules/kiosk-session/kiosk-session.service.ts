@@ -8,6 +8,7 @@ import { DoctorReviewRepository } from '../doctor-review/doctor-review.repositor
 import { QueueStatuses } from '../doctor-review/doctor-review.types.js';
 import { SpecialPopulationsService } from '../special-populations/special-populations.service.js';
 import { prisma, checkDatabaseHealth } from '../../database/prisma.js';
+import { DoctorAssignmentService } from '../doctor-review/assignment/doctor-assignment.service.js';
 
 export class KioskSessionService {
   public static async startSession(data: {
@@ -24,6 +25,8 @@ export class KioskSessionService {
     emergencyContact?: string;
     consentGranted?: boolean;
     consentGrantedVia?: 'patient' | 'companion' | 'staff_assisted';
+    presentingComplaint?: string;
+    department?: string;
   }) {
     // Module 10: Global Intake Pause & Kiosk Intake Kill Switch enforcement
     const pauseState = FeatureFlagsService.getGlobalIntakePauseState();
@@ -164,7 +167,8 @@ export class KioskSessionService {
 
     const activeConsents = await KioskSessionRepository.getConsentsForVisit(patientRecord.id, visitId);
 
-    // Register initial entry into the Doctor Review Queue
+    // Module 4: Dynamic Problem-Based Doctor Assignment & Queue Registration
+    let assignmentResult: any = null;
     try {
       // Clean up previous WAITING queue entries for this patient so the queue only has 1 active entry
       const isDbUp = await checkDatabaseHealth();
@@ -187,11 +191,22 @@ export class KioskSessionService {
         }
       }
 
+      // Execute workload-balanced problem-to-specialty assignment
+      assignmentResult = await DoctorAssignmentService.assignDoctorForVisit({
+        visitId,
+        presentingProblem: data.presentingComplaint,
+        requestedDepartment: data.department,
+        actorRole: 'SYSTEM',
+      });
+
       await DoctorReviewRepository.upsertQueueEntry({
         visitId,
-        department: 'General Medicine',
+        department: assignmentResult.department,
+        assignedDoctorId: assignmentResult.doctorId,
         queueStatus: QueueStatuses.WAITING,
         patientTokenOrName: `${patientRecord.full_name} (${patientRecord.hospital_registration_number})`,
+        patientAge: patientRecord.age,
+        patientGender: patientRecord.gender,
         readyAt: new Date(),
       });
     } catch (queueErr) {
@@ -202,6 +217,8 @@ export class KioskSessionService {
       visitId,
       isCompanionAssisted: visitProfile.is_companion_assisted,
       language: visitProfile.preferred_language,
+      assignedDoctorId: assignmentResult?.doctorId || null,
+      department: assignmentResult?.department || 'General Medicine',
     });
 
     return {
@@ -232,6 +249,15 @@ export class KioskSessionService {
         emergencyContact: visitProfile.emergency_contact,
         status: visitProfile.status,
       },
+      assignment: assignmentResult
+        ? {
+            assigned: assignmentResult.assigned,
+            doctorId: assignmentResult.doctorId,
+            doctorName: assignmentResult.doctorName,
+            department: assignmentResult.department,
+            matchingReason: assignmentResult.matchingReason,
+          }
+        : null,
       consents: activeConsents.map((c) => ({
         consentType: c.consent_type,
         granted: c.granted,

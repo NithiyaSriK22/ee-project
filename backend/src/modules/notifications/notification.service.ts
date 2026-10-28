@@ -12,7 +12,9 @@ import {
 import { InAppChannel } from './channels/in-app.channel.js';
 import { KioskScreenChannel } from './channels/kiosk-screen.channel.js';
 import { SmsChannel } from './channels/sms.channel.js';
+import { EmailChannel } from './channels/email.channel.js';
 import { logger } from '../../config/logger.js';
+import crypto from 'crypto';
 import { ValidationError, NotFoundError, ForbiddenError } from '../../errors/app-error.js';
 
 export class NotificationService {
@@ -75,7 +77,7 @@ export class NotificationService {
       ? new Date(now.getTime() + params.expiresInMinutes * 60000).toISOString()
       : null;
 
-    const notificationId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const notificationId = crypto.randomUUID();
     const notification: NotificationDTO = {
       id: notificationId,
       type: params.type,
@@ -136,6 +138,8 @@ export class NotificationService {
       await KioskScreenChannel.deliver(notification);
     } else if (channel === NotificationChannels.SMS) {
       await SmsChannel.deliver(notification);
+    } else if (channel === NotificationChannels.EMAIL) {
+      await EmailChannel.deliver(notification);
     }
 
     return notification;
@@ -272,7 +276,7 @@ export class NotificationService {
 
   public static async getPreferences(staffUserId: string): Promise<NotificationPreferenceDTO[]> {
     const allTypes = Object.values(NotificationTypes);
-    const channels = [NotificationChannels.IN_APP, NotificationChannels.SMS];
+    const channels = [NotificationChannels.IN_APP, NotificationChannels.SMS, NotificationChannels.EMAIL];
 
     const result: NotificationPreferenceDTO[] = [];
 

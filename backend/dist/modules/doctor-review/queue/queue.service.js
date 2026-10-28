@@ -8,7 +8,7 @@ const doctor_review_types_js_1 = require("../doctor-review.types.js");
 const app_error_js_1 = require("../../../errors/app-error.js");
 class QueueService {
     /**
-     * Retrieves deterministic patient review queue scoped by department and role
+     * Retrieves deterministic patient review queue scoped by department, assigned doctor, and role
      */
     static async getQueue(user, options) {
         const isDoctor = user.role === 'DOCTOR';
@@ -17,15 +17,30 @@ class QueueService {
         if (!isDoctor && !isStaff && !isAdmin) {
             throw new app_error_js_1.ForbiddenError(`Role '${user.role}' cannot access patient queue.`);
         }
-        // Doctors see visits in their department or assigned to them by default
         let filterDepartment = options?.department;
         let filterAssignedDoctor = undefined;
-        if (isDoctor && !filterDepartment && user.hospitalDepartment) {
+        let unassignedOnly = false;
+        // Evaluate scope
+        const scope = options?.scope;
+        if (scope === 'unassigned') {
+            unassignedOnly = true;
+        }
+        else if (scope === 'my_queue') {
+            filterAssignedDoctor = isDoctor ? user.id : options?.assignedDoctorId;
+        }
+        else if (options?.assignedDoctorId) {
+            filterAssignedDoctor = options.assignedDoctorId;
+        }
+        if (options?.department) {
+            filterDepartment = options.department;
+        }
+        else if (isDoctor && user.hospitalDepartment && scope !== 'unassigned' && scope !== 'all') {
             filterDepartment = user.hospitalDepartment;
         }
         const queue = await doctor_review_repository_js_1.DoctorReviewRepository.listQueue({
             department: filterDepartment,
             assignedDoctorId: filterAssignedDoctor,
+            unassignedOnly,
             status: options?.status,
         });
         // Refresh has_open_alert flag dynamically from Module 6

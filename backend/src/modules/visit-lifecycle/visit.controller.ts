@@ -145,9 +145,9 @@ export class VisitController {
     ResponseUtil.success(res, list, 'OPD Locations retrieved');
   }
 
-  public static getDoctors(req: Request, res: Response): void {
+  public static async getDoctors(req: Request, res: Response): Promise<void> {
     const { departmentId } = req.query;
-    const list = MasterDataService.listDoctors(departmentId as string);
+    const list = await MasterDataService.listDoctorsAsync(departmentId as string);
     ResponseUtil.success(res, list, 'Doctor profiles retrieved');
   }
 

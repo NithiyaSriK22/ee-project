@@ -16,18 +16,38 @@ export const registerStaffSchema = z
       .regex(/[0-9]/, 'Password must contain at least one number'),
     confirmPassword: z.string(),
     fullName: z.string().trim().min(2, 'Full name must be at least 2 characters'),
-    role: z.enum([
-      UserRoles.STAFF_ATTENDANT,
-      UserRoles.DOCTOR,
-      UserRoles.ADMIN,
-      UserRoles.SUPER_ADMIN,
-    ] as [string, ...string[]]),
+    role: z
+      .enum([
+        UserRoles.STAFF_ATTENDANT,
+        UserRoles.DOCTOR,
+        UserRoles.ADMIN,
+        UserRoles.SUPER_ADMIN,
+      ] as [string, ...string[]])
+      .optional()
+      .default(UserRoles.DOCTOR),
+    medicalRegistrationNumber: z
+      .string()
+      .trim()
+      .min(2, 'Medical registration number must be at least 2 characters')
+      .max(100, 'Medical registration number cannot exceed 100 characters')
+      .optional(),
+    specialization: z.string().trim().max(100).optional(),
     hospitalDepartment: z.string().trim().max(100).optional(),
+    clinicName: z.string().trim().max(255).optional(),
+    hospitalName: z.string().trim().max(255).optional(),
+    qualification: z.string().trim().max(100).optional(),
+    experienceYears: z.coerce.number().int().min(0, 'Experience must be a non-negative integer').optional(),
+    designation: z.string().trim().max(100).optional(),
+    phoneNumber: z.string().trim().max(50).optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
+
+export const suggestEmailSchema = z.object({
+  fullName: z.string().trim().min(2, 'Full name must be at least 2 characters'),
+});
 
 export const loginStaffSchema = z.object({
   email: z.string().trim().toLowerCase().email('Please provide a valid email address'),

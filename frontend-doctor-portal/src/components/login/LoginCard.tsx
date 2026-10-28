@@ -1,61 +1,70 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
-import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowRight, Info } from 'lucide-react';
+import { authApi } from '../../features/auth/api/auth.api';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  Sparkles,
+} from 'lucide-react';
 import { CenterPulse } from './CenterPulse';
 import { ForgotPasswordModal } from '../../features/auth/components/ForgotPasswordModal';
-import { RequestProDemoModal } from '../../features/auth/components/RequestProDemoModal';
 
-const GoogleIcon: React.FC = () => (
-  <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-      fill="#4285F4"
-    />
-    <path
-      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-      fill="#34A853"
-    />
-    <path
-      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-      fill="#FBBC05"
-    />
-    <path
-      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-      fill="#EA4335"
-    />
-  </svg>
-);
-
-const MicrosoftIcon: React.FC = () => (
-  <svg viewBox="0 0 21 21" className="w-4 h-4 shrink-0" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-    <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-    <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-    <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
-  </svg>
-);
+const SPECIALIZATIONS = [
+  'General Medicine',
+  'Cardiology',
+  'Pediatrics',
+  'Neurology',
+  'Dermatology',
+  'Orthopedics',
+  'Ophthalmology',
+  'ENT',
+  'Emergency Medicine',
+  'General Surgery',
+  'Psychiatry',
+  'Pulmonology',
+];
 
 export const LoginCard: React.FC = () => {
-  const { login, isLoading, error: authError } = useAuth();
+  const { login, register, isLoading, error: authError } = useAuth();
 
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+
+  // Login form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [ssoNotice, setSsoNotice] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Registration form state (all fields initially empty)
+  const [regFullName, setRegFullName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regShowPassword, setRegShowPassword] = useState(false);
+  const [regMedRegNo, setRegMedRegNo] = useState('');
+  const [regSpecialization, setRegSpecialization] = useState('');
+  const [regQualification, setRegQualification] = useState('');
+  const [regExperienceYears, setRegExperienceYears] = useState<string>('');
+  const [regHospitalName, setRegHospitalName] = useState('');
+  const [regSuccessMessage, setRegSuccessMessage] = useState<string | null>(null);
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
-    setSsoNotice(null);
 
     const targetEmail = email.trim();
     const targetPassword = password;
 
     if (!targetEmail || !targetPassword) {
-      setLocalError('Please enter both your institutional email address and password.');
+      setLocalError('Please enter both your email address and password.');
       return;
     }
 
@@ -66,16 +75,83 @@ export const LoginCard: React.FC = () => {
     }
   };
 
-  const handleSocialClick = (provider: string) => {
-    setSsoNotice(
-      `Institutional Single Sign-On with ${provider} requires hospital directory provisioning. Please sign in with your Institutional Email address.`
-    );
+  const handleSuggestShortEmail = async () => {
+    if (!regFullName.trim()) {
+      setLocalError('Please enter your full name first to generate a short email address.');
+      return;
+    }
+    try {
+      setIsGeneratingEmail(true);
+      setLocalError(null);
+      const res = await authApi.suggestEmail(regFullName.trim());
+      if (res?.email) {
+        setRegEmail(res.email);
+      }
+    } catch (err: any) {
+      setLocalError(err?.message || 'Failed to generate short email suggestion.');
+    } finally {
+      setIsGeneratingEmail(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+    setRegSuccessMessage(null);
+
+    if (!regFullName.trim()) {
+      setLocalError('Please enter your Full Name.');
+      return;
+    }
+    if (!regEmail.trim()) {
+      setLocalError('Please enter a valid Email Address.');
+      return;
+    }
+    if (!regPassword) {
+      setLocalError('Please enter a secure password (minimum 8 characters).');
+      return;
+    }
+    if (regPassword.length < 8) {
+      setLocalError('Password must be at least 8 characters long and contain both letters and numbers.');
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      setLocalError('Passwords do not match. Please verify your password confirmation.');
+      return;
+    }
+    if (!regMedRegNo.trim()) {
+      setLocalError('Medical Registration Number is required for doctor verification.');
+      return;
+    }
+    if (!regSpecialization) {
+      setLocalError('Please select your specialization.');
+      return;
+    }
+
+    try {
+      await register({
+        fullName: regFullName.trim(),
+        email: regEmail.trim().toLowerCase(),
+        password: regPassword,
+        confirmPassword: regConfirmPassword,
+        medicalRegistrationNumber: regMedRegNo.trim(),
+        specialization: regSpecialization,
+        qualification: regQualification.trim() || undefined,
+        experienceYears: regExperienceYears !== '' ? Number(regExperienceYears) : undefined,
+        hospitalName: regHospitalName.trim() || undefined,
+      });
+
+      setRegSuccessMessage('Your account has been created successfully. Please sign in to continue.');
+      setEmail(regEmail.trim().toLowerCase());
+    } catch (err: any) {
+      setLocalError(err?.message || 'Registration failed. Please check the entered information.');
+    }
   };
 
   const displayError = localError || authError;
 
   return (
-    <div className="relative w-full max-w-[485px] mx-auto select-none">
+    <div className="relative w-full max-w-[500px] mx-auto select-none">
       {/* Center Pulse Line & Cross connecting to Left Border */}
       <CenterPulse />
 
@@ -111,9 +187,8 @@ export const LoginCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Login Card Body: Opaque Gradient from #FFFFFF to #FFF8F0 */}
-      <div className="relative z-10 bg-gradient-to-b from-[#FFFFFF] to-[#FFF8F0] rounded-[48px] border border-peach shadow-card pt-16 pb-9 px-7 sm:px-11 overflow-hidden">
-        
+      {/* Main Card Body: Opaque Gradient from #FFFFFF to #FFF8F0 */}
+      <div className="relative z-10 bg-gradient-to-b from-[#FFFFFF] to-[#FFF8F0] rounded-[48px] border border-peach shadow-card pt-16 pb-9 px-7 sm:px-10 overflow-hidden">
         {/* Top-Right Decorative Flowing Wave */}
         <div
           className="absolute top-0 right-0 w-48 h-52 pointer-events-none overflow-hidden rounded-tr-[48px]"
@@ -134,176 +209,418 @@ export const LoginCard: React.FC = () => {
           </svg>
         </div>
 
-        {/* Headings: font-display, 700, ~44px, navy */}
+        {/* Headings */}
         <div className="text-center mb-6 relative z-10">
-          <span className="sr-only">Physician / Staff Sign In</span>
-          <h2 className="font-display font-bold text-[38px] sm:text-[44px] text-navy tracking-tight leading-tight mt-2">
-            Welcome Back
+          <span className="sr-only">Doctor Authentication</span>
+          <h2 className="font-display font-bold text-[36px] sm:text-[42px] text-navy tracking-tight leading-tight mt-1">
+            {mode === 'login' ? 'Welcome Back' : 'Doctor Sign-Up'}
           </h2>
-          <p className="text-xs sm:text-[14px] font-normal text-navysoft font-body mt-1.5 leading-normal">
-            Sign in to access your clinical workspace
+          <p className="text-xs sm:text-[14px] font-normal text-navysoft font-body mt-1 leading-normal">
+            {mode === 'login'
+              ? 'Sign in to access your clinical workspace'
+              : 'Register your doctor credentials for clinical review access'}
           </p>
         </div>
 
-        {/* Errors & Notices */}
-        {displayError && (
+        {/* Success Alert */}
+        {regSuccessMessage && (
+          <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col gap-2 text-xs text-emerald-900 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span className="font-bold text-sm">Account Created</span>
+            </div>
+            <p className="text-emerald-800 leading-relaxed font-body">{regSuccessMessage}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setRegSuccessMessage(null);
+                setMode('login');
+              }}
+              className="mt-1 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer"
+            >
+              Sign In to Continue →
+            </button>
+          </div>
+        )}
+
+        {/* Errors */}
+        {displayError && !regSuccessMessage && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
             <span className="font-medium leading-relaxed font-body">{displayError}</span>
           </div>
         )}
 
-        {ssoNotice && (
-          <div className="mb-4 p-3 bg-lavender border border-lavender2 rounded-2xl flex items-start gap-2.5 text-xs text-brand animate-in fade-in">
-            <Info className="w-4 h-4 shrink-0 mt-0.5 text-brand" />
-            <span className="font-medium leading-relaxed font-body">{ssoNotice}</span>
-          </div>
-        )}
-
-        {/* Form Controls */}
-        <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
-          {/* Email */}
-          <div>
-            <label
-              htmlFor="institutional-email"
-              className="block text-xs font-semibold text-navy font-body mb-1.5"
-            >
-              Institutional Email Address
-            </label>
-            <div className="flex items-center gap-2.5">
-              {/* Round ~44px Lavender Bubble with Indigo Icon */}
-              <div className="w-11 h-11 rounded-full bg-[#EDE6FA] flex items-center justify-center text-[#4B3FA0] shrink-0 shadow-2xs">
-                <Mail className="w-5 h-5 text-[#4B3FA0]" strokeWidth={2.2} />
-              </div>
-              <input
-                id="institutional-email"
-                type="email"
-                autoComplete="email"
-                placeholder="dr.admin@clinic.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 h-11 px-4 bg-white border border-peach rounded-2xl text-sm text-navy font-body placeholder:text-navysoft/60 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand transition-all shadow-2xs"
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
+        {/* ==================================================================== */}
+        {/* LOGIN FORM */}
+        {/* ==================================================================== */}
+        {mode === 'login' ? (
+          <form onSubmit={handleLoginSubmit} className="space-y-4 relative z-10">
+            {/* Email Address */}
+            <div>
               <label
-                htmlFor="staff-password"
-                className="block text-xs font-semibold text-navy font-body"
+                htmlFor="doctor-email"
+                className="block text-xs font-semibold text-navy font-body mb-1.5"
               >
-                Password
+                Email Address
               </label>
-              <button
-                type="button"
-                onClick={() => setIsForgotModalOpen(true)}
-                className="text-xs font-medium text-navy hover:text-brand hover:underline transition-colors cursor-pointer font-body"
-              >
-                Forgot password?
-              </button>
-            </div>
-            <div className="flex items-center gap-2.5">
-              {/* Round ~44px Filled Indigo Bubble with White Lock Icon */}
-              <div className="w-11 h-11 rounded-full bg-[#4B3FA0] flex items-center justify-center shrink-0 shadow-2xs">
-                <Lock className="w-5 h-5 text-white stroke-white fill-none" strokeWidth={2.2} />
-              </div>
-              <div className="relative flex-1">
+              <div className="relative flex items-center">
+                <div className="absolute left-3.5 flex items-center justify-center text-brand pointer-events-none">
+                  <Mail className="w-5 h-5 text-brand" strokeWidth={2} />
+                </div>
                 <input
-                  id="staff-password"
+                  id="doctor-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full h-12 pl-12 pr-4 bg-white/80 border border-peach rounded-2xl text-sm text-navy font-body placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand transition-all shadow-2xs"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label
+                  htmlFor="doctor-password"
+                  className="block text-xs font-semibold text-navy font-body"
+                >
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsForgotModalOpen(true)}
+                  className="text-xs font-medium text-navy hover:text-brand hover:underline transition-colors cursor-pointer font-body"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div className="relative flex items-center">
+                <div className="absolute left-3.5 flex items-center justify-center text-brand pointer-events-none">
+                  <Lock className="w-5 h-5 text-brand" strokeWidth={2} />
+                </div>
+                <input
+                  id="doctor-password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  placeholder="••••••"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-11 pl-4 pr-10 bg-white border border-peach rounded-2xl text-sm text-navy placeholder:text-navysoft/60 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand transition-all shadow-2xs font-mono text-base"
+                  className="w-full h-12 pl-12 pr-11 bg-white/80 border border-peach rounded-2xl text-sm text-navy placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand transition-all shadow-2xs font-body"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-navysoft hover:text-navy transition-colors cursor-pointer"
+                  className="absolute right-3.5 flex items-center text-navysoft hover:text-navy transition-colors cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* Sign In Button: Gradient from #8B6FE0 to #F2B8A8, Purple Glow Shadow, Non-faded */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-[52px] mt-3 px-6 bg-gradient-to-r from-[#8B6FE0] to-[#F2B8A8] text-white rounded-full text-[15px] font-semibold tracking-wide flex items-center justify-center gap-2.5 shadow-[0_10px_28px_-4px_rgba(139,111,224,0.48)] hover:opacity-95 active:scale-[0.99] transition-all duration-200 disabled:opacity-85 disabled:cursor-wait cursor-pointer font-body opacity-100"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-white" />
-                <span>Signing into Workspace...</span>
-              </>
-            ) : (
-              <>
-                <span className="font-semibold">Sign in to Clinical Workspace</span>
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* OR SIGN IN WITH */}
-        <div className="flex items-center my-4 relative z-10">
-          <div className="flex-1 h-px bg-peach" />
-          <span className="text-[10px] font-bold tracking-[0.14em] text-navysoft px-3.5 uppercase select-none font-body">
-            OR SIGN IN WITH
-          </span>
-          <div className="flex-1 h-px bg-peach" />
-        </div>
-
-        {/* Social Buttons */}
-        <div className="grid grid-cols-2 gap-3 relative z-10">
-          <button
-            type="button"
-            onClick={() => handleSocialClick('Google Workspace')}
-            className="h-11 px-4 bg-white border border-peach rounded-full flex items-center justify-center gap-2 text-xs font-semibold text-navy hover:bg-cream transition-all cursor-pointer font-body shadow-2xs"
-          >
-            <GoogleIcon />
-            <span>Google</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSocialClick('Microsoft Entra ID')}
-            className="h-11 px-4 bg-white border border-peach rounded-full flex items-center justify-center gap-2 text-xs font-semibold text-navy hover:bg-cream transition-all cursor-pointer font-body shadow-2xs"
-          >
-            <MicrosoftIcon />
-            <span>Microsoft</span>
-          </button>
-        </div>
-
-        {/* Request Pro Demo Link */}
-        <div className="mt-5 text-center relative z-10">
-          <p className="text-xs text-navysoft font-body">
-            Don't have an account?{' '}
+            {/* Primary Sign In Button */}
             <button
-              type="button"
-              onClick={() => setIsDemoModalOpen(true)}
-              className="font-bold text-navy hover:text-brand transition-colors cursor-pointer ml-1 inline-flex items-center gap-1 group"
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-[52px] mt-4 px-6 bg-gradient-to-r from-[#8B6FE0] to-[#F2B8A8] text-white rounded-full text-[15px] font-semibold tracking-wide flex items-center justify-center gap-2.5 shadow-[0_10px_28px_-4px_rgba(139,111,224,0.48)] hover:opacity-95 active:scale-[0.99] transition-all duration-200 disabled:opacity-85 disabled:cursor-wait cursor-pointer font-body"
             >
-              <span>Request Pro Demo</span>
-              <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Signing into Workspace...</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold">Sign in to Clinical Workspace</span>
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </>
+              )}
             </button>
-          </p>
-        </div>
+
+            {/* Sign Up Link */}
+            <div className="pt-3 text-center relative z-10">
+              <p className="text-xs text-navysoft font-body">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocalError(null);
+                    setRegSuccessMessage(null);
+                    setMode('register');
+                  }}
+                  className="font-bold text-navy hover:text-brand transition-colors cursor-pointer ml-1 inline-flex items-center gap-1 group"
+                >
+                  <span>Sign Up</span>
+                  <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                </button>
+              </p>
+            </div>
+          </form>
+        ) : (
+          /* ==================================================================== */
+          /* DOCTOR REGISTRATION FORM */
+          /* ==================================================================== */
+          <form onSubmit={handleRegisterSubmit} className="space-y-3.5 relative z-10">
+            {/* 1. Full Name */}
+            <div>
+              <label
+                htmlFor="reg-fullname"
+                className="block text-xs font-semibold text-navy font-body mb-1"
+              >
+                Full Name *
+              </label>
+              <div className="relative">
+                <input
+                  id="reg-fullname"
+                  type="text"
+                  required
+                  placeholder="Enter your full name"
+                  value={regFullName}
+                  onChange={(e) => setRegFullName(e.target.value)}
+                  className="w-full h-10 px-3.5 bg-white border border-peach rounded-xl text-sm text-navy placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand shadow-2xs font-body"
+                />
+              </div>
+            </div>
+
+            {/* 2. Email Address with short email generator button */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor="reg-email"
+                  className="block text-xs font-semibold text-navy font-body"
+                >
+                  Email Address *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleSuggestShortEmail}
+                  disabled={isGeneratingEmail}
+                  className="text-[11px] font-semibold text-brand hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  title="Generate short development email"
+                >
+                  {isGeneratingEmail ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3 h-3 text-brand" />
+                  )}
+                  <span>Generate Short Email</span>
+                </button>
+              </div>
+              <input
+                id="reg-email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="Enter your email address"
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+                className="w-full h-10 px-3.5 bg-white border border-peach rounded-xl text-sm text-navy placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand shadow-2xs font-body"
+              />
+            </div>
+
+            {/* 3 & 4. Password & Confirm Password */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="reg-password"
+                  className="block text-xs font-semibold text-navy font-body mb-1"
+                >
+                  Password *
+                </label>
+                <div className="relative">
+                  <input
+                    id="reg-password"
+                    type={regShowPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="new-password"
+                    placeholder="Enter your password"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    className="w-full h-10 pl-3 pr-8 bg-white border border-peach rounded-xl text-sm text-navy placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand shadow-2xs font-body"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setRegShowPassword(!regShowPassword)}
+                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-navysoft hover:text-navy cursor-pointer"
+                    aria-label={regShowPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {regShowPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="reg-confirm-password"
+                  className="block text-xs font-semibold text-navy font-body mb-1"
+                >
+                  Confirm Password *
+                </label>
+                <input
+                  id="reg-confirm-password"
+                  type={regShowPassword ? 'text' : 'password'}
+                  required
+                  autoComplete="new-password"
+                  placeholder="Re-enter your password"
+                  value={regConfirmPassword}
+                  onChange={(e) => setRegConfirmPassword(e.target.value)}
+                  className="w-full h-10 px-3 bg-white border border-peach rounded-xl text-sm text-navy placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand shadow-2xs font-body"
+                />
+              </div>
+            </div>
+
+            {/* 5. Medical Registration Number */}
+            <div>
+              <label
+                htmlFor="reg-medno"
+                className="block text-xs font-semibold text-navy font-body mb-1"
+              >
+                Medical Registration Number *
+              </label>
+              <input
+                id="reg-medno"
+                type="text"
+                required
+                placeholder="Enter your medical registration number"
+                value={regMedRegNo}
+                onChange={(e) => setRegMedRegNo(e.target.value)}
+                className="w-full h-10 px-3.5 bg-white border border-peach rounded-xl text-sm text-navy placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand shadow-2xs font-body uppercase placeholder:normal-case"
+              />
+            </div>
+
+            {/* 6. Specialization & Qualification */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="reg-specialization"
+                  className="block text-xs font-semibold text-navy font-body mb-1"
+                >
+                  Specialization *
+                </label>
+                <select
+                  id="reg-specialization"
+                  required
+                  value={regSpecialization}
+                  onChange={(e) => setRegSpecialization(e.target.value)}
+                  className={`w-full h-10 px-3 bg-white border border-peach rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand shadow-2xs font-body cursor-pointer ${
+                    !regSpecialization ? 'text-slate-400' : 'text-navy'
+                  }`}
+                >
+                  <option value="" disabled className="text-slate-400">
+                    Select your specialization
+                  </option>
+                  {SPECIALIZATIONS.map((spec) => (
+                    <option key={spec} value={spec} className="text-navy">
+                      {spec}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="reg-qualification"
+                  className="block text-xs font-semibold text-navy font-body mb-1"
+                >
+                  Qualification (optional)
+                </label>
+                <input
+                  id="reg-qualification"
+                  type="text"
+                  placeholder="Enter your qualifications (e.g., MBBS, MD)"
+                  value={regQualification}
+                  onChange={(e) => setRegQualification(e.target.value)}
+                  className="w-full h-10 px-3 bg-white border border-peach rounded-xl text-xs text-navy placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand shadow-2xs font-body"
+                />
+              </div>
+            </div>
+
+            {/* 7. Experience & Hospital/Clinic */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-1">
+                <label
+                  htmlFor="reg-experience"
+                  className="block text-xs font-semibold text-navy font-body mb-1"
+                >
+                  Experience (Years)
+                </label>
+                <input
+                  id="reg-experience"
+                  type="number"
+                  min="0"
+                  max="70"
+                  placeholder="Enter your years of experience"
+                  value={regExperienceYears}
+                  onChange={(e) => setRegExperienceYears(e.target.value)}
+                  className="w-full h-10 px-3 bg-white border border-peach rounded-xl text-xs text-navy placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand shadow-2xs font-body"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label
+                  htmlFor="reg-hospital"
+                  className="block text-xs font-semibold text-navy font-body mb-1"
+                >
+                  Hospital or Clinic Name (optional)
+                </label>
+                <input
+                  id="reg-hospital"
+                  type="text"
+                  placeholder="Enter your hospital or clinic name"
+                  value={regHospitalName}
+                  onChange={(e) => setRegHospitalName(e.target.value)}
+                  className="w-full h-10 px-3 bg-white border border-peach rounded-xl text-xs text-navy placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand/40 focus:border-brand shadow-2xs font-body"
+                />
+              </div>
+            </div>
+
+            {/* Register Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-[48px] mt-2 px-6 bg-gradient-to-r from-[#8B6FE0] to-[#F2B8A8] text-white rounded-full text-sm font-semibold tracking-wide flex items-center justify-center gap-2 shadow-[0_10px_28px_-4px_rgba(139,111,224,0.48)] hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-85 disabled:cursor-wait cursor-pointer font-body"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Registering Doctor Account...</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold">Complete Doctor Registration</span>
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </>
+              )}
+            </button>
+
+            {/* Back to Login Link */}
+            <div className="mt-3 text-center relative z-10">
+              <p className="text-xs text-navysoft font-body">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocalError(null);
+                    setRegSuccessMessage(null);
+                    setMode('login');
+                  }}
+                  className="font-bold text-navy hover:text-brand transition-colors cursor-pointer ml-1 inline-flex items-center gap-1 group"
+                >
+                  <span>Sign In</span>
+                  <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                </button>
+              </p>
+            </div>
+          </form>
+        )}
       </div>
 
       <ForgotPasswordModal
         isOpen={isForgotModalOpen}
         onClose={() => setIsForgotModalOpen(false)}
-      />
-
-      <RequestProDemoModal
-        isOpen={isDemoModalOpen}
-        onClose={() => setIsDemoModalOpen(false)}
       />
     </div>
   );

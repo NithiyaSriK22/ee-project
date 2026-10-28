@@ -1,7 +1,7 @@
 {
   "name": "medikiosk-root",
   "version": "1.0.0",
-  "description": "MediKiosk — AI-Assisted Patient Case-Taking & Clinical Summary Platform (SIH26047)",
+  "description": "MEDBRIEF — Medical Intelligence. Simplified. (SIH26047)",
   "private": true,
   "workspaces": [
     "backend",
@@ -11,12 +11,17 @@
   "scripts": {
     "db:start": "npm --workspace=backend run db:start",
     "db:ready": "npm --workspace=backend run db:ready",
+    "db:push": "npm --workspace=backend run db:push",
+    "prisma:generate": "npm --workspace=backend run prisma:generate",
     "dev:backend": "npm --workspace=backend run dev",
     "dev:kiosk": "npm --workspace=frontend-kiosk run dev",
     "dev:doctor": "npm --workspace=frontend-doctor-portal run dev",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces"
+  },
+  "prisma": {
+    "schema": "backend/prisma/schema.prisma"
   },
   "keywords": [
     "medikiosk",
@@ -25,6 +30,6 @@
     "doctor-summary",
     "triage"
   ],
-  "author": "MediKiosk Engineering Team",
+  "author": "MEDBRIEF Engineering Team",
   "license": "UNLICENSED"
 }

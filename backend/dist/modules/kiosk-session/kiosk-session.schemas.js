@@ -38,6 +38,9 @@ exports.startKioskSessionSchema = zod_1.z
     // Initial consents if granted upfront
     consentGranted: zod_1.z.boolean().default(true),
     consentGrantedVia: zod_1.z.enum(['patient', 'companion', 'staff_assisted']).default('patient'),
+    // Presenting problem and department
+    presentingComplaint: zod_1.z.string().trim().max(1000).optional(),
+    department: zod_1.z.string().trim().max(100).optional(),
 })
     .refine((data) => {
     // Must provide either existing registration number OR registration fields

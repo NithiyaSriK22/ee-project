@@ -133,7 +133,7 @@ export class ReportsService {
     });
 
     const csvContent =
-      `# THUNAI Automated Administrative Report\n` +
+      `# MEDBRIEF Automated Administrative Report\n` +
       `# Type: ${report.reportType}\n` +
       `# Range: ${report.dateRangeStart} to ${report.dateRangeEnd} (Timezone: ${report.reportingTimezone})\n` +
       `# GeneratedBy: ${report.generatedBy} at ${report.createdAt}\n` +

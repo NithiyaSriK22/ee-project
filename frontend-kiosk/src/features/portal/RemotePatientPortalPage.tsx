@@ -678,11 +678,11 @@ export const RemotePatientPortalPage: React.FC = () => {
           <p className="text-[11px] text-emerald-800 leading-relaxed">
             {latestUploadResult.ocrResult.success ? (
               <span>
-                Automated OCR extracted <strong>{latestUploadResult.ocrResult.fieldsExtracted} clinical fields</strong> from your document.
+                Digital text extraction processed <strong>{latestUploadResult.ocrResult.fieldsExtracted} clinical fields</strong> from your document.
               </span>
             ) : (
               <span>
-                Prescription received. Because handwriting was detected, your treating doctor will inspect the original high-resolution scan directly.
+                Document received securely. Your treating doctor will inspect the uploaded document directly during review.
               </span>
             )}
           </p>

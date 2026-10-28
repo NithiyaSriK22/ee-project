@@ -22,6 +22,7 @@ import { RedFlagsService } from '../redflags/redflags.service.js';
 import { SpecialPopulationsService } from '../special-populations/special-populations.service.js';
 import { DoctorReviewRepository } from '../doctor-review/doctor-review.repository.js';
 import { QueueStatuses } from '../doctor-review/doctor-review.types.js';
+import { DoctorAssignmentService } from '../doctor-review/assignment/doctor-assignment.service.js';
 
 export class InterviewService {
   // ============================================================================
@@ -597,10 +598,45 @@ export class InterviewService {
       new Date()
     );
 
-    // Advance doctor queue entry status to READY_FOR_REVIEW
+    // Advance doctor queue entry status to READY_FOR_REVIEW while preserving assigned doctor and department
+    let targetDept = 'General Medicine';
+    let targetDocId: string | null = null;
+    try {
+      const existingEntry = await DoctorReviewRepository.getQueueEntry(visitId);
+      if (existingEntry) {
+        targetDept = existingEntry.department || 'General Medicine';
+        targetDocId = existingEntry.assignedDoctorId || null;
+      }
+      if (!targetDocId) {
+        // Re-evaluate chief complaint from answers if available
+        const ccAnswer = (session.answers || []).find((a: any) =>
+          a.question?.question_code === 'CHIEF_COMPLAINT_PRIMARY' ||
+          a.question?.section === 'CHIEF_COMPLAINT'
+        );
+        let complaintText: string | undefined;
+        if (ccAnswer?.answer_value) {
+          complaintText = typeof ccAnswer.answer_value === 'string'
+            ? ccAnswer.answer_value
+            : (ccAnswer.answer_value as any).text || (ccAnswer.answer_value as any).value;
+        }
+        if (complaintText) {
+          const assignment = await DoctorAssignmentService.assignDoctorForVisit({
+            visitId,
+            presentingProblem: complaintText,
+            actorRole: 'SYSTEM',
+          });
+          targetDept = assignment.department;
+          targetDocId = assignment.doctorId;
+        }
+      }
+    } catch (evalErr) {
+      logger.warn('Failed re-evaluating doctor assignment on interview completion', { visitId, error: String(evalErr) });
+    }
+
     DoctorReviewRepository.upsertQueueEntry({
       visitId,
-      department: 'General Medicine',
+      department: targetDept,
+      assignedDoctorId: targetDocId,
       queueStatus: QueueStatuses.READY_FOR_REVIEW,
       readyAt: new Date(),
     }).catch((err) => {
@@ -721,19 +757,18 @@ export class InterviewService {
 
     switch (question.question_type) {
       case QuestionTypes.YES_NO:
-        if (typeof value === 'string') {
-          const upper = value.trim().toUpperCase();
+      case QuestionTypes.YES_NO_WITH_DETAIL: {
+        const rawVal = typeof value === 'object' && value !== null ? value.value : value;
+        if (typeof rawVal === 'string') {
+          const upper = rawVal.trim().toUpperCase();
           if (upper !== 'YES' && upper !== 'NO') {
             throw new ValidationError('YES_NO answer must be YES or NO.');
           }
-        } else if (typeof value !== 'boolean') {
+        } else if (typeof rawVal !== 'boolean') {
           throw new ValidationError('YES_NO questions require a boolean or string ("YES"/"NO") answer.');
         }
         break;
-
-      case QuestionTypes.YES_NO_WITH_DETAIL:
-        // May be string/boolean or object { value: "YES", detail: "..." }
-        break;
+      }
 
       case QuestionTypes.NUMERIC:
         const num = Number(typeof value === 'object' ? value.value : value);

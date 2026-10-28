@@ -10,10 +10,13 @@ const auth_rate_limit_middleware_js_1 = require("../../middleware/auth-rate-limi
 const router = (0, express_1.Router)();
 // Public / Protected Staff Auth Endpoints
 router.post('/register', (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.registerStaffSchema }), auth_controller_js_1.AuthController.register);
+router.post('/suggest-email', (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.suggestEmailSchema }), auth_controller_js_1.AuthController.suggestEmail);
 router.post('/login', auth_rate_limit_middleware_js_1.authRateLimiter, (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.loginStaffSchema }), auth_controller_js_1.AuthController.login);
 router.post('/logout', auth_controller_js_1.AuthController.logout);
 router.post('/refresh', (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.refreshTokenSchema }), auth_controller_js_1.AuthController.refresh);
 router.get('/me', auth_middleware_js_1.authenticateStaff, auth_controller_js_1.AuthController.me);
+router.patch('/profile', auth_middleware_js_1.authenticateStaff, auth_controller_js_1.AuthController.updateProfile);
+router.get('/doctors', auth_middleware_js_1.authenticateStaff, (0, auth_middleware_js_1.authorizeRoles)('ADMIN', 'SUPER_ADMIN', 'DOCTOR'), auth_controller_js_1.AuthController.listDoctors);
 router.post('/change-password', auth_middleware_js_1.authenticateStaff, (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.changePasswordSchema }), auth_controller_js_1.AuthController.changePassword);
 router.post('/forgot-password', auth_rate_limit_middleware_js_1.authRateLimiter, (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.forgotPasswordSchema }), auth_controller_js_1.AuthController.forgotPassword);
 router.post('/reset-password', auth_rate_limit_middleware_js_1.authRateLimiter, (0, validate_middleware_js_1.validateRequest)({ body: auth_schemas_js_1.resetPasswordSchema }), auth_controller_js_1.AuthController.resetPassword);

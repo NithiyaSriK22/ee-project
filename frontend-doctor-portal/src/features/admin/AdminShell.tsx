@@ -95,7 +95,7 @@ export const AdminShell: React.FC = () => {
                 <ShieldCheck className="h-4 w-4" />
               </span>
               <h1 className="text-lg font-bold tracking-tight text-white">
-                THUNAI Administration, Analytics & System Monitoring
+                MEDBRIEF Administration, Analytics & System Monitoring
               </h1>
               <span className="rounded-full bg-indigo-500/20 text-indigo-300 px-2 py-0.5 text-xs font-semibold border border-indigo-400/30">
                 Module 9
@@ -216,7 +216,7 @@ export const AdminShell: React.FC = () => {
             </div>
             <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700">
               <p className="text-slate-600">
-                Every metric across THUNAI is defined once in code and documentation. Changing a definition requires a version increment. No clinical content is used in computation.
+                Every metric across MEDBRIEF is defined once in code and documentation. Changing a definition requires a version increment. No clinical content is used in computation.
               </p>
               <div className="space-y-3">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">

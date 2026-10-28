@@ -173,7 +173,7 @@ describe('LIVE REAL AI INFERENCE VERIFICATION (OLLAMA LLAMA3.2:1B)', () => {
     expect(recsRes.body.success).toBe(true);
     expect(recsRes.body.data.length).toBe(1);
     expect(recsRes.body.data[0].id).toBe(doc1Id);
-  }, 60000);
+  }, 120000);
 
   it('Step 3: Upload Second Synthetic Record for Same Patient -> Live Combined Multi-Document Summary -> Discrepancy Detection -> Doctor Approval', async (ctx) => {
     if (!isOllamaRunning) {
@@ -244,7 +244,7 @@ describe('LIVE REAL AI INFERENCE VERIFICATION (OLLAMA LLAMA3.2:1B)', () => {
     expect(approveRes.status).toBe(200);
     expect(approveRes.body.data.doctorReviewStatus).toBe('APPROVED');
     expect(approveRes.body.data.doctorNotes).toContain('Amlodipine from 5mg to 10mg');
-  }, 60000);
+  }, 120000);
 
   it('Step 4: Safety & Fallback Guarantees (Template Fallback, Mock Tagging, Grounding Safety & Isolation)', async () => {
     if (!doc1Id) {

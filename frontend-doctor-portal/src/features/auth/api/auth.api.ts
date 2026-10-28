@@ -4,6 +4,7 @@ import {
   LoginPayload,
   LoginResponseData,
   StaffUser,
+  DoctorRegistrationPayload,
   ChangePasswordPayload,
   ForgotPasswordPayload,
   ResetPasswordPayload,
@@ -13,6 +14,16 @@ import {
 export const authApi = {
   login: async (payload: LoginPayload): Promise<LoginResponseData> => {
     const res = await apiClient.post<ApiResponse<LoginResponseData>>('/auth/login', payload);
+    return res.data.data!;
+  },
+
+  register: async (payload: DoctorRegistrationPayload): Promise<StaffUser> => {
+    const res = await apiClient.post<ApiResponse<StaffUser>>('/auth/register', payload);
+    return res.data.data!;
+  },
+
+  suggestEmail: async (fullName: string): Promise<{ email: string }> => {
+    const res = await apiClient.post<ApiResponse<{ email: string }>>('/auth/suggest-email', { fullName });
     return res.data.data!;
   },
 

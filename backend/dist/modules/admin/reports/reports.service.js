@@ -108,7 +108,7 @@ class ReportsService {
             result: 'SUCCESS',
             metadata: { report_type: report.reportType },
         });
-        const csvContent = `# THUNAI Automated Administrative Report\n` +
+        const csvContent = `# MEDBRIEF Automated Administrative Report\n` +
             `# Type: ${report.reportType}\n` +
             `# Range: ${report.dateRangeStart} to ${report.dateRangeEnd} (Timezone: ${report.reportingTimezone})\n` +
             `# GeneratedBy: ${report.generatedBy} at ${report.createdAt}\n` +

@@ -66,8 +66,14 @@ model StaffUser {
   full_name           String                   @db.VarChar(255)
   role                String                   @db.VarChar(50) // STAFF_ATTENDANT, DOCTOR, ADMIN, SUPER_ADMIN
   status              String                   @default("ACTIVE") @db.VarChar(50) // ACTIVE, SUSPENDED, DISABLED, PENDING_VERIFICATION
-  hospital_department String?                  @db.VarChar(100)
-  email_verified_at   DateTime?                @db.Timestamptz(6)
+  hospital_department         String?                  @db.VarChar(100)
+  medical_registration_number String?                  @db.VarChar(100)
+  clinic_name                 String?                  @db.VarChar(255)
+  qualification               String?                  @db.VarChar(100)
+  experience_years            Int?                     @default(0)
+  designation                 String?                  @db.VarChar(100)
+  phone_number                String?                  @db.VarChar(50)
+  email_verified_at           DateTime?                @db.Timestamptz(6)
   last_login_at       DateTime?                @db.Timestamptz(6)
   created_at          DateTime                 @default(now()) @db.Timestamptz(6)
   updated_at          DateTime                 @updatedAt @db.Timestamptz(6)

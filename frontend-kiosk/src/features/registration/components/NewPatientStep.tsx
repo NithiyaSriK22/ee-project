@@ -23,6 +23,7 @@ export const NewPatientStep: React.FC<NewPatientStepProps> = ({
     initialData.gender || 'MALE'
   );
   const [contactNumber, setContactNumber] = useState(initialData.contactNumber || '');
+  const [presentingComplaint, setPresentingComplaint] = useState(initialData.presentingComplaint || '');
   const [emergencyContact] = useState(initialData.emergencyContact || '');
 
   // Companion Assistance fields
@@ -85,6 +86,7 @@ export const NewPatientStep: React.FC<NewPatientStepProps> = ({
       age: parsedAge,
       gender,
       contactNumber: contactNumber.trim(),
+      presentingComplaint: presentingComplaint.trim() || undefined,
       emergencyContact: emergencyContact.trim() || undefined,
       isCompanionAssisted: isCompanionAssisted || parsedAge < 18,
       companionName: companionName.trim() || undefined,
@@ -214,6 +216,24 @@ export const NewPatientStep: React.FC<NewPatientStepProps> = ({
               placeholder="e.g. 9876543210"
               className="w-full text-lg py-3 px-4 bg-slate-50 border-2 border-slate-300 rounded-2xl text-slate-900 focus:outline-hidden focus:ring-4 focus:ring-teal-500/20 focus:border-teal-600"
             />
+          </div>
+
+          {/* Presenting Complaint / Reason for Visit */}
+          <div>
+            <label htmlFor="presenting-complaint" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Reason for Visit / Problem Description (Optional)
+            </label>
+            <input
+              id="presenting-complaint"
+              type="text"
+              value={presentingComplaint}
+              onChange={(e) => setPresentingComplaint(e.target.value)}
+              placeholder="e.g. Chest discomfort, joint pain, cough & fever, skin rash"
+              className="w-full text-base py-3 px-4 bg-slate-50 border-2 border-slate-300 rounded-2xl text-slate-900 focus:outline-hidden focus:ring-4 focus:ring-teal-500/20 focus:border-teal-600"
+            />
+            <p className="text-2xs text-slate-500 mt-1">
+              Used by MEDBRIEF to automatically route your consultation to the appropriate clinical department.
+            </p>
           </div>
 
           {/* Optional Companion Assistance Details */}

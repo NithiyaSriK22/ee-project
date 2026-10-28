@@ -20,7 +20,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">Physician Help & Support</h3>
-              <p className="text-xs text-slate-500">THUNAI Hospital IT & Clinical Operations Desk</p>
+              <p className="text-xs text-slate-500">MEDBRIEF Hospital IT & Clinical Operations Desk</p>
             </div>
           </div>
           <button
@@ -61,7 +61,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
               </div>
               <div className="flex-1">
                 <p className="font-bold text-slate-800">Clinical Informatics Email</p>
-                <p className="text-slate-500 font-mono">support@thunai-health.internal</p>
+                <p className="text-slate-500 font-mono">support@medbrief-health.internal</p>
               </div>
             </div>
 

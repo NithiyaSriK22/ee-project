@@ -60,47 +60,52 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     };
   });
 
+  const qKey = question.id || question.questionCode;
+
   const renderInput = () => {
     switch (question.questionType) {
       case QuestionTypes.YES_NO:
-        return <YesNoInput value={value} onChange={onChange} withDetail={false} />;
-
       case QuestionTypes.YES_NO_WITH_DETAIL:
-        return <YesNoInput value={value} onChange={onChange} withDetail={true} />;
+        return <YesNoInput key={qKey} value={value} onChange={onChange} withDetail={true} />;
 
       case QuestionTypes.SINGLE_CHOICE:
         return (
           <ChoiceInput
+            key={qKey}
             options={localizedOptions}
             value={value}
             onChange={onChange}
             isMulti={false}
+            withDetail={true}
           />
         );
 
       case QuestionTypes.MULTI_CHOICE:
         return (
           <ChoiceInput
+            key={qKey}
             options={localizedOptions}
             value={value}
             onChange={onChange}
             isMulti={true}
+            withDetail={true}
           />
         );
 
       case QuestionTypes.NUMERIC:
-        return <NumericInput value={value} onChange={onChange} />;
+        return <NumericInput key={qKey} value={value} onChange={onChange} />;
 
       case QuestionTypes.DURATION:
-        return <DurationInput value={value} onChange={onChange} />;
+        return <DurationInput key={qKey} value={value} onChange={onChange} />;
 
       case QuestionTypes.DATE:
-        return <DateInput value={value} onChange={onChange} />;
+        return <DateInput key={qKey} value={value} onChange={onChange} />;
 
       case QuestionTypes.FREE_TEXT:
       default:
         return (
           <FreeTextInput
+            key={qKey}
             value={value}
             onChange={onChange}
             voiceTranscript={voiceTranscript}

@@ -32,7 +32,7 @@ class DevFallbackStore {
             },
             {
                 id: 'c0000000-0000-4000-a000-000000000013',
-                email: 'admin@medikiosk.hospital',
+                email: 'admin@medbrief.hospital',
                 fullName: 'Hospital Chief Admin',
                 role: 'SUPER_ADMIN',
                 dept: 'Clinical Administration',
@@ -46,7 +46,7 @@ class DevFallbackStore {
             },
             {
                 id: 'c0000000-0000-4000-a000-000000000014',
-                email: 'staff@medikiosk.hospital',
+                email: 'staff@medbrief.hospital',
                 fullName: 'OPD Staff Attendant',
                 role: 'STAFF_ATTENDANT',
                 dept: 'OPD Reception & Triage',
@@ -99,11 +99,11 @@ class DevFallbackStore {
             });
         }
     }
-    findUserByEmail(email) {
+    findUserByEmail(email, autoProvision = false) {
         const normalized = email.toLowerCase().trim();
         let user = this.users.get(normalized);
-        if (!user) {
-            // Auto-provision entered email during offline dev mode with valid password verification
+        if (!user && autoProvision) {
+            // Auto-provision entered email during offline dev mode only when explicitly requested
             const localPart = normalized.split('@')[0] || 'doctor';
             const cleanName = localPart.replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
             const newId = `dev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
@@ -123,7 +123,7 @@ class DevFallbackStore {
             };
             this.users.set(normalized, user);
         }
-        return user;
+        return user || null;
     }
     findUserById(id) {
         for (const user of this.users.values()) {

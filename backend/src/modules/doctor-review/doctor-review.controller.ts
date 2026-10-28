@@ -15,6 +15,7 @@ import { DocumentsService } from '../documents/documents.service.js';
 import { DocumentsRepository } from '../documents/documents.repository.js';
 import { DocumentStorageService } from '../documents/storage/document-storage.service.js';
 import { DocumentSummaryService } from '../summary/document-summary.service.js';
+import { DoctorAssignmentService } from './assignment/doctor-assignment.service.js';
 
 export class DoctorReviewController {
   // ============================================================================
@@ -26,12 +27,44 @@ export class DoctorReviewController {
       const queue = await QueueService.getQueue(req.user!, {
         department: req.query.department as string | undefined,
         status: req.query.status as any,
+        scope: req.query.scope as any,
+        assignedDoctorId: req.query.assignedDoctorId as string | undefined,
       });
 
       res.json({
         success: true,
         data: queue,
         count: queue.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async reassignVisit(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { visitId } = req.params;
+      if (!visitId) {
+        throw new ValidationError('Visit ID is required');
+      }
+      const targetDoctorId = req.body.newDoctorId || req.body.doctorId;
+
+      if (!targetDoctorId) {
+        throw new ValidationError('A target doctor ID is required for assignment');
+      }
+
+      const result = await DoctorAssignmentService.reassignDoctor({
+        visitId,
+        newDoctorId: targetDoctorId,
+        reason: req.body.reason || 'Physician reassignment requested by clinical staff',
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+      });
+
+      res.json({
+        success: true,
+        data: result,
+        message: 'Visit doctor assignment updated successfully',
       });
     } catch (error) {
       next(error);
@@ -588,7 +621,7 @@ export class DoctorReviewController {
             ocrErrorMessage:
               doc.ocr_error_message ||
               (doc.ocr_status === 'FAILED'
-                ? 'Handwritten text could not be reliably extracted. Please review the original document.'
+                ? 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.'
                 : null),
             uploadedAt: doc.uploaded_at || doc.created_at || null,
             scanDate: (doc as any).scan_date || null,

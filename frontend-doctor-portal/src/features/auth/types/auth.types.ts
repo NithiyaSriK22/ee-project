@@ -8,9 +8,34 @@ export interface StaffUser {
   fullName: string;
   role: StaffRole;
   status: StaffUserStatus;
+  accountStatus?: StaffUserStatus;
   hospitalDepartment?: string | null;
+  specialization?: string | null;
+  medicalRegistrationNumber?: string | null;
+  clinicName?: string | null;
+  hospitalName?: string | null;
+  qualification?: string | null;
+  experienceYears?: number | null;
+  designation?: string | null;
+  phoneNumber?: string | null;
   emailVerifiedAt?: string | null;
   createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DoctorRegistrationPayload {
+  fullName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  medicalRegistrationNumber: string;
+  specialization: string;
+  qualification?: string;
+  experienceYears?: number;
+  hospitalName?: string;
+  clinicName?: string;
+  designation?: string;
+  phoneNumber?: string;
 }
 
 export interface AuthTokens {

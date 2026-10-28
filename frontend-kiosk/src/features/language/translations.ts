@@ -197,8 +197,8 @@ export interface AppTranslations {
 export const translations: Record<'en' | 'ta', AppTranslations> = {
   en: {
     // Global / Layout
-    platformTitle: 'THUNAI',
-    platformSubtitle: 'Healthcare Assistance & Case-Taking Platform',
+    platformTitle: 'MEDBRIEF',
+    platformSubtitle: 'Medical Intelligence. Simplified.',
     opdBadge: 'OPD Pre-Consultation',
     demoBanner: 'DEMONSTRATION — synthetic data',
     guideButton: 'Guide',
@@ -370,8 +370,8 @@ export const translations: Record<'en' | 'ta', AppTranslations> = {
 
     // Home Page
     homeSystemBadge: 'Hospital OPD Pre-Consultation System',
-    homeTitle: 'Welcome to THUNAI',
-    homeSubtitle: 'Healthcare Assistance, Made More Accessible',
+    homeTitle: 'Welcome to MEDBRIEF',
+    homeSubtitle: 'Medical Intelligence. Simplified.',
     homeIntro: 'Please complete your medical case intake before meeting the doctor. Your answers and past prescriptions will help your physician prepare your consultation.',
     homeSelfIntakeTitle: 'Self Intake (Patient)',
     homeSelfIntakeDesc: 'Answer clear, simple questions by voice or touch. You can scan past prescriptions and lab reports at the next step.',
@@ -384,7 +384,7 @@ export const translations: Record<'en' | 'ta', AppTranslations> = {
     homeMobileEntryDesc: 'Skip waiting at the terminal! Open the mobile patient portal on your phone to upload prescriptions directly from your camera and answer intake questions at your own pace.',
     homeMobileEntryAction: 'Open Mobile Portal',
     homeSafetyNoticeTitle: 'Trust & Clinical Safety Assurance',
-    homeSafetyNoticeDesc: 'THUNAI assists in organizing patient information into a structured summary. It does not diagnose or prescribe. The treating physician always reviews, edits, and confirms your clinical record.',
+    homeSafetyNoticeDesc: 'MEDBRIEF assists in organizing patient information into a structured summary. It does not diagnose or prescribe. The treating physician always reviews, edits, and confirms your clinical record.',
     homeBackendApiLabel: 'Clinical Backend API:',
     homeCheckingHealth: 'Checking health...',
     homeServerOffline: 'Server Offline (Verify backend on :5001)',
@@ -393,7 +393,7 @@ export const translations: Record<'en' | 'ta', AppTranslations> = {
 
   ta: {
     // Global / Layout
-    platformTitle: 'துணை (THUNAI)',
+    platformTitle: 'MEDBRIEF',
     platformSubtitle: 'மருத்துவ உதவி மற்றும் வழக்கு-பதிவு தளம்',
     opdBadge: 'வெளிநோயாளி முன்-ஆலோசனை',
     demoBanner: 'செயற்கை மாதிரி தரவு — செயல்முறை விளக்கம்',
@@ -566,7 +566,7 @@ export const translations: Record<'en' | 'ta', AppTranslations> = {
 
     // Home Page
     homeSystemBadge: 'மருத்துவமனை வெளிநோயாளி முன்-ஆலோசனை அமைப்பு',
-    homeTitle: 'துணை (THUNAI)-க்கு நல்வரவு',
+    homeTitle: 'MEDBRIEF-க்கு நல்வரவு',
     homeSubtitle: 'மருத்துவ உதவி, அனைவருக்கும் எளிதாக',
     homeIntro: 'மருத்துவரை சந்திப்பதற்கு முன் உங்கள் மருத்துவ விவரங்களை பதிவு செய்யவும். உங்கள் பதில்களும் முந்தைய மருந்துச் சீட்டுகளும் மருத்துவருக்கு பெரிதும் உதவும்.',
     homeSelfIntakeTitle: 'நோயாளி சுய பதிவு',
@@ -580,7 +580,7 @@ export const translations: Record<'en' | 'ta', AppTranslations> = {
     homeMobileEntryDesc: 'கியோஸ்க்கில் வரிசையில் நிற்க வேண்டாம்! உங்கள் மொபைல் போனிலேயே கேமரா மூலம் மருந்துச் சீட்டுகளை பதிவேற்றி உங்கள் வேகத்தில் பதிலளிக்கலாம்.',
     homeMobileEntryAction: 'மொபைல் தளத்தைத் திறக்கவும்',
     homeSafetyNoticeTitle: 'மருத்துவ பாதுகாப்பு மற்றும் நம்பகத்தன்மை உறுதி',
-    homeSafetyNoticeDesc: 'துணை (THUNAI) உங்கள் தகவல்களை ஒழுங்கமைக்க மட்டுமே உதவுகிறது. இது நோய் கண்டறிதல் அல்லது மருந்து வழங்குவதில்லை. உங்கள் மருத்துவரே அனைத்தையும் சரிபார்த்து இறுதி முடிவை எடுப்பார்.',
+    homeSafetyNoticeDesc: 'MEDBRIEF உங்கள் தகவல்களை ஒழுங்கமைக்க மட்டுமே உதவுகிறது. இது நோய் கண்டறிதல் அல்லது மருந்து வழங்குவதில்லை. உங்கள் மருத்துவரே அனைத்தையும் சரிபார்த்து இறுதி முடிவை எடுப்பார்.',
     homeBackendApiLabel: 'மருத்துவ பின்தள சேவையகம்:',
     homeCheckingHealth: 'நிலை சரிபார்க்கப்படுகிறது...',
     homeServerOffline: 'சேவையகம் இயங்கவில்லை (Backend :5001 ஐ சரிபார்க்கவும்)',

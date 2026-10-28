@@ -22,6 +22,9 @@ export async function checkDatabaseAvailability(): Promise<boolean> {
   return checkDatabaseHealth();
 }
 
+const isUuid = (val?: string | null): boolean =>
+  typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
 export class DoctorReviewRepository {
   // ============================================================================
   // QUEUE OPERATIONS
@@ -31,19 +34,20 @@ export class DoctorReviewRepository {
     const available = await checkDatabaseAvailability();
     if (available) {
       try {
+        const safeAssignedDocId = isUuid(entry.assignedDoctorId) ? entry.assignedDoctorId : null;
         const row = await prisma.visitQueueEntry.upsert({
           where: { visit_id: entry.visitId },
           create: {
             visit_id: entry.visitId,
             department: entry.department || 'General Medicine',
-            assigned_doctor_id: entry.assignedDoctorId || null,
+            assigned_doctor_id: safeAssignedDocId,
             queue_status: entry.queueStatus || QueueStatuses.WAITING,
             has_open_alert: entry.hasOpenAlert ?? false,
             ready_at: entry.readyAt ? new Date(entry.readyAt) : new Date(),
           },
           update: {
             department: entry.department,
-            assigned_doctor_id: entry.assignedDoctorId,
+            assigned_doctor_id: entry.assignedDoctorId !== undefined ? safeAssignedDocId : undefined,
             queue_status: entry.queueStatus,
             has_open_alert: entry.hasOpenAlert,
             ready_at: entry.readyAt ? new Date(entry.readyAt) : undefined,
@@ -105,6 +109,7 @@ export class DoctorReviewRepository {
   public static async listQueue(filters?: {
     department?: string;
     assignedDoctorId?: string;
+    unassignedOnly?: boolean;
     status?: QueueStatus;
   }): Promise<VisitQueueEntryDTO[]> {
     const available = await checkDatabaseAvailability();
@@ -125,7 +130,16 @@ export class DoctorReviewRepository {
             };
           }
         }
-        if (filters?.assignedDoctorId) where.assigned_doctor_id = filters.assignedDoctorId;
+        if (filters?.unassignedOnly) {
+          where.assigned_doctor_id = null;
+        } else if (filters?.assignedDoctorId) {
+          if (isUuid(filters.assignedDoctorId)) {
+            where.assigned_doctor_id = filters.assignedDoctorId;
+          } else {
+            // Non-UUID doctor ID cannot match any persisted doctor
+            return [];
+          }
+        }
         if (filters?.status) {
           where.queue_status = filters.status;
         } else {
@@ -138,6 +152,19 @@ export class DoctorReviewRepository {
           where,
           orderBy: [{ has_open_alert: 'desc' }, { ready_at: 'desc' }],
         });
+
+        // Resolve doctor names
+        const assignedDoctorIds = rows
+          .map((r) => r.assigned_doctor_id)
+          .filter((id): id is string => Boolean(id) && isUuid(id));
+        const uniqueDocIds = Array.from(new Set(assignedDoctorIds));
+        const doctors = uniqueDocIds.length > 0
+          ? await prisma.staffUser.findMany({
+              where: { id: { in: uniqueDocIds } },
+              select: { id: true, full_name: true },
+            })
+          : [];
+        const doctorNameMap = new Map<string, string>(doctors.map((d) => [d.id, d.full_name]));
 
         const mapped = await Promise.all(
           rows.map(async (r) => {
@@ -218,6 +245,7 @@ export class DoctorReviewRepository {
               patientId,
               department: r.department,
               assignedDoctorId: r.assigned_doctor_id,
+              assignedDoctorName: r.assigned_doctor_id ? doctorNameMap.get(r.assigned_doctor_id) || null : null,
               queueStatus: r.queue_status as QueueStatus,
               hasOpenAlert: r.has_open_alert,
               readyAt: r.ready_at,

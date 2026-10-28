@@ -343,7 +343,7 @@ export const MedicalImageViewerModal: React.FC<MedicalImageViewerModalProps> = (
               )}
 
               <div>
-                <span className="text-slate-400 block text-[11px]">Uploaded to THUNAI</span>
+                <span className="text-slate-400 block text-[11px]">Uploaded to MEDBRIEF</span>
                 <span className="font-semibold text-slate-100">
                   {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString() : 'Recent intake'}
                 </span>

@@ -44,7 +44,7 @@ export const HeroSection: React.FC = () => {
 
       {/* Supporting Paragraph: ~20px, line-height 1.5, max-w ~470px, breaking into 3 lines */}
       <p className="font-body text-[17px] lg:text-[20px] leading-[1.5] text-navysoft max-w-[470px] mt-6">
-        THUNAI empowers healthcare professionals with AI-driven analysis of medical documents, helping you deliver precise and timely care.
+        MEDBRIEF empowers healthcare professionals with AI-driven analysis of medical documents, helping you deliver precise and timely care.
       </p>
     </div>
   );

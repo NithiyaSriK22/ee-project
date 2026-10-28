@@ -84,7 +84,7 @@ class DevFallbackLanguageStore {
             version: '1.0.0',
             status: language_types_js_1.ContentStatuses.APPROVED,
             strings: {
-                'common.welcome': 'Welcome to THUNAI',
+                'common.welcome': 'Welcome to MEDBRIEF',
                 'common.next': 'Next',
                 'common.previous': 'Previous',
                 'common.submit': 'Submit Answer',
@@ -116,7 +116,7 @@ class DevFallbackLanguageStore {
             version: '1.0.0',
             status: language_types_js_1.ContentStatuses.APPROVED,
             strings: {
-                'common.welcome': 'துணை (THUNAI)-க்கு நல்வரவு',
+                'common.welcome': 'MEDBRIEF-க்கு நல்வரவு',
                 'common.next': 'அடுத்து',
                 'common.previous': 'முந்தையது',
                 'common.submit': 'பதிலைச் சமர்ப்பிக்கவும்',

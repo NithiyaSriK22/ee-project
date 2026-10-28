@@ -32,6 +32,7 @@ const envSchema = z.object({
   IS_SYNTHETIC_DATA: z.coerce.boolean().default(true),
   // Clinical AI & OCR Providers
   OCR_PROVIDER: z.string().default('tesseract'),
+  TESSERACT_CMD: z.string().optional(),
   SUMMARY_PROVIDER: z.string().default('local'),
   LOCAL_LLM_BASE_URL: z.string().default('http://localhost:11434/v1'),
   LOCAL_LLM_MODEL: z.string().default('llama3.2:1b'),

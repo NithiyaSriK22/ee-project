@@ -755,6 +755,7 @@ export const GuidedInterviewPage: React.FC = () => {
         {/* Interactive Question Renderer */}
         {currentQuestion && (
           <QuestionRenderer
+            key={currentQuestion.id || currentQuestion.questionCode}
             question={currentQuestion}
             value={currentAnswerValue}
             onChange={setCurrentAnswerValue}
@@ -788,7 +789,7 @@ export const GuidedInterviewPage: React.FC = () => {
 
       {/* Footer info */}
       <footer className="w-full border-t border-slate-900 py-3 text-center text-xs text-slate-500">
-        THUNAI • Multilingual & Accessible Case-Taking • All answers stored language-independently
+        MEDBRIEF • Multilingual & Accessible Case-Taking • All answers stored language-independently
       </footer>
     </div>
   );

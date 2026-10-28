@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { StaffUser, LoginPayload, StaffRole } from '../types/auth.types';
+import { StaffUser, LoginPayload, StaffRole, DoctorRegistrationPayload } from '../types/auth.types';
 import { authApi } from '../api/auth.api';
 
 interface AuthContextType {
@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (credentials: LoginPayload) => Promise<void>;
+  register: (data: DoctorRegistrationPayload) => Promise<StaffUser>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   hasRole: (roles: StaffRole[]) => boolean;
@@ -107,6 +108,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (data: DoctorRegistrationPayload): Promise<StaffUser> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const newUser = await authApi.register(data);
+      return newUser;
+    } catch (err: any) {
+      const msg = err?.message || 'Registration failed. Please check the entered details.';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     const refreshToken = safeStorage.getItem(REFRESH_TOKEN_KEY) || undefined;
     try {
@@ -133,6 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         error,
         login,
+        register,
         logout,
         refreshProfile,
         hasRole,

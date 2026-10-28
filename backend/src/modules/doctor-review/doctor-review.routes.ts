@@ -16,6 +16,7 @@ import {
   amendConfirmedRecordSchema,
 } from './doctor-review.schemas.js';
 import { optionalUploadMiddleware } from '../../middleware/upload.middleware.js';
+import { MasterDataService } from '../visit-lifecycle/master-data.service.js';
 
 const router = Router();
 
@@ -92,6 +93,31 @@ router.post(
     params: releaseVisitSchema.shape.params,
   }),
   DoctorReviewController.releaseVisit
+);
+
+router.post(
+  '/queue/:visitId/reassign',
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  DoctorReviewController.reassignVisit
+);
+
+router.post(
+  '/queue/:visitId/assign',
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  DoctorReviewController.reassignVisit
+);
+
+router.get(
+  '/doctors',
+  authorizeRoles('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'),
+  async (_req, res, next) => {
+    try {
+      const doctors = await MasterDataService.listDoctorsAsync();
+      res.json({ success: true, data: doctors });
+    } catch (err) {
+      next(err);
+    }
+  }
 );
 
 // ============================================================================

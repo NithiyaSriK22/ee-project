@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Delete, Plus, Minus } from 'lucide-react';
 
 interface NumericInputProps {
@@ -16,8 +16,13 @@ export const NumericInput: React.FC<NumericInputProps> = ({
   min = 0,
   max = 200,
 }) => {
-  const currentVal = value !== undefined && value !== null && value !== '' ? String(value) : '';
+  const currentVal = value !== undefined && value !== null && value !== '' ? String(typeof value === 'object' && value !== null ? value.value : value) : '';
   const [displayVal, setDisplayVal] = useState(currentVal);
+
+  useEffect(() => {
+    const nextVal = value !== undefined && value !== null && value !== '' ? String(typeof value === 'object' && value !== null ? value.value : value) : '';
+    setDisplayVal(nextVal);
+  }, [value]);
 
   const handleKeypadPress = (digit: string) => {
     let nextStr = displayVal + digit;

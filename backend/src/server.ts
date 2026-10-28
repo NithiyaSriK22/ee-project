@@ -7,7 +7,7 @@ import { Server } from 'http';
 const app = createApp();
 
 const server: Server = app.listen(env.PORT, () => {
-  logger.info(`🏥 THUNAI Backend API running successfully`, {
+  logger.info(`🏥 MEDBRIEF Backend API running successfully`, {
     port: env.PORT,
     environment: env.NODE_ENV,
     apiPrefix: '/api/v1',

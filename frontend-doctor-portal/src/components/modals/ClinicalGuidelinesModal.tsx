@@ -61,7 +61,7 @@ export const ClinicalGuidelinesModal: React.FC<ClinicalGuidelinesModalProps> = (
                 <span>2. Prescription & Document OCR Provenance</span>
               </div>
               <p className="text-slate-500 pl-6">
-                All medications and clinical parameters extracted via OCR maintain direct bounding-box provenance. When OCR confidence is low or handwritten text is ambiguous, refer directly to the raw image snippet.
+                All medications and clinical parameters extracted via digital text extraction or OCR maintain direct provenance. When extraction confidence is low or text is ambiguous, refer directly to the original document scan.
               </p>
             </div>
           </div>

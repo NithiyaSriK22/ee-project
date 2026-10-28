@@ -54,6 +54,7 @@ export interface VisitQueueEntryDTO {
   visitId: string;
   department: string;
   assignedDoctorId: string | null;
+  assignedDoctorName?: string | null;
   queueStatus: QueueStatus;
   hasOpenAlert: boolean;
   readyAt: string | null;

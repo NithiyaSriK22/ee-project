@@ -10,6 +10,8 @@ const index_js_1 = require("../deployment/index.js");
 const doctor_review_repository_js_1 = require("../doctor-review/doctor-review.repository.js");
 const doctor_review_types_js_1 = require("../doctor-review/doctor-review.types.js");
 const special_populations_service_js_1 = require("../special-populations/special-populations.service.js");
+const prisma_js_1 = require("../../database/prisma.js");
+const doctor_assignment_service_js_1 = require("../doctor-review/assignment/doctor-assignment.service.js");
 class KioskSessionService {
     static async startSession(data) {
         // Module 10: Global Intake Pause & Kiosk Intake Kill Switch enforcement
@@ -129,13 +131,44 @@ class KioskSessionService {
             });
         }
         const activeConsents = await kiosk_session_repository_js_1.KioskSessionRepository.getConsentsForVisit(patientRecord.id, visitId);
-        // Register initial entry into the Doctor Review Queue
+        // Module 4: Dynamic Problem-Based Doctor Assignment & Queue Registration
+        let assignmentResult = null;
         try {
+            // Clean up previous WAITING queue entries for this patient so the queue only has 1 active entry
+            const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
+            if (isDbUp) {
+                const priorProfiles = await prisma_js_1.prisma.patientVisitProfile.findMany({
+                    where: {
+                        patient_id: patientRecord.id,
+                        visit_id: { not: visitId },
+                    },
+                    select: { visit_id: true },
+                });
+                if (priorProfiles.length > 0) {
+                    const priorVisitIds = priorProfiles.map((p) => p.visit_id);
+                    await prisma_js_1.prisma.visitQueueEntry.deleteMany({
+                        where: {
+                            visit_id: { in: priorVisitIds },
+                            queue_status: doctor_review_types_js_1.QueueStatuses.WAITING,
+                        },
+                    });
+                }
+            }
+            // Execute workload-balanced problem-to-specialty assignment
+            assignmentResult = await doctor_assignment_service_js_1.DoctorAssignmentService.assignDoctorForVisit({
+                visitId,
+                presentingProblem: data.presentingComplaint,
+                requestedDepartment: data.department,
+                actorRole: 'SYSTEM',
+            });
             await doctor_review_repository_js_1.DoctorReviewRepository.upsertQueueEntry({
                 visitId,
-                department: 'General Medicine',
+                department: assignmentResult.department,
+                assignedDoctorId: assignmentResult.doctorId,
                 queueStatus: doctor_review_types_js_1.QueueStatuses.WAITING,
                 patientTokenOrName: `${patientRecord.full_name} (${patientRecord.hospital_registration_number})`,
+                patientAge: patientRecord.age,
+                patientGender: patientRecord.gender,
                 readyAt: new Date(),
             });
         }
@@ -146,6 +179,8 @@ class KioskSessionService {
             visitId,
             isCompanionAssisted: visitProfile.is_companion_assisted,
             language: visitProfile.preferred_language,
+            assignedDoctorId: assignmentResult?.doctorId || null,
+            department: assignmentResult?.department || 'General Medicine',
         });
         return {
             session: {
@@ -175,6 +210,15 @@ class KioskSessionService {
                 emergencyContact: visitProfile.emergency_contact,
                 status: visitProfile.status,
             },
+            assignment: assignmentResult
+                ? {
+                    assigned: assignmentResult.assigned,
+                    doctorId: assignmentResult.doctorId,
+                    doctorName: assignmentResult.doctorName,
+                    department: assignmentResult.department,
+                    matchingReason: assignmentResult.matchingReason,
+                }
+                : null,
             consents: activeConsents.map((c) => ({
                 consentType: c.consent_type,
                 granted: c.granted,

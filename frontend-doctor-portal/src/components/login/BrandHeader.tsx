@@ -32,20 +32,20 @@ export const BrandHeader: React.FC = () => {
 
         {/* Brand Text */}
         <div className="flex flex-col">
-          <span className="font-display font-bold text-[38px] tracking-[0.04em] text-navy leading-none">
-            THUNAI
+          <span className="font-display font-bold text-[36px] tracking-[0.04em] text-navy leading-none">
+            MEDBRIEF
           </span>
-          <span className="text-[12px] sm:text-[13px] font-medium text-navysoft mt-1 leading-tight font-body">
-            AI-Powered Clinical Intelligence
+          <span className="text-[12px] sm:text-[13px] font-semibold text-emerald-800 mt-1 leading-tight font-body">
+            Doctor Portal
           </span>
         </div>
-        <span className="sr-only">Staff Portal</span>
+        <span className="sr-only">MEDBRIEF Doctor Portal</span>
       </div>
 
       {/* Right: Tagline with Purple ECG line */}
       <div className="hidden md:flex items-center gap-3">
-        <span className="font-display italic text-[18px] text-navysoft whitespace-nowrap font-normal">
-          Smarter Care. Healthier Tomorrow.
+        <span className="font-display italic text-[17px] text-navysoft whitespace-nowrap font-normal">
+          Medical Intelligence. Simplified.
         </span>
         <svg
           viewBox="0 0 150 28"

@@ -7,6 +7,7 @@ import { prisma, checkDatabaseHealth } from '../../../database/prisma.js';
 import { logger } from '../../../config/logger.js';
 import { OcrStatuses } from '../documents.types.js';
 import { DocumentsRepository } from '../documents.repository.js';
+import { DigitalDocumentExtractorService } from '../digital/digital-document-extractor.service.js';
 
 export class OcrService {
   private static provider: IOcrProvider = OcrProviderFactory.getDefaultProvider();
@@ -20,15 +21,76 @@ export class OcrService {
   }
 
   /**
-   * Processes a document through OCR extraction and creates raw extracted field records
+   * Processes a document through digital text extraction (native PDF parsing first) or OCR
    */
   public static async processDocument(
     documentId: string,
     fileBuffer: Buffer,
     mimeType: string
   ): Promise<OcrExtractionResult> {
-    logger.info('Starting OCR extraction for document', { documentId });
+    logger.info('Starting digital/OCR extraction for document', { documentId, mimeType });
 
+    const isPdf =
+      mimeType === 'application/pdf' ||
+      (fileBuffer?.length >= 5 && fileBuffer.slice(0, 5).toString() === '%PDF-');
+
+    // 1. Prioritize Native Digital PDF Text Extraction (Digital Documents Only)
+    if (isPdf) {
+      try {
+        const digitalResult = await DigitalDocumentExtractorService.extractFromPdf(fileBuffer);
+        if (digitalResult.success && digitalResult.extractedFields.length > 0) {
+          const isDbUp = await checkDatabaseHealth();
+          if (isDbUp) {
+            try {
+              await prisma.$transaction(
+                digitalResult.extractedFields.map((f) =>
+                  prisma.rawExtractedField.create({
+                    data: {
+                      document_id: documentId,
+                      field_type: f.fieldType,
+                      raw_text: f.rawText,
+                      ocr_confidence: f.confidence,
+                      source_snippet_ref: f.sourceSnippetRef,
+                      bounding_box: f.boundingBox || undefined,
+                    },
+                  })
+                )
+              );
+
+              await prisma.uploadedDocument.update({
+                where: { id: documentId },
+                data: {
+                  ocr_status: OcrStatuses.COMPLETED,
+                  ocr_error_message: null,
+                  overall_status: 'PENDING_VALIDATION',
+                },
+              });
+            } catch (dbErr) {
+              logger.warn('Failed to persist digital PDF fields to DB', { error: String(dbErr) });
+            }
+          }
+
+          await DocumentsRepository.updateDocument(documentId, {
+            ocr_status: OcrStatuses.COMPLETED,
+            ocr_error_message: null,
+            overall_status: 'PENDING_VALIDATION',
+          });
+
+          return {
+            success: true,
+            extractedFields: digitalResult.extractedFields,
+            fullText: digitalResult.fullText,
+            pageCount: digitalResult.pageCount,
+            extractionStatus: 'SUCCESSFUL',
+            engineUsed: 'NativePdfDigitalExtractor',
+          };
+        }
+      } catch (pdfErr) {
+        logger.warn('Native PDF extraction failed, proceeding to fallback provider', { error: String(pdfErr) });
+      }
+    }
+
+    // 2. OCR Provider for Images or Scanned PDFs
     try {
       const result = await this.provider.extractText(fileBuffer, mimeType);
       const isDbUp = await checkDatabaseHealth();
@@ -36,7 +98,7 @@ export class OcrService {
       if (!result.success || result.extractedFields.length === 0) {
         const failureMessage =
           result.errorMessage ||
-          'Handwritten text could not be reliably extracted. Please review the original document.';
+          'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.';
 
         if (isDbUp) {
           try {
@@ -56,7 +118,7 @@ export class OcrService {
           overall_status: 'EXTRACTION_FAILED',
         });
 
-        logger.warn('OCR extraction failed for document', {
+        logger.warn('Document extraction failed', {
           documentId,
           reason: failureMessage,
         });

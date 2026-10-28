@@ -2,30 +2,43 @@ import { prisma, checkDatabaseHealth } from '../../database/prisma.js';
 import { StaffRole, StaffUserStatusType } from '../../types/auth.types.js';
 import { devFallbackAuthStore } from './dev-fallback-store.js';
 import { logger } from '../../config/logger.js';
+import { ConflictError } from '../../errors/app-error.js';
 
 export async function checkDatabaseAvailability(): Promise<boolean> {
   return checkDatabaseHealth();
 }
 
+const TEST_DOCTOR_ALIASES: Record<string, string> = {
+  'doctor1@medbrief.test': 'arun@medbrief.test',
+  'doctor2@medbrief.test': 'priya@medbrief.test',
+  'doctor3@medbrief.test': 'meena@medbrief.test',
+  'doctor4@medbrief.test': 'karthik@medbrief.test',
+  'doctor5@medbrief.test': 'divya@medbrief.test',
+  'doctor6@medbrief.test': 'kavya@medbrief.test',
+};
+
 export class AuthRepository {
   public static async findUserByEmail(email: string) {
+    const normalized = email.toLowerCase().trim();
+    const targetEmail = TEST_DOCTOR_ALIASES[normalized] || normalized;
     const available = await checkDatabaseAvailability();
     if (available) {
       try {
         const user = await prisma.staffUser.findUnique({
-          where: { email: email.toLowerCase() },
+          where: { email: targetEmail },
         });
         if (user) return user;
       } catch (error) {
-        logger.warn('Database error in findUserByEmail', { email });
+        logger.warn('Database error in findUserByEmail', { email: targetEmail });
       }
     }
-    return devFallbackAuthStore.findUserByEmail(email) as any;
+    return devFallbackAuthStore.findUserByEmail(targetEmail) as any;
   }
 
   public static async findUserById(id: string) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     const available = await checkDatabaseAvailability();
-    if (available) {
+    if (available && isUuid) {
       try {
         const user = await prisma.staffUser.findUnique({
           where: { id },
@@ -44,34 +57,83 @@ export class AuthRepository {
     fullName: string;
     role: StaffRole;
     hospitalDepartment?: string;
+    medicalRegistrationNumber?: string;
+    clinicName?: string;
+    qualification?: string;
+    experienceYears?: number;
+    designation?: string;
+    phoneNumber?: string;
     status?: StaffUserStatusType;
   }) {
-    try {
-      return await prisma.staffUser.create({
-        data: {
-          email: data.email.toLowerCase(),
-          password_hash: data.passwordHash,
-          full_name: data.fullName,
-          role: data.role,
-          hospital_department: data.hospitalDepartment,
-          status: data.status || 'ACTIVE',
-        },
-        select: {
-          id: true,
-          email: true,
-          full_name: true,
-          role: true,
-          status: true,
-          hospital_department: true,
-          email_verified_at: true,
-          created_at: true,
-          updated_at: true,
-        },
-      });
-    } catch (error) {
-      logger.warn('Database unreachable in createStaffUser, using offline dev fallback store');
-      return devFallbackAuthStore.createStaffUser(data) as any;
+    const available = await checkDatabaseAvailability();
+    if (available) {
+      try {
+        return await prisma.staffUser.create({
+          data: {
+            email: data.email.toLowerCase(),
+            password_hash: data.passwordHash,
+            full_name: data.fullName,
+            role: data.role,
+            hospital_department: data.hospitalDepartment,
+            medical_registration_number: data.medicalRegistrationNumber,
+            clinic_name: data.clinicName,
+            qualification: data.qualification,
+            experience_years: data.experienceYears ?? 0,
+            designation: data.designation,
+            phone_number: data.phoneNumber,
+            status: data.status || 'ACTIVE',
+          },
+          select: {
+            id: true,
+            email: true,
+            full_name: true,
+            role: true,
+            status: true,
+            hospital_department: true,
+            medical_registration_number: true,
+            clinic_name: true,
+            qualification: true,
+            experience_years: true,
+            designation: true,
+            phone_number: true,
+            email_verified_at: true,
+            created_at: true,
+            updated_at: true,
+          },
+        });
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          throw new ConflictError('A staff account with this email address already exists');
+        }
+        logger.warn('Database error in createStaffUser, falling back to dev store', { error: error?.message });
+      }
     }
+
+    const fallbackUser = devFallbackAuthStore.createStaffUser({
+      email: data.email,
+      passwordHash: data.passwordHash,
+      fullName: data.fullName,
+      role: data.role,
+      hospitalDepartment: data.hospitalDepartment,
+      status: data.status,
+    });
+    return {
+      id: fallbackUser.id,
+      email: fallbackUser.email,
+      full_name: fallbackUser.full_name,
+      role: fallbackUser.role,
+      status: fallbackUser.status,
+      hospital_department: fallbackUser.hospital_department,
+      medical_registration_number: data.medicalRegistrationNumber || null,
+      clinic_name: data.clinicName || null,
+      qualification: data.qualification || null,
+      experience_years: data.experienceYears ?? 0,
+      designation: data.designation || null,
+      phone_number: data.phoneNumber || null,
+      email_verified_at: fallbackUser.email_verified_at,
+      created_at: fallbackUser.created_at,
+      updated_at: fallbackUser.updated_at,
+    } as any;
   }
 
   public static async updateLastLogin(id: string) {

@@ -8,6 +8,7 @@ export const NotificationTypes = {
   KIOSK_ONLINE: 'KIOSK_ONLINE',
   QUEUE_STATUS_UPDATE: 'QUEUE_STATUS_UPDATE',
   SYSTEM_ANNOUNCEMENT: 'SYSTEM_ANNOUNCEMENT',
+  DOCTOR_ASSIGNED: 'DOCTOR_ASSIGNED',
 } as const;
 
 export type NotificationType = (typeof NotificationTypes)[keyof typeof NotificationTypes];
@@ -16,6 +17,7 @@ export const NotificationChannels = {
   IN_APP: 'IN_APP',
   KIOSK_SCREEN: 'KIOSK_SCREEN',
   SMS: 'SMS',
+  EMAIL: 'EMAIL',
 } as const;
 
 export type NotificationChannel = (typeof NotificationChannels)[keyof typeof NotificationChannels];

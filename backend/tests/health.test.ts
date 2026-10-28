@@ -10,7 +10,7 @@ describe('Health Module API', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.name).toContain('THUNAI');
+    expect(res.body.data.name).toContain('MEDBRIEF');
     expect(res.body.data.version).toBe('1.0.0');
     expect(res.body.data.endpoints).toBeDefined();
     expect(res.body.data.endpoints.health).toBe('/api/v1/health');

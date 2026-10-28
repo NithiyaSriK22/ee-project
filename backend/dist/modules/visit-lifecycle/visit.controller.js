@@ -131,9 +131,9 @@ class VisitController {
         const list = master_data_service_js_1.MasterDataService.listLocations(departmentId);
         response_util_js_1.ResponseUtil.success(res, list, 'OPD Locations retrieved');
     }
-    static getDoctors(req, res) {
+    static async getDoctors(req, res) {
         const { departmentId } = req.query;
-        const list = master_data_service_js_1.MasterDataService.listDoctors(departmentId);
+        const list = await master_data_service_js_1.MasterDataService.listDoctorsAsync(departmentId);
         response_util_js_1.ResponseUtil.success(res, list, 'Doctor profiles retrieved');
     }
     static getKiosks(_req, res) {

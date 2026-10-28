@@ -96,7 +96,7 @@ async function run() {
   if (!doctorUser) {
     doctorUser = await prisma.staffUser.create({
       data: {
-        email: 'dr.smith.e2e@medikiosk.local',
+        email: 'dr.smith.e2e@medbrief.test',
         password_hash: '$2a$12$e84W/32fXG/u7tYcQW3n7OWrU/636w8W8f8o45mO4U0k52O0K',
         full_name: 'Dr. Jane Smith, MD',
         role: 'DOCTOR',

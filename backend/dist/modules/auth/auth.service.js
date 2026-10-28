@@ -2,10 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const auth_repository_js_1 = require("./auth.repository.js");
+const prisma_js_1 = require("../../database/prisma.js");
 const token_util_js_1 = require("../../utils/token.util.js");
 const app_error_js_1 = require("../../errors/app-error.js");
 const logger_js_1 = require("../../config/logger.js");
 const auth_types_js_1 = require("../../types/auth.types.js");
+const email_generator_util_js_1 = require("../../utils/email-generator.util.js");
 class AuthService {
     static async registerStaff(data) {
         const existing = await auth_repository_js_1.AuthRepository.findUserByEmail(data.email);
@@ -13,19 +15,51 @@ class AuthService {
             throw new app_error_js_1.ConflictError('A staff account with this email address already exists');
         }
         const passwordHash = await token_util_js_1.TokenUtil.hashPassword(data.password);
+        const role = data.role || 'DOCTOR';
+        const department = data.hospitalDepartment || data.specialization || 'General Medicine';
+        const clinic = data.clinicName || data.hospitalName || 'MEDBRIEF Clinical Care';
         const user = await auth_repository_js_1.AuthRepository.createStaffUser({
             email: data.email,
             passwordHash,
             fullName: data.fullName,
-            role: data.role,
-            hospitalDepartment: data.hospitalDepartment,
+            role,
+            hospitalDepartment: department,
+            medicalRegistrationNumber: data.medicalRegistrationNumber,
+            clinicName: clinic,
+            qualification: data.qualification,
+            experienceYears: data.experienceYears,
+            designation: data.designation,
+            phoneNumber: data.phoneNumber,
             status: 'ACTIVE',
         });
         logger_js_1.logger.info('Staff user account created', {
-            actorRole: data.role,
-            department: data.hospitalDepartment,
+            actorRole: role,
+            department,
+            email: data.email,
         });
-        return user;
+        return {
+            id: user.id,
+            email: user.email,
+            fullName: user.full_name || user.fullName,
+            role: user.role,
+            status: user.status,
+            accountStatus: user.status,
+            hospitalDepartment: user.hospital_department || user.hospitalDepartment,
+            specialization: user.hospital_department || user.hospitalDepartment,
+            medicalRegistrationNumber: user.medical_registration_number || user.medicalRegistrationNumber,
+            clinicName: user.clinic_name || user.clinicName,
+            hospitalName: user.clinic_name || user.clinicName,
+            qualification: user.qualification,
+            experienceYears: user.experience_years ?? user.experienceYears ?? 0,
+            designation: user.designation,
+            phoneNumber: user.phone_number || user.phoneNumber,
+            createdAt: user.created_at || user.createdAt,
+            updatedAt: user.updated_at || user.updatedAt,
+        };
+    }
+    static async suggestEmail(fullName) {
+        const email = await email_generator_util_js_1.EmailGeneratorUtil.generateUniqueShortEmail(fullName);
+        return { email };
     }
     static async loginStaff(credentials) {
         const user = await auth_repository_js_1.AuthRepository.findUserByEmail(credentials.email);
@@ -74,7 +108,16 @@ class AuthService {
                 fullName: user.full_name,
                 role: user.role,
                 status: user.status,
+                accountStatus: user.status,
                 hospitalDepartment: user.hospital_department,
+                specialization: user.hospital_department,
+                medicalRegistrationNumber: user.medical_registration_number || null,
+                clinicName: user.clinic_name || null,
+                hospitalName: user.clinic_name || null,
+                qualification: user.qualification || null,
+                experienceYears: user.experience_years ?? 0,
+                designation: user.designation || null,
+                phoneNumber: user.phone_number || null,
                 emailVerifiedAt: user.email_verified_at,
             },
             tokens: {
@@ -137,7 +180,16 @@ class AuthService {
             fullName: user.full_name,
             role: user.role,
             status: user.status,
+            accountStatus: user.status,
             hospitalDepartment: user.hospital_department,
+            specialization: user.hospital_department,
+            medicalRegistrationNumber: user.medical_registration_number || null,
+            clinicName: user.clinic_name || null,
+            hospitalName: user.clinic_name || null,
+            qualification: user.qualification || null,
+            experienceYears: user.experience_years ?? 0,
+            designation: user.designation || null,
+            phoneNumber: user.phone_number || null,
             emailVerifiedAt: user.email_verified_at,
             createdAt: user.created_at,
         };
@@ -224,6 +276,89 @@ class AuthService {
             success: true,
             message: 'If the account exists and is unverified, a new verification link has been sent.',
         };
+    }
+    static async updateProfile(userId, data) {
+        const updateData = {};
+        if (data.fullName)
+            updateData.full_name = data.fullName;
+        if (data.hospitalDepartment || data.specialization)
+            updateData.hospital_department = data.hospitalDepartment || data.specialization;
+        if (data.medicalRegistrationNumber)
+            updateData.medical_registration_number = data.medicalRegistrationNumber;
+        if (data.clinicName || data.hospitalName)
+            updateData.clinic_name = data.clinicName || data.hospitalName;
+        if (data.qualification !== undefined)
+            updateData.qualification = data.qualification;
+        if (data.experienceYears !== undefined)
+            updateData.experience_years = data.experienceYears;
+        if (data.designation !== undefined)
+            updateData.designation = data.designation;
+        if (data.phoneNumber !== undefined)
+            updateData.phone_number = data.phoneNumber;
+        const updated = await prisma_js_1.prisma.staffUser.update({
+            where: { id: userId },
+            data: updateData,
+        });
+        return {
+            id: updated.id,
+            email: updated.email,
+            fullName: updated.full_name,
+            role: updated.role,
+            status: updated.status,
+            accountStatus: updated.status,
+            hospitalDepartment: updated.hospital_department,
+            specialization: updated.hospital_department,
+            medicalRegistrationNumber: updated.medical_registration_number,
+            clinicName: updated.clinic_name,
+            hospitalName: updated.clinic_name,
+            qualification: updated.qualification,
+            experienceYears: updated.experience_years,
+            designation: updated.designation,
+            phoneNumber: updated.phone_number,
+            emailVerifiedAt: updated.email_verified_at,
+            updatedAt: updated.updated_at,
+        };
+    }
+    static async listDoctors() {
+        const doctors = await prisma_js_1.prisma.staffUser.findMany({
+            where: { role: 'DOCTOR' },
+            select: {
+                id: true,
+                email: true,
+                full_name: true,
+                role: true,
+                status: true,
+                hospital_department: true,
+                medical_registration_number: true,
+                clinic_name: true,
+                qualification: true,
+                experience_years: true,
+                designation: true,
+                phone_number: true,
+                created_at: true,
+                updated_at: true,
+            },
+            orderBy: { created_at: 'asc' },
+        });
+        return doctors.map((d) => ({
+            id: d.id,
+            email: d.email,
+            fullName: d.full_name,
+            role: d.role,
+            status: d.status,
+            accountStatus: d.status,
+            hospitalDepartment: d.hospital_department,
+            specialization: d.hospital_department,
+            medicalRegistrationNumber: d.medical_registration_number,
+            clinicName: d.clinic_name,
+            hospitalName: d.clinic_name,
+            qualification: d.qualification,
+            experienceYears: d.experience_years,
+            designation: d.designation,
+            phoneNumber: d.phone_number,
+            createdAt: d.created_at,
+            updatedAt: d.updated_at,
+        }));
     }
 }
 exports.AuthService = AuthService;

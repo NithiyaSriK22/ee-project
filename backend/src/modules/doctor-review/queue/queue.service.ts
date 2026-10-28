@@ -12,11 +12,16 @@ import { ForbiddenError } from '../../../errors/app-error.js';
 
 export class QueueService {
   /**
-   * Retrieves deterministic patient review queue scoped by department and role
+   * Retrieves deterministic patient review queue scoped by department, assigned doctor, and role
    */
   public static async getQueue(
     user: StaffUserPayload,
-    options?: { department?: string; status?: QueueStatus }
+    options?: {
+      department?: string;
+      status?: QueueStatus;
+      assignedDoctorId?: string;
+      scope?: 'my_queue' | 'unassigned' | 'all' | 'department';
+    }
   ): Promise<VisitQueueEntryDTO[]> {
     const isDoctor = user.role === 'DOCTOR';
     const isStaff = user.role === 'STAFF_ATTENDANT';
@@ -26,17 +31,31 @@ export class QueueService {
       throw new ForbiddenError(`Role '${user.role}' cannot access patient queue.`);
     }
 
-    // Doctors see visits in their department or assigned to them by default
     let filterDepartment = options?.department;
     let filterAssignedDoctor: string | undefined = undefined;
+    let unassignedOnly = false;
 
-    if (isDoctor && !filterDepartment && user.hospitalDepartment) {
+    // Evaluate scope
+    const scope = options?.scope;
+
+    if (scope === 'unassigned') {
+      unassignedOnly = true;
+    } else if (scope === 'my_queue') {
+      filterAssignedDoctor = isDoctor ? user.id : options?.assignedDoctorId;
+    } else if (options?.assignedDoctorId) {
+      filterAssignedDoctor = options.assignedDoctorId;
+    }
+
+    if (options?.department) {
+      filterDepartment = options.department;
+    } else if (isDoctor && user.hospitalDepartment && scope !== 'unassigned' && scope !== 'all') {
       filterDepartment = user.hospitalDepartment;
     }
 
     const queue = await DoctorReviewRepository.listQueue({
       department: filterDepartment,
       assignedDoctorId: filterAssignedDoctor,
+      unassignedOnly,
       status: options?.status,
     });
 

@@ -1,6 +1,9 @@
 import { createWorker } from 'tesseract.js';
+import { PDFParse } from 'pdf-parse';
 import { FieldType } from '../documents.types.js';
 import { logger } from '../../../config/logger.js';
+import { DigitalDocumentExtractorService } from '../digital/digital-document-extractor.service.js';
+import { NativeTesseractRunner, TesseractWordData } from './native-tesseract-runner.js';
 
 export interface RawOcrFieldOutput {
   fieldType: FieldType;
@@ -71,11 +74,11 @@ export class StandardClinicalOcrProvider implements IOcrProvider {
         fullText: textSample,
         pageCount: 1,
         isLowConfidence: true,
-        isHandwritten: true,
-        handwritingDetected: true,
+        isHandwritten: false,
+        handwritingDetected: false,
         extractionStatus: 'FAILED',
-        errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
-        limitationNotice: 'The local optical character recognition engine does not support reliable cursive handwriting recognition without risk of clinical hallucination.',
+        errorMessage: 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.',
+        limitationNotice: 'Text could not be reliably extracted from unstandardized document.',
         engineUsed: this.name,
       };
     }
@@ -230,17 +233,69 @@ export class TesseractOcrProvider implements IOcrProvider {
 
     // 3. Handle PDF text extraction (e.g. digital lab reports, electronic discharge summaries)
     if (isPdf) {
-      const pdfText = this.extractPdfText(buffer);
-      if (pdfText && pdfText.length >= 20) {
-        const extractedFields = this.parseClinicalEntities(pdfText);
-        if (extractedFields.length > 0) {
-          return {
-            success: true,
-            extractedFields,
-            fullText: pdfText,
-            pageCount: 1,
-            engineUsed: this.name,
-          };
+      // 3a. Prioritize Native digital text extraction
+      const digitalRes = await DigitalDocumentExtractorService.extractFromPdf(buffer);
+      if (digitalRes.success && digitalRes.extractedFields.length > 0) {
+        return {
+          success: true,
+          extractedFields: digitalRes.extractedFields,
+          fullText: digitalRes.fullText,
+          pageCount: digitalRes.pageCount,
+          engineUsed: 'NativePdfDigitalExtractor',
+        };
+      }
+
+      // 3b. Scanned PDF: Render pages to images using PDFParse and OCR them with Native Tesseract
+      if (NativeTesseractRunner.isAvailable()) {
+        try {
+          const uint8 = new Uint8Array(buffer);
+          const parser = new PDFParse(uint8);
+          if (typeof (parser as any).load === 'function') {
+            await (parser as any).load();
+          }
+          const screenshotRes = await (parser as any).getScreenshot({ imageBuffer: true, scale: 2.0 });
+          const pages = screenshotRes?.pages || [];
+
+          if (pages.length > 0) {
+            let combinedText = '';
+            const aggregatedFields: RawOcrFieldOutput[] = [];
+            let totalConfidence = 0;
+            let ocrPageCount = 0;
+
+            for (const page of pages) {
+              const pageBuffer = page.data ? Buffer.from(page.data) : null;
+              if (pageBuffer && pageBuffer.length > 100) {
+                const pageResult = await NativeTesseractRunner.recognize(pageBuffer, 'eng');
+                if (pageResult.success && pageResult.fullText.trim()) {
+                  combinedText += (combinedText ? '\n\n' : '') + pageResult.fullText;
+                  totalConfidence += pageResult.confidence;
+                  ocrPageCount++;
+                  const pageFields = this.parseClinicalEntities(pageResult.fullText, undefined, pageResult.words);
+                  aggregatedFields.push(...pageFields);
+                }
+              }
+            }
+
+            if (aggregatedFields.length > 0 && combinedText.trim()) {
+              const hasMed = aggregatedFields.some((f) => f.fieldType === 'drug_name');
+              const hasLab = aggregatedFields.some((f) => f.fieldType === 'lab_test_name' || f.fieldType === 'lab_value');
+              const isPartial = !hasMed && !hasLab;
+
+              return {
+                success: true,
+                extractedFields: aggregatedFields,
+                fullText: combinedText,
+                pageCount: pages.length,
+                isHandwritten: isPartial,
+                handwritingDetected: isPartial,
+                extractionStatus: isPartial ? 'PARTIALLY_SUCCESSFUL' : 'SUCCESSFUL',
+                errorMessage: isPartial ? 'Partial extraction only: Handwritten clinical body could not be reliably digitized.' : undefined,
+                engineUsed: this.name,
+              };
+            }
+          }
+        } catch (pdfOcrErr: any) {
+          logger.warn('Failed to OCR scanned PDF pages via native engine', { error: pdfOcrErr.message });
         }
       }
 
@@ -248,14 +303,83 @@ export class TesseractOcrProvider implements IOcrProvider {
       return {
         success: false,
         extractedFields: [],
-        fullText: pdfText || '',
-        pageCount: 1,
-        errorMessage: 'Document could not be reliably digitized. PDF does not contain searchable text or recognizable clinical entities. Please review the original document.',
+        fullText: digitalRes.fullText || '',
+        pageCount: digitalRes.pageCount || 1,
+        errorMessage: 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.',
         engineUsed: this.name,
       };
     }
 
-    // 4. Handle Optical Character Recognition on Image via Tesseract.js
+    // 4. Handle Optical Character Recognition on Image
+    // 4a. Prioritize Native Tesseract Binary Process Execution
+    if (NativeTesseractRunner.isAvailable()) {
+      try {
+        const nativeRes = await NativeTesseractRunner.recognize(buffer, 'eng');
+        const recognizedText = nativeRes.fullText || '';
+        const confidence = nativeRes.confidence || 0;
+
+        logger.info('Native Tesseract OCR extraction finished', {
+          textLength: recognizedText.length,
+          confidence,
+        });
+
+        // Low confidence or empty output check (< 40% threshold)
+        if (!recognizedText.trim() || confidence < 0.40) {
+          return {
+            success: false,
+            extractedFields: [],
+            fullText: recognizedText,
+            pageCount: 1,
+            isLowConfidence: true,
+            isHandwritten: false,
+            handwritingDetected: false,
+            extractionStatus: 'FAILED',
+            errorMessage: 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.',
+            limitationNotice: 'Legibility confidence is below clinical threshold (confidence < 40%).',
+            engineUsed: this.name,
+          };
+        }
+
+        const extractedFields = this.parseClinicalEntities(recognizedText, undefined, nativeRes.words);
+
+        if (extractedFields.length === 0) {
+          return {
+            success: false,
+            extractedFields: [],
+            fullText: recognizedText,
+            pageCount: 1,
+            isLowConfidence: true,
+            isHandwritten: false,
+            handwritingDetected: false,
+            extractionStatus: 'FAILED',
+            errorMessage: 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.',
+            limitationNotice: 'No verified clinical entities could be recognized from document.',
+            engineUsed: this.name,
+          };
+        }
+
+        const hasMed = extractedFields.some((f) => f.fieldType === 'drug_name');
+        const hasLab = extractedFields.some((f) => f.fieldType === 'lab_test_name' || f.fieldType === 'lab_value');
+        const isPartial = !hasMed && !hasLab && extractedFields.length > 0;
+
+        return {
+          success: true,
+          extractedFields,
+          fullText: recognizedText,
+          pageCount: 1,
+          isHandwritten: isPartial,
+          handwritingDetected: isPartial,
+          extractionStatus: isPartial ? 'PARTIALLY_SUCCESSFUL' : 'SUCCESSFUL',
+          errorMessage: isPartial ? 'Partial extraction only: Handwritten clinical body could not be reliably digitized.' : undefined,
+          limitationNotice: isPartial ? 'Printed clinic header was recognized, but handwritten prescription body was unreadable.' : undefined,
+          engineUsed: this.name,
+        };
+      } catch (nativeErr: any) {
+        logger.warn('Native Tesseract execution error, falling back to worker', { error: nativeErr.message });
+      }
+    }
+
+    // 4b. Fallback to Tesseract.js Worker
     let worker: any = null;
     try {
       worker = await createWorker('eng', 1, {
@@ -280,11 +404,11 @@ export class TesseractOcrProvider implements IOcrProvider {
           fullText: recognizedText,
           pageCount: 1,
           isLowConfidence: true,
-          isHandwritten: true,
-          handwritingDetected: true,
+          isHandwritten: false,
+          handwritingDetected: false,
           extractionStatus: 'FAILED',
-          errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
-          limitationNotice: 'The local optical engine is trained on printed typography and cannot reliably transcribe cursive handwriting without clinical risk. Legibility confidence is below clinical threshold (confidence < 40%).',
+          errorMessage: 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.',
+          limitationNotice: 'Legibility confidence is below clinical threshold (confidence < 40%).',
           engineUsed: this.name,
         };
       }
@@ -299,11 +423,11 @@ export class TesseractOcrProvider implements IOcrProvider {
           fullText: recognizedText,
           pageCount: 1,
           isLowConfidence: true,
-          isHandwritten: true,
-          handwritingDetected: true,
+          isHandwritten: false,
+          handwritingDetected: false,
           extractionStatus: 'FAILED',
-          errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
-          limitationNotice: 'No verified medication entities could be extracted from handwritten or unstandardized note.',
+          errorMessage: 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.',
+          limitationNotice: 'No verified clinical entities could be recognized from document.',
           engineUsed: this.name,
         };
       }
@@ -334,9 +458,9 @@ export class TesseractOcrProvider implements IOcrProvider {
         extractedFields: [],
         fullText: '',
         pageCount: 0,
-        isHandwritten: true,
+        isHandwritten: false,
         extractionStatus: 'FAILED',
-        errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
+        errorMessage: 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.',
         limitationNotice: `Optical engine error: ${err.message || 'Processing error'}.`,
         engineUsed: this.name,
       };
@@ -350,47 +474,30 @@ export class TesseractOcrProvider implements IOcrProvider {
   }
 
   /**
-   * Extracts raw text streams from electronic PDF byte stream without external dependencies
-   */
-  private extractPdfText(buffer: Buffer): string {
-    const raw = buffer.toString('binary');
-    const textPieces: string[] = [];
-
-    // Match parenthesized text in standard Tj operators: (text) Tj
-    const tjRegex = /\(([^)]+)\)\s*(?:Tj|'|")/g;
-    let match;
-    while ((match = tjRegex.exec(raw)) !== null) {
-      if (match[1]) textPieces.push(match[1]);
-    }
-
-    // Match TJ array text blocks: [(string) -10 (string)] TJ
-    const tjArrayRegex = /\[([^\]]+)\]\s*TJ/g;
-    while ((match = tjArrayRegex.exec(raw)) !== null) {
-      const inner = match[1];
-      if (inner) {
-        const innerMatches = inner.match(/\(([^)]+)\)/g);
-        if (innerMatches) {
-          for (const im of innerMatches) {
-            textPieces.push(im.slice(1, -1));
-          }
-        }
-      }
-    }
-
-    // Match metadata dictionary entries: /Title (foo) /Subject (bar)
-    const dictRegex = /\/(?:Title|Subject|Author|Keywords)\s*\(([^)]+)\)/g;
-    while ((match = dictRegex.exec(raw)) !== null) {
-      if (match[1]) textPieces.push(match[1]);
-    }
-
-    return textPieces.join(' ').replace(/\\r|\\n/g, ' ').replace(/\s+/g, ' ').trim();
-  }
-
-  /**
    * Parses structured clinical fields from recognized OCR text
    */
-  public parseClinicalEntities(text: string, _ocrData?: any): RawOcrFieldOutput[] {
+  public parseClinicalEntities(
+    text: string,
+    _ocrData?: any,
+    words?: TesseractWordData[]
+  ): RawOcrFieldOutput[] {
     const fields: RawOcrFieldOutput[] = [];
+
+    const getWordBoundingBox = (needle: string) => {
+      if (!words || words.length === 0) return undefined;
+      const lower = needle.toLowerCase().split(/\s+/)[0];
+      if (!lower) return undefined;
+      const found = words.find((w) => w.text && w.text.toLowerCase().includes(lower));
+      return found ? found.box : undefined;
+    };
+
+    const getWordConfidence = (needle: string) => {
+      if (!words || words.length === 0) return undefined;
+      const lower = needle.toLowerCase().split(/\s+/)[0];
+      if (!lower) return undefined;
+      const found = words.find((w) => w.text && w.text.toLowerCase().includes(lower));
+      return found ? found.confidence : undefined;
+    };
 
     // 1. Drug names & dosages (e.g., Amoxicillin 500mg, Paracetamol 650mg, Dolo 650, etc.)
     const drugPatterns = [
@@ -404,21 +511,25 @@ export class TesseractOcrProvider implements IOcrProvider {
         const dosageVal = match[2]?.trim();
 
         if (drugName) {
+          const wordBox = getWordBoundingBox(drugName);
+          const wordConf = getWordConfidence(drugName);
+
           fields.push({
             fieldType: 'drug_name',
             rawText: drugName,
-            confidence: 0.88,
+            confidence: wordConf ? Math.max(0.80, wordConf) : 0.88,
             sourceSnippetRef: `tess_line_${fields.length + 1}`,
-            boundingBox: { x: 60, y: 150 + fields.length * 40, width: 220, height: 35 },
+            boundingBox: wordBox || { x: 60, y: 150 + fields.length * 40, width: 220, height: 35 },
           });
 
           if (dosageVal) {
+            const doseBox = getWordBoundingBox(dosageVal);
             fields.push({
               fieldType: 'dosage',
               rawText: dosageVal,
               confidence: 0.88,
               sourceSnippetRef: `tess_dosage_${fields.length + 1}`,
-              boundingBox: { x: 290, y: 150 + fields.length * 40, width: 100, height: 35 },
+              boundingBox: doseBox || { x: 290, y: 150 + fields.length * 40, width: 100, height: 35 },
             });
           }
         }
@@ -428,34 +539,40 @@ export class TesseractOcrProvider implements IOcrProvider {
     // 2. Frequencies / Dosages (e.g. 1-0-1, TID, BD, 1 tab twice daily)
     const dosageMatch = text.match(/\b(\d\s*-\s*\d\s*-\s*\d|\bTID\b|\bBID\b|\bOD\b|\bQID\b|\bSOS\b|\b1\s+tab\s+twice\s+daily\b|\b1\s+tablet\s+daily\b)/i);
     if (dosageMatch && dosageMatch[1]) {
+      const freqText = dosageMatch[1].replace(/\s+/g, '');
+      const freqBox = getWordBoundingBox(freqText);
       fields.push({
         fieldType: 'dosage',
-        rawText: dosageMatch[1].replace(/\s+/g, ''),
+        rawText: freqText,
         confidence: 0.84,
         sourceSnippetRef: 'tess_dosage_freq',
-        boundingBox: { x: 290, y: 190, width: 100, height: 30 },
+        boundingBox: freqBox || { x: 290, y: 190, width: 100, height: 30 },
       });
     }
 
     // 3. Lab Test Name & Values
     const labTestMatch = text.match(/\b(Fasting Blood (?:Glucose|Sugar)|HbA1c|Hemoglobin|Platelet Count|Serum Creatinine|Total Cholesterol|TSH|Bilirubin)\b/i);
     if (labTestMatch && labTestMatch[1]) {
+      const testName = labTestMatch[1].trim();
+      const labBox = getWordBoundingBox(testName);
       fields.push({
         fieldType: 'lab_test_name',
-        rawText: labTestMatch[1].trim(),
+        rawText: testName,
         confidence: 0.90,
         sourceSnippetRef: 'tess_lab_test',
-        boundingBox: { x: 50, y: 120, width: 220, height: 30 },
+        boundingBox: labBox || { x: 50, y: 120, width: 220, height: 30 },
       });
 
       const labValMatch = text.match(/\b(\d+(?:\.\d+)?\s*(?:mg\/dL|g\/dL|%|mIU\/L|\/cumm))\b/i);
       if (labValMatch && labValMatch[1]) {
+        const valText = labValMatch[1].trim();
+        const valBox = getWordBoundingBox(valText);
         fields.push({
           fieldType: 'lab_value',
-          rawText: labValMatch[1].trim(),
+          rawText: valText,
           confidence: 0.88,
           sourceSnippetRef: 'tess_lab_val',
-          boundingBox: { x: 300, y: 120, width: 120, height: 30 },
+          boundingBox: valBox || { x: 300, y: 120, width: 120, height: 30 },
         });
       }
     }
@@ -463,41 +580,55 @@ export class TesseractOcrProvider implements IOcrProvider {
     // 4. Date
     const dateMatch = text.match(/\b(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4})\b/);
     if (dateMatch && dateMatch[1]) {
+      const dateText = dateMatch[1];
+      const dateBox = getWordBoundingBox(dateText);
       fields.push({
         fieldType: 'date',
-        rawText: dateMatch[1],
+        rawText: dateText,
         confidence: 0.92,
         sourceSnippetRef: 'tess_date',
-        boundingBox: { x: 450, y: 60, width: 120, height: 25 },
+        boundingBox: dateBox || { x: 450, y: 60, width: 120, height: 25 },
       });
     }
 
     // 5. Physician Name
     const docMatch = text.match(/\b(?:Dr\.|Doctor|Dr)\s+([A-Za-z\s.]+)/i);
     if (docMatch && docMatch[1]) {
+      const docName = `Dr. ${docMatch[1].trim()}`;
+      const docBox = getWordBoundingBox(docMatch[1]);
       fields.push({
         fieldType: 'physician_name',
-        rawText: `Dr. ${docMatch[1].trim()}`,
+        rawText: docName,
         confidence: 0.85,
         sourceSnippetRef: 'tess_physician',
-        boundingBox: { x: 380, y: 460, width: 200, height: 30 },
+        boundingBox: docBox || { x: 380, y: 460, width: 200, height: 30 },
       });
     }
 
     // 6. Allergies
     const allergyMatch = text.match(/\b(?:Allergy|Allergies|NKDA|No known allergies)[^.\n]*/i);
     if (allergyMatch) {
+      const allergyText = allergyMatch[0].trim();
+      const allergyBox = getWordBoundingBox(allergyText);
       fields.push({
         fieldType: 'allergy',
-        rawText: allergyMatch[0].trim(),
+        rawText: allergyText,
         confidence: 0.80,
         sourceSnippetRef: 'tess_allergy',
-        boundingBox: { x: 60, y: 320, width: 220, height: 30 },
+        boundingBox: allergyBox || { x: 60, y: 320, width: 220, height: 30 },
       });
     }
 
     return fields;
   }
+}
+
+/**
+ * Native Tesseract OCR Provider:
+ * Direct subclass of TesseractOcrProvider with dedicated name identifier.
+ */
+export class NativeTesseractOcrProvider extends TesseractOcrProvider {
+  public override name = 'NativeTesseractOcrProvider';
 }
 
 /**
@@ -534,11 +665,11 @@ export class HandwrittenUnreadableOcrProvider implements IOcrProvider {
       fullText: '??? cursive handwriting marks ???',
       pageCount: 1,
       isLowConfidence: true,
-      isHandwritten: true,
-      handwritingDetected: true,
+      isHandwritten: false,
+      handwritingDetected: false,
       extractionStatus: 'FAILED',
-      errorMessage: 'Handwritten text could not be reliably extracted. Please review the original document.',
-      limitationNotice: 'The local optical character recognition engine does not support reliable cursive handwriting recognition without risk of clinical hallucination. Please review the original document.',
+      errorMessage: 'Digital text could not be extracted. Please upload a text-based PDF or another supported digital document.',
+      limitationNotice: 'Text could not be reliably extracted from document. Please review the original document.',
       engineUsed: this.name,
     };
   }
@@ -628,6 +759,9 @@ export class OcrProviderFactory {
   public static getProvider(type?: string): IOcrProvider {
     const configured = type || (process.env.OCR_PROVIDER as string) || (process.env.OCR_ENGINE as string) || 'STANDARD';
     switch (configured.toUpperCase()) {
+      case 'NATIVE_TESSERACT':
+      case 'NATIVE':
+        return new NativeTesseractOcrProvider();
       case 'TESSERACT':
         return new TesseractOcrProvider();
       case 'LOW_CONFIDENCE':

@@ -21,8 +21,14 @@ export const FreeTextInput: React.FC<FreeTextInputProps> = ({
   onChange,
   voiceTranscript,
 }) => {
-  const initialText = typeof value === 'object' ? value?.value || '' : value || '';
+  const initialText = typeof value === 'object' && value !== null ? value?.value || '' : value || '';
   const [text, setText] = useState(initialText);
+
+  // Sync when value prop changes externally (e.g. next question or answer cleared)
+  useEffect(() => {
+    const nextText = typeof value === 'object' && value !== null ? value?.value || '' : value || '';
+    setText(nextText);
+  }, [value]);
 
   // Sync voice transcript if updated externally
   useEffect(() => {

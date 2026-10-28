@@ -7,6 +7,7 @@ const auth_middleware_js_1 = require("../../middleware/auth.middleware.js");
 const validate_middleware_js_1 = require("../../middleware/validate.middleware.js");
 const doctor_review_schemas_js_1 = require("./doctor-review.schemas.js");
 const upload_middleware_js_1 = require("../../middleware/upload.middleware.js");
+const master_data_service_js_1 = require("../visit-lifecycle/master-data.service.js");
 const router = (0, express_1.Router)();
 // ============================================================================
 // SIGNED DOCUMENT & SNIPPET IMAGE STREAMING (P1.3)
@@ -32,6 +33,17 @@ router.post('/queue/:visitId/claim', (0, auth_middleware_js_1.authorizeRoles)('D
 router.post('/queue/:visitId/release', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'SUPER_ADMIN'), (0, validate_middleware_js_1.validateRequest)({
     params: doctor_review_schemas_js_1.releaseVisitSchema.shape.params,
 }), doctor_review_controller_js_1.DoctorReviewController.releaseVisit);
+router.post('/queue/:visitId/reassign', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.reassignVisit);
+router.post('/queue/:visitId/assign', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), doctor_review_controller_js_1.DoctorReviewController.reassignVisit);
+router.get('/doctors', (0, auth_middleware_js_1.authorizeRoles)('DOCTOR', 'STAFF_ATTENDANT', 'ADMIN', 'SUPER_ADMIN'), async (_req, res, next) => {
+    try {
+        const doctors = await master_data_service_js_1.MasterDataService.listDoctorsAsync();
+        res.json({ success: true, data: doctors });
+    }
+    catch (err) {
+        next(err);
+    }
+});
 // ============================================================================
 // WORKSPACE & RAW VIEW ENDPOINTS
 // ============================================================================

@@ -38,7 +38,7 @@ exports.CreateRuleSchema = zod_1.z.object({
 });
 exports.UpdateRuleSchema = exports.CreateRuleSchema.partial();
 exports.HelpRequestSchema = zod_1.z.object({
-    kioskDeviceId: zod_1.z.string().uuid().optional(),
+    kioskDeviceId: zod_1.z.string().uuid().nullable().optional(),
     kioskLocation: zod_1.z.string().max(255).optional(),
     reason: zod_1.z.string().max(255).optional(),
 });

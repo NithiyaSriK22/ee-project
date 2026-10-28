@@ -62,13 +62,17 @@ export const ThunaiBrandLogo: React.FC<ThunaiLogoProps> = ({
       {showText && (
         <div className="flex flex-col">
           <span className="text-2xl font-black tracking-[0.08em] text-[#142B68] leading-none font-sans">
-            THUNAI
+            MEDBRIEF
           </span>
           <span className="text-[11px] font-semibold tracking-normal text-[#5146A8] mt-1 leading-tight">
-            AI-Powered Clinical Intelligence
+            Medical Intelligence. Simplified.
           </span>
         </div>
       )}
     </div>
   );
 };
+
+export const MedbriefBrandLogo = ThunaiBrandLogo;
+export const MedbriefHeartIcon = ThunaiHeartIcon;
+

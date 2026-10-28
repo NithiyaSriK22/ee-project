@@ -25,12 +25,12 @@ const index_js_19 = require("../modules/synthetic-demo/index.js");
 const response_util_js_1 = require("../utils/response.util.js");
 const apiV1Router = (0, express_1.Router)();
 exports.apiV1Router = apiV1Router;
-// THUNAI API Root Discovery & Info Endpoint (GET /api/v1)
+// MEDBRIEF API Root Discovery & Info Endpoint (GET /api/v1)
 apiV1Router.get('/', (_req, res) => {
     response_util_js_1.ResponseUtil.success(res, {
-        name: 'THUNAI Clinical Assistance API',
+        name: 'MEDBRIEF Clinical Assistance API',
         version: '1.0.0',
-        platform: 'THUNAI Healthcare Platform',
+        platform: 'MEDBRIEF Healthcare Platform',
         status: 'OPERATIONAL',
         service: 'thunai-backend',
         documentation: '/api/v1/health',
@@ -59,7 +59,7 @@ apiV1Router.get('/', (_req, res) => {
             deployment: '/api/v1/deployment/status',
             demo: '/api/v1/demo',
         },
-    }, 'THUNAI API v1 root endpoint operational');
+    }, 'MEDBRIEF API v1 root endpoint operational');
 });
 // Module 1 Core Endpoints
 apiV1Router.use('/health', health_routes_js_1.healthRoutes);

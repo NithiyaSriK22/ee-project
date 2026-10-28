@@ -152,7 +152,7 @@ export const KioskLayout: React.FC = () => {
             <span>{locale.footerNotice}</span>
           </div>
           <div className="text-slate-400 font-mono text-[11px]">
-            THUNAI Healthcare Platform • Clinical Core v1.0.0
+            MEDBRIEF Healthcare Platform • Clinical Core v1.0.0
           </div>
         </div>
       </footer>

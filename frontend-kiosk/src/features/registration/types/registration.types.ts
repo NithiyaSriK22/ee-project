@@ -73,12 +73,21 @@ export interface StartKioskSessionPayload {
   emergencyContact?: string;
   consentGranted?: boolean;
   consentGrantedVia?: 'patient' | 'companion' | 'staff_assisted';
+  presentingComplaint?: string;
+  department?: string;
 }
 
 export interface StartSessionResponseData {
   session: KioskSessionInfo;
   patient: Patient;
   visitProfile: PatientVisitProfile;
+  assignment?: {
+    assigned: boolean;
+    doctorId: string | null;
+    doctorName: string | null;
+    department: string;
+    matchingReason: string;
+  } | null;
   consents: ConsentItem[];
 }
 

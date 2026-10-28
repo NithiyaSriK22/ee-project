@@ -573,7 +573,7 @@ export const ReviewWorkspacePage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
                 <h3 className="font-bold text-sm text-amber-950">
-                  Original Handwritten Document Inspection
+                  Original Medical Document Inspection
                 </h3>
               </div>
               <button
@@ -587,7 +587,7 @@ export const ReviewWorkspacePage: React.FC = () => {
               <DocumentSnippetViewer
                 documentId={inspectingDocumentId}
                 verificationState="UNREADABLE"
-                rawExtractedValue="Handwritten prescription could not be automatically digitized. Please inspect the original optical scan directly."
+                rawExtractedValue="Digital text could not be extracted automatically. Please inspect the original medical document directly."
                 onClose={() => setInspectingDocumentId(null)}
               />
             </div>

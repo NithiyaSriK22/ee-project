@@ -113,9 +113,9 @@ export const PilotEvaluationPage: React.FC<Props> = ({ preset }) => {
               </p>
             </div>
 
-            {/* Current THUNAI Measurement */}
+            {/* Current MEDBRIEF Measurement */}
             <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-              <span className="text-2xs font-bold uppercase text-indigo-700">Measured Under THUNAI</span>
+              <span className="text-2xs font-bold uppercase text-indigo-700">Measured Under MEDBRIEF</span>
               <div className="text-2xl font-black text-indigo-900 mt-1">
                 {Math.round(measuredReviewSec / 60)}m {measuredReviewSec % 60}s
               </div>

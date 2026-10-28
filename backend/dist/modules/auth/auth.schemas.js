@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resendVerificationSchema = exports.verifyEmailSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.changePasswordSchema = exports.refreshTokenSchema = exports.loginStaffSchema = exports.registerStaffSchema = void 0;
+exports.resendVerificationSchema = exports.verifyEmailSchema = exports.resetPasswordSchema = exports.forgotPasswordSchema = exports.changePasswordSchema = exports.refreshTokenSchema = exports.loginStaffSchema = exports.suggestEmailSchema = exports.registerStaffSchema = void 0;
 const zod_1 = require("zod");
 const auth_types_js_1 = require("../../types/auth.types.js");
 exports.registerStaffSchema = zod_1.z
@@ -18,17 +18,36 @@ exports.registerStaffSchema = zod_1.z
         .regex(/[0-9]/, 'Password must contain at least one number'),
     confirmPassword: zod_1.z.string(),
     fullName: zod_1.z.string().trim().min(2, 'Full name must be at least 2 characters'),
-    role: zod_1.z.enum([
+    role: zod_1.z
+        .enum([
         auth_types_js_1.UserRoles.STAFF_ATTENDANT,
         auth_types_js_1.UserRoles.DOCTOR,
         auth_types_js_1.UserRoles.ADMIN,
         auth_types_js_1.UserRoles.SUPER_ADMIN,
-    ]),
+    ])
+        .optional()
+        .default(auth_types_js_1.UserRoles.DOCTOR),
+    medicalRegistrationNumber: zod_1.z
+        .string()
+        .trim()
+        .min(2, 'Medical registration number must be at least 2 characters')
+        .max(100, 'Medical registration number cannot exceed 100 characters')
+        .optional(),
+    specialization: zod_1.z.string().trim().max(100).optional(),
     hospitalDepartment: zod_1.z.string().trim().max(100).optional(),
+    clinicName: zod_1.z.string().trim().max(255).optional(),
+    hospitalName: zod_1.z.string().trim().max(255).optional(),
+    qualification: zod_1.z.string().trim().max(100).optional(),
+    experienceYears: zod_1.z.coerce.number().int().min(0, 'Experience must be a non-negative integer').optional(),
+    designation: zod_1.z.string().trim().max(100).optional(),
+    phoneNumber: zod_1.z.string().trim().max(50).optional(),
 })
     .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
+});
+exports.suggestEmailSchema = zod_1.z.object({
+    fullName: zod_1.z.string().trim().min(2, 'Full name must be at least 2 characters'),
 });
 exports.loginStaffSchema = zod_1.z.object({
     email: zod_1.z.string().trim().toLowerCase().email('Please provide a valid email address'),

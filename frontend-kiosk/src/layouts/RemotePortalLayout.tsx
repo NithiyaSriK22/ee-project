@@ -25,14 +25,14 @@ export const RemotePortalLayout: React.FC = () => {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-base tracking-tight text-slate-900">
-                  THUNAI
+                  MEDBRIEF
                 </span>
                 <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-teal-50 text-teal-800 border border-teal-200 flex items-center gap-1">
                   <Smartphone className="w-2.5 h-2.5 text-teal-700" />
                   MOBILE
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium">Remote Patient Portal</p>
+              <p className="text-[11px] text-slate-500 font-medium">MEDBRIEF Patient Portal</p>
             </div>
           </div>
 
@@ -68,7 +68,7 @@ export const RemotePortalLayout: React.FC = () => {
             <span>Encrypted Hospital Intake Portal</span>
           </div>
           <p className="text-[11px] text-slate-400 mx-auto sm:mx-0">
-            THUNAI OPD Pre-Consultation System
+            MEDBRIEF Patient Portal
           </p>
         </div>
       </footer>

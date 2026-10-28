@@ -45,7 +45,7 @@ export class StatusBoardService {
         auditChain: auditChainValid ? 'VERIFIED' : 'TAMPER_ALERT',
       },
       patientGuidance: intakeActive
-        ? 'THUNAI terminals are operational. Please use any available terminal for assisted OPD registration.'
+        ? 'MEDBRIEF terminals are operational. Please use any available terminal for assisted OPD registration.'
         : 'Kiosk self-registration is currently paused. Please proceed directly to the outpatient reception counter for paper-assisted registration.',
       staffGuidance: !isDbConnected
         ? 'Database server is offline or unreachable at localhost:5432. System is operating in resilient in-memory fallback mode. Existing doctor review and triage queues remain operational.'

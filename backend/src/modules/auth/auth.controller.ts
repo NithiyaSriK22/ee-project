@@ -13,6 +13,15 @@ export class AuthController {
     }
   }
 
+  public static async suggestEmail(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await AuthService.suggestEmail(req.body.fullName);
+      ResponseUtil.success(res, result, 'Suggested short email generated');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   public static async login(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await AuthService.loginStaff(req.body);
@@ -99,6 +108,28 @@ export class AuthController {
     try {
       const result = await AuthService.resendVerification(req.body.email);
       ResponseUtil.success(res, result, result.message);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async updateProfile(req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        ResponseUtil.error(res, 401, 'UNAUTHORIZED', 'Authentication required');
+        return;
+      }
+      const profile = await AuthService.updateProfile(req.user.id, req.body);
+      ResponseUtil.success(res, profile, 'Profile updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public static async listDoctors(_req: AppRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const doctors = await AuthService.listDoctors();
+      ResponseUtil.success(res, doctors, 'Doctors retrieved successfully');
     } catch (error) {
       next(error);
     }

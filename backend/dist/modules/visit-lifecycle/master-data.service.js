@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MasterDataService = void 0;
 const app_error_js_1 = require("../../errors/app-error.js");
 const dev_fallback_admin_store_js_1 = require("../admin/dev-fallback-admin-store.js");
+const prisma_js_1 = require("../../database/prisma.js");
 class MasterDataService {
     // In-memory master stores with resilient seed data
     static departments = new Map([
@@ -73,22 +74,7 @@ class MasterDataService {
             },
         ],
     ]);
-    static doctors = new Map([
-        [
-            'doc_prof_001',
-            {
-                id: 'doc_prof_001',
-                staff_user_id: 'c0000000-0000-4000-a000-000000000002',
-                department_id: 'dept_gen_med',
-                license_number: 'MCI-2015-88491',
-                specialization: 'Internal Medicine',
-                consultation_room: 'Room 101-A',
-                is_active: true,
-                created_at: new Date('2026-01-01'),
-                updated_at: new Date('2026-01-01'),
-            },
-        ],
-    ]);
+    static doctors = new Map();
     static kiosks = new Map([
         [
             'KIOSK-OPD-B1',
@@ -204,8 +190,83 @@ class MasterDataService {
         return loc;
     }
     // --- Doctor Profiles ---
+    static async listDoctorsAsync(departmentId) {
+        const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
+        if (isDbUp) {
+            try {
+                const where = { role: 'DOCTOR', status: 'ACTIVE' };
+                if (departmentId) {
+                    where.hospital_department = { contains: departmentId, mode: 'insensitive' };
+                }
+                const staffDocs = await prisma_js_1.prisma.staffUser.findMany({
+                    where,
+                    select: {
+                        id: true,
+                        full_name: true,
+                        email: true,
+                        hospital_department: true,
+                        status: true,
+                        created_at: true,
+                    },
+                    orderBy: { full_name: 'asc' },
+                });
+                if (staffDocs.length > 0) {
+                    return staffDocs.map((doc) => ({
+                        id: doc.id,
+                        staff_user_id: doc.id,
+                        doctor_name: doc.full_name,
+                        full_name: doc.full_name,
+                        fullName: doc.full_name,
+                        email: doc.email,
+                        department_id: doc.hospital_department || 'dept_gen_med',
+                        department_name: doc.hospital_department || 'General Medicine',
+                        department: doc.hospital_department || 'General Medicine',
+                        specialization: doc.hospital_department || 'General Medicine',
+                        is_active: doc.status === 'ACTIVE',
+                        created_at: doc.created_at,
+                    }));
+                }
+            }
+            catch { }
+        }
+        return Array.from(this.doctors.values()).filter((doc) => doc.is_active && (!departmentId || doc.department_id === departmentId));
+    }
     static listDoctors(departmentId) {
         return Array.from(this.doctors.values()).filter((doc) => doc.is_active && (!departmentId || doc.department_id === departmentId));
+    }
+    static async getDoctorByIdAsync(id) {
+        const isDbUp = await (0, prisma_js_1.checkDatabaseHealth)();
+        if (isDbUp) {
+            try {
+                const staffDoc = await prisma_js_1.prisma.staffUser.findUnique({
+                    where: { id },
+                    select: {
+                        id: true,
+                        full_name: true,
+                        email: true,
+                        hospital_department: true,
+                        status: true,
+                        created_at: true,
+                    },
+                });
+                if (staffDoc && staffDoc.status === 'ACTIVE') {
+                    return {
+                        id: staffDoc.id,
+                        staff_user_id: staffDoc.id,
+                        doctor_name: staffDoc.full_name,
+                        full_name: staffDoc.full_name,
+                        email: staffDoc.email,
+                        department_id: staffDoc.hospital_department || 'dept_gen_med',
+                        department_name: staffDoc.hospital_department || 'General Medicine',
+                        specialization: staffDoc.hospital_department || 'General Medicine',
+                        is_active: true,
+                        created_at: staffDoc.created_at,
+                    };
+                }
+            }
+            catch { }
+        }
+        return this.doctors.get(id) || null;
     }
     static getDoctorById(id) {
         return this.doctors.get(id) || null;

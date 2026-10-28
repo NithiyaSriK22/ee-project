@@ -3,11 +3,11 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import App from '../App';
 
 describe('Kiosk Application Foundation', () => {
-  it('Renders the THUNAI brand header and welcoming intake cards', () => {
+  it('Renders the MEDBRIEF brand header and welcoming intake cards', () => {
     render(<App />);
 
     // Brand and subtitle
-    expect(screen.getAllByText(/THUNAI/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/MEDBRIEF/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Self Intake \(Patient\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Companion \/ Staff Assisted/i)).toBeInTheDocument();
 
