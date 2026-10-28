@@ -17,7 +17,14 @@ import { logger } from '../../config/logger.js';
 import crypto from 'crypto';
 import { ValidationError, NotFoundError, ForbiddenError } from '../../errors/app-error.js';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(id?: string | null): boolean {
+  return typeof id === 'string' && UUID_REGEX.test(id);
+}
+
 export class NotificationService {
+  private static inflightRequests = new Map<string, Promise<NotificationDTO>>();
+
   /**
    * Creates an operational notification with deduplication, clinical sanitization,
    * preference checking, and idempotent channel dispatch.
@@ -61,7 +68,29 @@ export class NotificationService {
       }
     }
 
-    // 4. CHECK DEDUPLICATION IN STORE
+    // Deduplicate concurrent inflight requests for the exact same event
+    const inflightKey = `${deduplicationKey}:${params.recipientId || 'broadcast'}`;
+    const existingInflight = this.inflightRequests.get(inflightKey);
+    if (existingInflight) {
+      return await existingInflight;
+    }
+
+    const creationPromise = this.executeCreateNotification(params, channel, deduplicationKey);
+    this.inflightRequests.set(inflightKey, creationPromise);
+
+    try {
+      return await creationPromise;
+    } finally {
+      this.inflightRequests.delete(inflightKey);
+    }
+  }
+
+  private static async executeCreateNotification(
+    params: CreateNotificationParams,
+    channel: any,
+    deduplicationKey: string
+  ): Promise<NotificationDTO> {
+    // 4. CHECK DEDUPLICATION IN STORE / DB
     const existing = await this.findByDeduplicationKey(deduplicationKey, params.recipientId);
     if (existing) {
       logger.info('Duplicate notification suppressed via deduplicationKey', {
@@ -78,6 +107,12 @@ export class NotificationService {
       : null;
 
     const notificationId = crypto.randomUUID();
+    const safeRecipientId = isUuid(params.recipientId) ? params.recipientId : null;
+    const metadata: any = { ...(params.metadata || {}) };
+    if (params.recipientId && !isUuid(params.recipientId)) {
+      metadata.rawRecipientId = params.recipientId;
+    }
+
     const notification: NotificationDTO = {
       id: notificationId,
       type: params.type,
@@ -92,34 +127,91 @@ export class NotificationService {
       isRead: false,
       readAt: null,
       expiresAt,
-      metadata: params.metadata,
+      metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
     };
 
     const isDb = await checkDatabaseAvailability();
+    let isDuplicate = false;
+
     if (isDb) {
       try {
-        const created = await prisma.notification.create({
-          data: {
-            id: notificationId,
-            type: notification.type,
-            recipient_id: notification.recipientId || undefined,
-            recipient_role: notification.recipientRole || undefined,
-            title: notification.title,
-            message: notification.message,
-            channel: notification.channel,
-            visit_id: notification.visitId || undefined,
-            kiosk_device_id: notification.kioskDeviceId || undefined,
-            deduplication_key: notification.deduplicationKey,
-            is_read: false,
-            expires_at: expiresAt ? new Date(expiresAt) : undefined,
-            metadata: params.metadata ? (params.metadata as any) : undefined,
-          },
+        const saved = await prisma.$transaction(async (tx) => {
+          // Transaction-level advisory lock on deduplicationKey to serialize concurrent attempts
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${deduplicationKey}))`;
+
+          const whereClause: any = { deduplication_key: deduplicationKey };
+          if (safeRecipientId) {
+            whereClause.OR = [
+              { recipient_id: safeRecipientId },
+              { recipient_id: null },
+            ];
+          } else {
+            whereClause.recipient_id = null;
+          }
+
+          const existingRow = await tx.notification.findFirst({
+            where: whereClause,
+            orderBy: { created_at: 'desc' },
+          });
+
+          if (existingRow) {
+            isDuplicate = true;
+            return {
+              id: existingRow.id,
+              type: existingRow.type as any,
+              recipientId: (existingRow.metadata as any)?.rawRecipientId || existingRow.recipient_id,
+              recipientRole: existingRow.recipient_role,
+              title: existingRow.title,
+              message: existingRow.message,
+              channel: existingRow.channel as any,
+              visitId: existingRow.visit_id,
+              kioskDeviceId: existingRow.kiosk_device_id,
+              deduplicationKey: existingRow.deduplication_key,
+              isRead: existingRow.is_read,
+              readAt: existingRow.read_at?.toISOString() || null,
+              expiresAt: existingRow.expires_at?.toISOString() || null,
+              metadata: existingRow.metadata as any,
+              createdAt: existingRow.created_at.toISOString(),
+              updatedAt: existingRow.updated_at.toISOString(),
+            };
+          }
+
+          const created = await tx.notification.create({
+            data: {
+              id: notificationId,
+              type: notification.type,
+              recipient_id: safeRecipientId || undefined,
+              recipient_role: notification.recipientRole || undefined,
+              title: notification.title,
+              message: notification.message,
+              channel: notification.channel,
+              visit_id: notification.visitId || undefined,
+              kiosk_device_id: notification.kioskDeviceId || undefined,
+              deduplication_key: notification.deduplicationKey,
+              is_read: false,
+              expires_at: expiresAt ? new Date(expiresAt) : undefined,
+              metadata: notification.metadata as any,
+            },
+          });
+
+          return {
+            ...notification,
+            id: created.id,
+          };
         });
-        notification.id = created.id;
+
+        notification.id = saved.id;
+        if (isDuplicate) {
+          logger.info('Duplicate notification suppressed via DB lock check', {
+            deduplicationKey,
+            type: params.type,
+          });
+          devFallbackNotificationsStore.notifications.set(saved.id, saved);
+          return saved;
+        }
       } catch (err: any) {
-        // If unique constraint hit on deduplication_key
         if (err?.code === 'P2002' || String(err).includes('unique')) {
           const found = await this.findByDeduplicationKey(deduplicationKey, params.recipientId);
           if (found) return found;
@@ -130,6 +222,8 @@ export class NotificationService {
     } else {
       devFallbackNotificationsStore.notifications.set(notificationId, notification);
     }
+
+    devFallbackNotificationsStore.notifications.set(notification.id, notification);
 
     // 6. DISPATCH TO CHANNEL
     if (channel === NotificationChannels.IN_APP) {
@@ -159,11 +253,18 @@ export class NotificationService {
       try {
         const where: any = {};
         if (params.recipientId) {
-          where.OR = [
-            { recipient_id: params.recipientId },
-            { recipient_id: null, recipient_role: params.recipientRole },
-            { recipient_id: null, recipient_role: null }, // Broadcasts
-          ];
+          if (isUuid(params.recipientId)) {
+            where.OR = [
+              { recipient_id: params.recipientId },
+              { recipient_id: null, recipient_role: params.recipientRole },
+              { recipient_id: null, recipient_role: null }, // Broadcasts
+            ];
+          } else {
+            where.OR = [
+              { recipient_id: null, recipient_role: params.recipientRole },
+              { recipient_id: null, recipient_role: null }, // Broadcasts
+            ];
+          }
         }
         if (params.isRead !== undefined) {
           where.is_read = params.isRead;
@@ -178,7 +279,7 @@ export class NotificationService {
         return rows.map((r) => ({
           id: r.id,
           type: r.type as any,
-          recipientId: r.recipient_id,
+          recipientId: (r.metadata as any)?.rawRecipientId || r.recipient_id,
           recipientRole: r.recipient_role,
           title: r.title,
           message: r.message,
@@ -229,7 +330,7 @@ export class NotificationService {
         return {
           id: updated.id,
           type: updated.type as any,
-          recipientId: updated.recipient_id,
+          recipientId: (updated.metadata as any)?.rawRecipientId || updated.recipient_id,
           recipientRole: updated.recipient_role,
           title: updated.title,
           message: updated.message,
@@ -343,7 +444,11 @@ export class NotificationService {
     return pref ? pref.enabled : true; // Default opt-in
   }
 
-  private static async findByDeduplicationKey(deduplicationKey: string, recipientId?: string | null): Promise<NotificationDTO | null> {
+  public static async findByDeduplicationKey(
+    deduplicationKey: string,
+    recipientId?: string | null
+  ): Promise<NotificationDTO | null> {
+    // 1. Check in-memory store
     for (const [, n] of devFallbackNotificationsStore.notifications.entries()) {
       if (n.deduplicationKey === deduplicationKey) {
         if (!recipientId || n.recipientId === recipientId || !n.recipientId) {
@@ -351,6 +456,54 @@ export class NotificationService {
         }
       }
     }
+
+    // 2. Check Database if available
+    const isDb = await checkDatabaseAvailability();
+    if (isDb) {
+      try {
+        const safeRecipientId = isUuid(recipientId) ? recipientId : null;
+        const whereClause: any = { deduplication_key: deduplicationKey };
+        if (safeRecipientId) {
+          whereClause.OR = [
+            { recipient_id: safeRecipientId },
+            { recipient_id: null },
+          ];
+        } else {
+          whereClause.recipient_id = null;
+        }
+
+        const row = await prisma.notification.findFirst({
+          where: whereClause,
+          orderBy: { created_at: 'desc' },
+        });
+
+        if (row) {
+          const dto: NotificationDTO = {
+            id: row.id,
+            type: row.type as any,
+            recipientId: (row.metadata as any)?.rawRecipientId || row.recipient_id,
+            recipientRole: row.recipient_role,
+            title: row.title,
+            message: row.message,
+            channel: row.channel as any,
+            visitId: row.visit_id,
+            kioskDeviceId: row.kiosk_device_id,
+            deduplicationKey: row.deduplication_key,
+            isRead: row.is_read,
+            readAt: row.read_at?.toISOString() || null,
+            expiresAt: row.expires_at?.toISOString() || null,
+            metadata: row.metadata as any,
+            createdAt: row.created_at.toISOString(),
+            updatedAt: row.updated_at.toISOString(),
+          };
+          devFallbackNotificationsStore.notifications.set(dto.id, dto);
+          return dto;
+        }
+      } catch (err) {
+        logger.warn('Error querying notification deduplication from DB', { error: String(err) });
+      }
+    }
+
     return null;
   }
 
